@@ -10,9 +10,12 @@ because `ci / python` has been read green on the merge commit of pull request #1
 `main`. Gates G3 and G4 are closed below, on the runs and on the reading of the body against
 the report. Every claim here names the run or the file it was read from.
 
-Last updated: 2026-11-04T08:45Z (3.1, 3.2, G3 and G4 close on the two `watch / audit`
-dispatches and on issue #6 read against a reproduced report; 3.6 is the wording bug that reading
-found, and 2.10 loses its blocker. The counts move to 30 of 37 with 4 of 5 gates.)
+Last updated: 2026-11-04T09:10Z (3.6 closes: the summary line's account count now comes from
+the same function that writes the table's `Read` column, so "across 3 accounts read" becomes
+"across 2 accounts read of 3 asked about" when one was never read, and a body whose first line
+carries the old wording still decodes to the same state marker. 3.7 is added for the same noun
+error in the heading one section lower, and 2.10 still waits on a tag. The counts move to 31 of
+38 with 4 of 5 gates.)
 
 ## 1. What this repository is
 
@@ -95,8 +98,12 @@ a half minutes later (job 126477058944) found the issue by its state marker, ren
 characters of "no change since the previous run" and left the body byte-identical.
 
 What is left in Phase 3 is not plumbing. 3.3 is a mainnet read the owner has to make, 3.4 is
-somebody else's repository, and 3.6 is a wording bug this reading found: the summary line says
-"across 3 accounts read" for a set in which one account was never read.
+somebody else's repository. 3.6, the wording bug that reading found, is closed: the summary line
+used to say "across 3 accounts read" for a set in which one account was never read, and it now
+says "across 2 accounts read of 3 asked about". The same noun error survives one section lower in
+the heading "## Accounts read", which sits above a row reading "(not read)"; that is 3.7, and it
+is deliberately not fixed in the same diff because the section name is keyed on by three tests and
+described in `ARCHITECTURE.md` section 2's field table.
 
 The ordering that held this repository back was G3, then G4, and both are now closed. A green
 hosted CI run told us the code builds and the suite passes on somebody else's machine; an
@@ -363,14 +370,37 @@ it is why this repository's value right now is the plumbing rather than the find
 - [ ] **3.5** Wave-shaped backlog. Done-when: the tasks a stranger could take have tiers
   and acceptance criteria in their issue bodies, and none of them is published before the
   organization's application is approved.
-- [ ] **3.6** The summary line counts an account that was not read. Found while closing G4 on
+- [x] **3.6** The summary line counts an account that was not read. Found while closing G4 on
   2026-11-04: issue #6 opens with "1 finding open (1 high, 0 warn) across 3 accounts read", while
   its own table marks one of those three `(not read)` and `not found on this endpoint`. The number
-  is right and the noun is wrong: two accounts were read and three were asked about. Done-when:
-  `render_report.py` distinguishes them, its tests and the golden bodies move together, the
-  fixtures that quote the sentence are regenerated under `-update` and read, and the change leaves
-  the state marker alone, because detection is keyed on the fingerprint rather than on the
-  sentence.
+  is right and the noun is wrong: two accounts were read and three were asked about. Closed
+  2026-11-04. `status_line` now takes the read count and the asked-about count as separate
+  arguments, and the call site derives the first from `account_status`, the same function the
+  table's `Read` column already uses, so the sentence and the row it summarises cannot drift apart
+  again. Rendered from `tests/fixtures/report-findings.json` the first line reads "across 1 account
+  read of 2 asked about."; from `report-network-mismatch.json`, where the single account was
+  skipped for a network mismatch, "across 0 accounts read of 1 asked about."; a report whose every
+  account was read keeps the old shape and says "across 1 account read." with no denominator, which
+  is why the change is invisible on the clean fixtures. Four cases in `TestSummaryAccountCounts`
+  cover the three branches and cross-check the sentence against the table's own rows, and the
+  suite is 171 on this branch where it was 167. The done-when asked that the change "leaves the
+  state marker alone": it does, and that is now a test rather than an expectation, because a body
+  whose first line is rewritten back to the old sentence still decodes to the same marker and
+  renders `changed=false`. Two notes on what this does not do. It does not rewrite issue #6: the
+  posture there has not moved, `sync_issue.py:287` leaves an unchanged issue alone, so the old
+  sentence stays in the live body until a run reports a change or `update-on-no-change` is flipped,
+  which is D-07 working as designed rather than a defect in this fix. And there is no `-update`
+  here to regenerate goldens with; the task was written in Go vocabulary, and the only file in this
+  repository that quotes the sentence is `README.md`'s schematic, which was re-rendered from the
+  fixture and pasted rather than retyped.
+- [ ] **3.7** The heading below the summary repeats the noun error 3.6 fixed. Found while closing
+  3.6 on 2026-11-04: `## Accounts read` sits directly above a table whose last row says
+  `(not read)`, so the section that 3.6 made honest in the sentence is wrong again in its title.
+  Done-when: the heading names every account the run was asked about, the three splits in
+  `tests/test_render_report.py` and the two in `tests/test_sync_issue.py` that key on the string
+  move with it, `README.md`'s schematic carries the new name, and `ARCHITECTURE.md` section 2's
+  field table describes it. Not bundled into 3.6 because a section name is part of the body
+  contract and the two changes would make one diff hard to revert.
 
 ### Phase 9: Backlog, not scheduled
 
@@ -443,9 +473,9 @@ it is why this repository's value right now is the plumbing rather than the find
 | 0 | Ground work | 7 | 7 | 100% |
 | 1 | The action | 10 | 11 | 91% |
 | 2 | Public shape | 11 | 13 | 85% |
-| 3 | Real use | 2 | 6 | 33% |
+| 3 | Real use | 3 | 7 | 43% |
 | 9 (backlog) | Backlog, not scheduled | 0 | 4 | 0% |
-| **All phases** | **Readiness total** | **30** | **37** | **81%** |
+| **All phases** | **Readiness total** | **31** | **38** | **82%** |
 | Gates | G1 to G5 | 4 | 5 | 80% |
 <!-- PROGRESS:END -->
 
@@ -462,6 +492,7 @@ it is why this repository's value right now is the plumbing rather than the find
 | 2026-11-04 | The public shape finishes and a second opinion arrives. 2.6's last done-when was never a change to this tree: pull request #1 in `posture-sec/.github` added this project's row to the org profile page, merged there as `06d2db5` at 08:07:19Z, and the raw profile README answers 200 naming `stellar-posture-watch` four times. `gh repo view` reads back the other three on `main` at `8a308ac`: the description, `homepageUrl`, ten topics, wiki off. 2.8's first run was not the schedule. The merge of pull request #3 pushed `8a308ac` at 08:00:43Z and the `push` trigger fired: `scorecard / analysis` job 126460914087 in run 41796242453, success, and `api.scorecard.dev` answers 200 with the result dated 08:00:51Z at that commit: **5.2** over 18 checks. `README.md` now carries the badge, which was fetched and checked for the number rather than assumed to render, and the paragraph beside it separates what the score measures from what it does not. `Dangerous-Workflow` and `Token-Permissions` are 10, which are the two checks that matter for an action that fetches and compiles another repository's Go. `Branch-Protection` is 4 for the three warnings 2.7 already states as its own limit, so the ruleset requiring no approver now arrives as a number rather than as a footnote. `Pinned-Dependencies` is 6 for one `pip install -r` line in `ci.yml`, the same reason the corpus scores 6, and `Fuzzing` is 0 for a reason that does measure something here: `render_report.py` parses a report whose contents came off the chain and nothing hammers it. `Maintained`, `Code-Review`, `Contributors`, `CII-Best-Practices`, `Dependency-Update-Tool` and `SAST` are states of a one-maintainer repository created this month, and `Packaging` and `Signed-Releases` are -1 because nothing is published from here at all. None of the eighteen touches the sentence a consumer would most want, which is still G3. Gate G2 closes with the two rows it names. Two smaller corrections ride along: section 1 carried the em dash this repository's own writing rule forbids, and the `ci.yml` header still said nothing required the check on `main`. | 2.6, 2.8, G2 |
 | 2026-11-04 | The schedule that writes lands. `.github/workflows/watch.yml` is `self-check.yml`'s call with `dry-run` off: Tuesday 05:23 UTC, `workflow_dispatch` beside it so the first read does not wait for the cron, `contents: read` plus `issues: write` and nothing else, `uses: ./` rather than a sha pin because a local reference resolves from the commit the run is at, `gauge-ref` the same `da656733` and `config` the same `example/gauge.toml` as the dry run. So the delta against `self-check.yml`, which has gone green on all six of its runs here, is the flag, the permission that makes the flag mean something and the token named in the `with:` block rather than defaulted: the accounts, the Gauge sha and the renderer are untouched. The expectation is written down before the run rather than after it: three accounts in the policy, two of them the testnet addresses `tests/fixtures/` holds real reports for and one a valid checksum-correct address the endpoint does not have, so the first issue should carry exactly one high `acct-missing` and exit 1 with the run green. An empty issue would mean the audit step died, not that the accounts are clean, and a second finding would mean the pinned code changed; both readings are G4's job, not this row's, which is why 3.1 and 3.2 gain text and keep their boxes. `self-check` ran again on this pull request (job 126473116440, 08:30:39Z) and its log narrows the expectation without closing it: `gauge exited 1 after writing 4646 bytes of report`, `render_report: wrote /home/runner/work/_temp/issue-body.md (2573 characters); 1 open, 1 high, 0 warn, 0 accepted`, then `sync_issue: dry run, would open an issue titled 'Account posture watch'`. So the number of findings is now an observed hosted fact at this sha against this config; which finding it is stays an inference from the four rules in `da656733` and the three accounts in the policy, because D-06 keeps the report out of the log. Nothing was merged to `main` with the write on, no issue exists yet, and no number in this repository quotes one. | 3.1 (part), 3.2 (part) |
 | 2026-11-04 | The write happened, and it was read. `.github/workflows/watch.yml` merged as `f19f12c` and the first `workflow_dispatch` of it, job 126475427542 at 08:36:02Z, built Gauge at `da656733`, read `example/gauge.toml` against live testnet, rendered 2573 characters and opened issue #6 carrying one high `acct-missing` with `changed=true`, on a green job while Gauge exited 1. At 08:39:51Z job 126477058944 found the same issue by its state marker, rendered 2291 characters of no change, said `issue #6 needs no change, left alone` and reported `changed=false`; the body read back byte-identical with `updated_at` still 08:36:02Z. So the sentence four documents carried, that no issue had ever been opened or edited by this action, is now false and each of them names the two runs instead. G4 closed by reproducing the report rather than by trusting the body: the pinned sha went out through `git archive`, built on the desk and run against the same policy at 08:37:59Z, which wrote the same 4646 bytes the runner had printed 118 seconds earlier, and every number in the hosted body maps to a field of it, from the header ledger to the 64-hex fingerprint the state marker decodes to. Rendering that desk report against the hosted body printed the same 2291 characters and the same `changed: false` the runner printed, so the two reads agree to the byte. 3.1 and 3.2 close with the runs, 2.10 loses its blocker, and the reading found one wording bug, 3.6: the summary line says "across 3 accounts read" for a set in which one account was never read. Phase 3 moves to 2 of 6, the readiness total to 30 of 37 and the gate row to 4 of 5. Nothing in `action.yml`, its scripts or its tests changed to produce any of this, which is the point: the second caller of the same code is the whole diff. | 3.1, 3.2, G3, G4 |
+| 2026-11-04 | The summary line stops calling an unread account read. 3.6, found while closing G4, is closed here: `status_line` took one number, `len(report["accounts"])`, and called it "read", so a policy naming three accounts of which the endpoint had two printed "across 3 accounts read" above a table whose own last row says `(not read)`. It now takes the read count and the asked-about count, and the first comes from `account_status`, the same function that writes that column, so the sentence and the rows it summarises cannot drift apart again. A render of `tests/fixtures/report-findings.json` says "across 1 account read of 2 asked about." and `report-network-mismatch.json`, whose one account was skipped, says "across 0 accounts read of 1 asked about."; a report whose every account was read keeps the old shape and prints no denominator. Four cases in `TestSummaryAccountCounts` cover those branches, cross-check the line against the table, and prove the state marker byte-for-byte unchanged with `changed=false` when the previous body carries the old wording, which turns D-07's fingerprint keying from a sentence in a doc into a test. The suite is 171 where it was 167, `check_action` holds its rules and `roadmap_progress.py --check` exits 0 on this branch, and the two lint steps ran locally because `ruff==0.17.3` and `mypy==2.4.0` were installed from `requirements-dev.txt` into a temporary venv outside the repository: `All checks passed!`, `10 files already formatted` after one wrapped test line was reformatted, and `Success: no issues found in 10 source files`. `README.md`'s schematic sentence is a re-render from the fixture rather than a retyping. 3.7 records the same noun error one section lower, in the heading `## Accounts read`, which is a body string keyed on by five test sites and so is not bundled here. Nothing in `action.yml` changed and no JSON field moved, so `ARCHITECTURE.md` section 2's report contract is untouched; issue #6 keeps its old first line until a run finds a change, because an unchanged issue is left alone by design. | 3.6, 3.7 (added) |
 
 ## 9. Last updated line format
 

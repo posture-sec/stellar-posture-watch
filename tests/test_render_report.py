@@ -169,6 +169,64 @@ class TestFirstRun(Renderer):
         self.assertEqual(summary["open"], 0)
 
 
+class TestSummaryAccountCounts(Renderer):
+    """3.6: an account the run could not read is asked about, not read.
+
+    The first line used to count `report["accounts"]` and call the result "read", so a policy
+    naming three accounts of which the endpoint had two printed "across 3 accounts read" above
+    a table whose own row says "(not read)". The numerator is the accounts `account_status` calls
+    read, which is the function that writes that column; the denominator is every account the
+    report carries, read or not.
+    """
+
+    def test_the_tail_says_how_many_of_the_asked_were_read(self) -> None:
+        cases = [
+            ("report-findings.json", "across 1 account read of 2 asked about."),
+            ("report-accepted.json", "across 1 account read of 2 asked about."),
+            ("report-network-mismatch.json", "across 0 accounts read of 1 asked about."),
+            ("report-clean.json", "across 1 account read."),
+            ("report-warn.json", "across 1 account read."),
+            ("report-hostile-strings.json", "across 1 account read."),
+        ]
+        for name, tail in cases:
+            with self.subTest(fixture=name):
+                _, body, _, err = self.render(name)
+                first = body.splitlines()[0]
+                self.assertTrue(first.endswith(tail), f"{name}: {first!r} {err}")
+
+    def test_no_fixture_that_was_fully_read_borrows_the_denominator(self) -> None:
+        for name in ("report-clean.json", "report-warn.json", "report-hostile-strings.json"):
+            with self.subTest(fixture=name):
+                _, body, _, _ = self.render(name)
+                self.assertNotIn("asked about", body.splitlines()[0])
+
+    def test_the_counts_behind_the_sentence_agree_with_the_table(self) -> None:
+        _, body, summary, _ = self.render("report-findings.json")
+        accounts = body.split("## Accounts read")[1].split("## What this cannot see")[0]
+        rows = [line for line in accounts.splitlines() if line.startswith("| `")]
+        read = [row for row in rows if row.rstrip().endswith("| read |")]
+        self.assertEqual(len(read), 1, "one row the table itself calls read")
+        self.assertEqual(len(rows), 2, "two accounts were asked about")
+        self.assertEqual(summary["open"], 1)
+        self.assertIn("across 1 account read of 2 asked about", body.splitlines()[0])
+
+    def test_the_rewritten_sentence_is_not_read_as_changed_posture(self) -> None:
+        # D-07: detection keys on the fingerprint, so a body carrying the old wording must
+        # still match a fresh render of the same report, marker to marker.
+        _, body, _, _ = self.render("report-findings.json")
+        old = body.replace("across 1 account read of 2 asked about", "across 2 accounts read", 1)
+        self.assertNotEqual(old, body, "the replacement has to have found the sentence")
+        previous = self.tmp / "previous.md"
+        previous.write_text(old, encoding="utf-8")
+        code, again, summary, err = self.render("report-findings.json", previous)
+        self.assertEqual(code, 0, err)
+        self.assertFalse(summary["changed"])
+        fresh, carried = MARKER_RE.search(again), MARKER_RE.search(old)
+        if fresh is None or carried is None:
+            self.fail("a rendered body carries no state marker")
+        self.assertEqual(fresh.group(1), carried.group(1))
+
+
 class TestChangeDetection(Renderer):
     def test_an_identical_run_again_is_marked_unchanged(self) -> None:
         previous = self.tmp / "previous.md"

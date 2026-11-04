@@ -127,7 +127,7 @@ One issue per policy file, titled `Account posture watch` unless you change `tit
 `account-posture` unless you change `issue-label`. Its body carries:
 
 ```
-Posture changed since the previous run: 1 finding open (1 high, 0 warn) across 2 accounts read.
+Posture changed since the previous run: 1 finding open (1 high, 0 warn) across 1 account read of 2 asked about.
 
 As of 2026-11-03, read at ledger 5535642 on Test SDF Network ; September 2015 with
 `0.1.0-dev`, built from `posture-sec/guage` at `da65673`, auditing `.posture/gauge.toml`
@@ -145,6 +145,11 @@ A run that finds the same posture leaves the body alone, so the header date mean
 that changed something" and the workflow run history means "the newest read". When the list
 does move, the change gets one comment as well as the rewritten body. Which findings moved
 is decided by the fingerprint Gauge puts on each one, not by the message text.
+
+The first line counts the accounts the run actually read. "across 1 account read of 2 asked
+about" means the policy named two and the endpoint had one of them; an account that is not
+there is a finding in its own right, not a read that came up empty, so it is left out of the
+numerator. When every account was read the sentence says so plainly and carries no denominator.
 
 Everything chain-derived goes through escaping before it reaches the body. A `home_domain`
 is chosen by the account's owner, and a tool that pastes it into markdown would let a

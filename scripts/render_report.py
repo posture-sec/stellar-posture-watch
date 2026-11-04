@@ -271,7 +271,9 @@ def account_status(account: dict) -> str:
     return "read"
 
 
-def status_line(counts: dict[str, int], accounts: int, baseline: bool, changed: bool) -> str:
+def status_line(
+    counts: dict[str, int], read: int, asked: int, baseline: bool, changed: bool
+) -> str:
     noun = "finding" if counts["open"] == 1 else "findings"
     if counts["open"] == 0:
         posture = (
@@ -283,7 +285,11 @@ def status_line(counts: dict[str, int], accounts: int, baseline: bool, changed: 
         posture = f"{counts['open']} {noun} open ({counts['high']} high, {counts['warn']} warn)"
         if counts["accepted"]:
             posture += f", {counts['accepted']} accepted in the policy"
-    tail = f" across {accounts} account{'s' if accounts != 1 else ''} read"
+    # 3.6: an account the endpoint did not have is not an account that was read. The table
+    # below already marks the row "(not read)"; the sentence has to agree with it.
+    tail = f" across {read} account{'s' if read != 1 else ''} read"
+    if asked != read:
+        tail += f" of {asked} asked about"
     if baseline:
         return f"This run establishes the baseline: {posture}{tail}.\n"
     if changed:
@@ -332,8 +338,10 @@ def render(args: argparse.Namespace) -> tuple[str, dict[str, object]]:
     }
 
     parts: list[str] = []
+    asked = len(report["accounts"])
+    read = sum(1 for account in report["accounts"] if account_status(account) == "read")
     parts.append(
-        status_line(counts, len(report["accounts"]), baseline, changed)
+        status_line(counts, read, asked, baseline, changed)
         + f"\nAs of {args.as_of}, read at ledger {report['ledger']} on {escape(report['network'])} "
         f"with `{escape(tool_version)}`, built from {fenced(args.gauge_repo)} at "
         f"{fenced(args.gauge_ref[:7])}, auditing {fenced(args.config)} "

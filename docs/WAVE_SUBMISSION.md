@@ -61,7 +61,7 @@ the program's three, and they are a guess about effort, not a label.
 
 | Shape | Work | Why it suits a contributor |
 |---|---|---|
-| Trivial | Close 3.6: the first line of a body says "across 3 accounts read" when one of those three was never read. The renderer, its tests and the golden bodies move together (roadmap 3.6). | The bug is one sentence, the change is table-driven, and the evidence is a rendered fixture. |
+| Trivial | Close 3.7: the section heading `## Accounts read` sits above a table whose own last row says `(not read)`. Five test sites split on that string and `ARCHITECTURE.md` section 2 describes the table, so it is a rename with a paper trail (roadmap 3.7). | The bug is one heading, the evidence is a grep, and 3.6 closed the sentence half of it on 2026-11-04, so the shape of the fix is already in the history. |
 | Medium | The escape surface as a test matrix: hostile `home_domain`, data values and messages assembled into one fixture per markdown construct, each with the render it must not produce (roadmap 1.2 follow-on). | Pure, self-contained, and the failure mode is visible in the diff. |
 | Medium | A documentation site for the action (roadmap 2.9), with a rendered example issue beside the report that produced it. | Deferred by the maintainer on purpose, so it is work a stranger can own without a design argument. |
 | Medium | A second consumer: point this action at one of the organization's own repositories watching a real treasury policy, or write down that nobody uses it (roadmap 3.4, G5). | The honest version is two paragraphs and one decision. |
