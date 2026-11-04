@@ -1,0 +1,95 @@
+# The dogfood run: this repository's own tracking issue, on a schedule (tasks 3.1, 3.2).
+
+# Gate G3 asked for one thing this repository could not do at a desk: let the action write.
+# `self-check.yml` runs the whole step graph with `dry-run: true`, so the runner reaches the
+# point where `sync_issue.py` holds a body and stops. This file is the same call with the flag
+# off, against the same pinned Gauge sha and the same policy file, which is also what 3.2 asks
+# for: the dogfood policy is the file the scheduled run actually reads, not a copy of somebody's
+# example with the addresses swapped.
+#
+# The accounts are the two testnet addresses `tests/fixtures/` captured real reports for, plus a
+# third that is a valid, checksum-correct address the endpoint does not have. So the first issue
+# this action ever wrote should say exactly one thing: `acct-missing`, high. An issue that says
+# nothing would mean the audit step fell over rather than that the accounts are clean, and an
+# issue with two findings would mean the pinned Gauge code changed. Both of those are read from
+# the issue against its report, which is G4, and the numbers are the reason the third account is
+# in the policy on purpose.
+#
+# `issues: write` is the elevation, and it is the whole elevation: `contents: read` for the
+# checkout, nothing else. The default workflow token is scoped to this repository, so a scheduled
+# run cannot reach Gauge's. `break-build` stays off per D-05: a finding belongs in the issue, and
+# a red schedule should mean the read failed, not that the read worked.
+#
+# This is not a required status check either, and it cannot be: a cron that files an issue is not
+# evidence about a pull request. `self-check.yml` explains why a run that compiles another
+# repository's Go and reads a public Horizon must not gate a merge; the same reasoning applies
+# with the write turned on, only louder.
+#
+# Third-party actions here are pinned by full sha with the release named beside them, the same
+# four commits the siblings run. `check_action.py` refuses an expression inside a `run:` block in
+# `action.yml`; the workflow files are not its subject, so the pins in this one are reviewed here.
+
+name: watch
+
+on:
+  schedule:
+    # 05:23 UTC on Tuesdays. Deliberately not the example's Monday 06:17 slot: two schedules in
+    # the same minute is a queue, and a queued audit reports nothing for a day while looking
+    # green. A prime minute so this run does not land with the round-number crons.
+    - cron: '23 5 * * 2'
+  # So the first read after a policy change does not wait for Tuesday, and so a run can be
+  # produced on purpose the day the workflow merges rather than four days later.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: account-posture-watch
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    name: watch / audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Audit the testnet policy and update the tracking issue
+        id: watch
+        uses: ./
+        with:
+          # The Gauge commit whose four rules produce the findings. Not a branch name, and not
+          # bumped as a refresh: this line decides which code a published answer came from, and
+          # the issue body prints it.
+          gauge-ref: da656733fff839d5cf20f795460f4365a7254257
+          config: example/gauge.toml
+          # warn, so an undeclared clawback reaches the issue instead of sitting in a report
+          # nobody opened. The same value self-check.yml runs with.
+          fail-on: warn
+          break-build: "false"
+          issue-label: account-posture
+          title: Account posture watch
+          update-on-no-change: "false"
+          dry-run: "false"
+          # Named rather than left to the action's default, because in a workflow whose whole
+          # point is the write the diff should say which token performs it. This is the
+          # repository-scoped default token: a scheduled run has no other, and it cannot reach
+          # another repository's issues. Passed to `sync_issue.py` through an environment
+          # variable, never an argument, so it is in no step log.
+          github-token: ${{ github.token }}
+
+      # One line, no report text, per D-06: the JSON stays in a file inside the runner. The
+      # numbers exist so a reader of the run log can see which issue the write targeted without
+      # opening it, and so `changed=false` on a week when the issue says something new is
+      # visible as a contradiction rather than invisible.
+      - name: Record what the run saw
+        env:
+          GAUGE_EXIT: ${{ steps.watch.outputs.exit-code }}
+          ISSUE: ${{ steps.watch.outputs.issue-number }}
+          CHANGED: ${{ steps.watch.outputs.changed }}
+        run: |
+          echo "gauge exited $GAUGE_EXIT, tracking issue ${ISSUE:-none}, changed=$CHANGED"

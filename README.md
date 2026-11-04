@@ -70,6 +70,11 @@ read again.
 `.github/workflows/posture-watch.yml` in the repository you want watched. Actions are
 pinned by commit sha here as everywhere else in this organization, so replace the one
 placeholder with the sha of the commit of *this* repository you read before using it.
+This repository runs it too. `.github/workflows/watch.yml` is the file above with `dry-run` off
+and `uses: ./` in place of the pin, pointed at `example/gauge.toml`: a local action reference is
+resolved from the commit the schedule ran at, so there is no second sha to bump in the diff that
+changes the code it points to. That is the dogfood. Until a run of it files an issue, the write
+is still the unproven part, and `ROADMAP.md` gate G3 is the row that says so.
 
 ```yaml
 name: account posture
@@ -182,6 +187,8 @@ claims and nothing more. `.github/workflows/ci.yml` runs them on 3.11 on
 every pull request and every push to `main`, `.github/workflows/roadmap-check.yml` is the
 roadmap gate, and `.github/workflows/self-check.yml` consumes this directory as an action
 with `dry-run: true` so the yaml is executed rather than only parsed.
+`.github/workflows/watch.yml` is the same call with `dry-run: "false"`, on a Tuesday schedule,
+and it is the file that was written to make the write stop being the unproven part.
 
 Those three have since run on GitHub rather than here: on 2026-11-04, at `b107b0f` on pull
 request #1, `ci / python` (job 126439899511) passed on CPython 3.11.17 with the same 167 cases
