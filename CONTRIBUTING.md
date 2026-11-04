@@ -99,6 +99,12 @@ how the issue is found or updated, dispatch that workflow from `main` after your
 read the issue it touches: issue #6 is the one this schedule maintains today, and the two
 dispatches recorded in `ROADMAP.md` 3.1 are what a reading of it looks like.
 
+A manual dispatch of that workflow takes one input, `refresh_body`, and it exists for the case
+this file runs into twice: a fix to the words in the body, on an issue whose posture has not
+moved. It maps to the action's `update-on-no-change`, so the body is rewritten and no comment is
+posted, and a scheduled run cannot reach it because the fallback in the yaml is what a `schedule`
+event resolves `inputs` to. Use it once, read the issue, and say what moved.
+
 ## Changing what the issue looks like
 
 The body is the product. Four constraints hold it together:
