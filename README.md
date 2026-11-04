@@ -146,6 +146,13 @@ that changed something" and the workflow run history means "the newest read". Wh
 does move, the change gets one comment as well as the rewritten body. Which findings moved
 is decided by the fingerprint Gauge puts on each one, not by the message text.
 
+The one case where that rule wants an override is a fix to the renderer's wording: a body is
+written by the code that read the chain, so a corrected sentence reaches an existing issue at
+the next change in posture or not at all. `watch.yml` therefore takes a `refresh_body` box on a
+manual dispatch, which is the action's `update-on-no-change` input and nothing else. It rewrites
+the body and posts no comment, and it moves the header date without moving the posture. That is
+the cost, and it is why the scheduled run never has it on.
+
 The first line counts the accounts the run actually read. "across 1 account read of 2 asked
 about" means the policy named two and the endpoint had one of them; an account that is not
 there is a finding in its own right, not a read that came up empty, so it is left out of the

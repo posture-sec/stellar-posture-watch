@@ -10,14 +10,14 @@ because `ci / python` has been read green on the merge commit of pull request #1
 `main`. Gates G3 and G4 are closed below, on the runs and on the reading of the body against
 the report. Every claim here names the run or the file it was read from.
 
-Last updated: 2026-11-04T10:04Z (3.7 closes the noun error 3.6 left one section lower: the account
-table's heading is now `## Accounts asked about`, so no title claims read above a row whose Read
-cell says otherwise. The rename is carried through the five test split sites, `README.md`,
-`ARCHITECTURE.md` section 2 and `CONTRIBUTING.md`, and it was read on a runner: `ci / python` job
-126503763136 passes 175 tests with `ruff==0.17.3` and `mypy==2.4.0` both clean, and
-`self-check / action` job 126503764248 re-rendered the live report at 2315 characters, 2308 plus
-the 7 of " asked about", and left issue #6 alone. The readiness counts move to 32 of 38 with 4 of
-5 gates; 2.10 still waits on a tag.)
+Last updated: 2026-11-04T11:16Z (3.8 is added by reading issue #6 rather than reading the render:
+its first line still says "across 3 accounts read" and its account section is still titled
+`## Accounts read`, because 3.6 and 3.7 fixed the renderer, no run since has found a posture change,
+and an unchanged issue is left alone. `.github/workflows/watch.yml` now takes a `refresh_body`
+boolean on a manual dispatch, which is the action's existing `update-on-no-change` and rewrites the
+published body with no comment; the two dispatches its done-when asks for have not run yet, so this
+row claims wiring and not observation. The readiness counts move to 32 of 39, Phase 3 to 4 of 8,
+gates still 4 of 5; 2.10 still waits on a tag.)
 
 ## 1. What this repository is
 
@@ -108,6 +108,15 @@ lower was "## Accounts read" above a row reading "(not read)", and it is now
 "## Accounts asked about", the same noun the sentence uses for that set. They are separate diffs
 because the section name is a body string keyed on by five test split sites and described in
 `ARCHITECTURE.md` section 2's field table.
+
+Reading issue #6 after 3.7 closed shows what leaving the body alone costs. Its first line still
+says "across 3 accounts read" and its account section is still titled `## Accounts read` over a row
+that says `(not read)`, because a run that finds the same posture does not rewrite a body and the
+posture on that issue has not moved since the baseline was written. Both fixes are in the renderer
+and neither is on the one artifact a reader opens first, so 3.8 records the gap. The switch it needs
+has been in the action since `action.yml` was written: `update-on-no-change` rewrites the body with
+no comment, `tests/test_sync_issue.py:383` covers it, and nothing in a dispatch could reach it
+because `watch.yml` held it at `"false"`.
 
 The ordering that held this repository back was G3, then G4, and both are now closed. A green
 hosted CI run told us the code builds and the suite passes on somebody else's machine; an
@@ -419,8 +428,8 @@ it is why this repository's value right now is the plumbing rather than the find
   `report-*.json` fixture, that the not-read row is still *under* the heading rather than
   dropped to make the title true, and the D-07 check 3.6 added for a sentence repeated for a
   section name: a body titled `## Accounts read` fed in as `--previous-body` renders
-  `no change since the previous run` with the state marker byte-identical to the one in it, so
-  the rename reaches a live issue only when posture moves. At the desk the same render is 2428
+  `no change since the previous run` with the state marker byte-identical to the one in it, so the
+  rename reaches a live issue only when posture moves, which is the limitation 3.8 exists for. At the desk the same render is 2428
   characters where the old title gives 2421, and 7 is exactly the width of " asked about", so
   nothing but the heading moved. The five test split sites the done-when names, three in
   `tests/test_render_report.py` and two in `tests/test_sync_issue.py`, moved with the string, as
@@ -443,6 +452,25 @@ it is why this repository's value right now is the plumbing rather than the find
   of the runner's output, `render_report.py:454`'s only stdout line prints a path, a character
   count and the finding counts, so the hosted proof of the new title is that number, the identical
   marker and `sync_issue.py:287` leaving the issue alone.
+- [ ] **3.8** A wording fix should reach the published body. Found by reading issue #6 after 3.7
+  closed rather than by reading the render: its first line still says "1 finding open (1 high, 0
+  warn) across 3 accounts read" and its account section is still titled `## Accounts read` over a
+  row reading `(not read)`. Both bugs are fixed in the renderer and neither is fixed on the issue,
+  because the posture there has not moved and an unchanged issue is left alone. So what 3.6 and 3.7
+  claim is true of a render and not yet of the one artifact a stranger opens first. The behaviour
+  already exists and already has a test: the action's `update-on-no-change` maps to
+  `--update-on-no-change`, which rewrites the body and posts no comment
+  (`tests/test_sync_issue.py:383`, `action.yml:44`), and `sync_issue.py:287` is the branch it
+  steps over. What was missing was any way to reach it from a dispatch, since `watch.yml` hard-coded
+  it to `"false"`. Done-when: `.github/workflows/watch.yml` takes a `refresh_body` boolean on
+  `workflow_dispatch`, a `schedule` event resolves it to false through the fallback in the step's
+  expression, and two dispatches from `main` are recorded here. The unticked one is the proof that
+  the leave-alone path still holds after the edit, read as the fallback a `schedule` run would take;
+  the ticked one is the proof that the body is rewritten, that the state marker survives it
+  byte-for-byte, that no comment appears, and that `updated_at` moves. The cost is the one
+  `action.yml`'s own description names: after a refresh the header date means "the run that last
+  wrote the body" rather than "the run that changed something", which is why it is a switch for a
+  fix to the words and not a refresh button.
 
 ### Phase 9: Backlog, not scheduled
 
@@ -515,9 +543,9 @@ it is why this repository's value right now is the plumbing rather than the find
 | 0 | Ground work | 7 | 7 | 100% |
 | 1 | The action | 10 | 11 | 91% |
 | 2 | Public shape | 11 | 13 | 85% |
-| 3 | Real use | 4 | 7 | 57% |
+| 3 | Real use | 4 | 8 | 50% |
 | 9 (backlog) | Backlog, not scheduled | 0 | 4 | 0% |
-| **All phases** | **Readiness total** | **32** | **38** | **84%** |
+| **All phases** | **Readiness total** | **32** | **39** | **82%** |
 | Gates | G1 to G5 | 4 | 5 | 80% |
 <!-- PROGRESS:END -->
 
@@ -537,6 +565,7 @@ it is why this repository's value right now is the plumbing rather than the find
 | 2026-11-04 | The summary line stops calling an unread account read. 3.6, found while closing G4, is closed here: `status_line` took one number, `len(report["accounts"])`, and called it "read", so a policy naming three accounts of which the endpoint had two printed "across 3 accounts read" above a table whose own last row says `(not read)`. It now takes the read count and the asked-about count, and the first comes from `account_status`, the same function that writes that column, so the sentence and the rows it summarises cannot drift apart again. A render of `tests/fixtures/report-findings.json` says "across 1 account read of 2 asked about." and `report-network-mismatch.json`, whose one account was skipped, says "across 0 accounts read of 1 asked about."; a report whose every account was read keeps the old shape and prints no denominator. Four cases in `TestSummaryAccountCounts` cover those branches, cross-check the line against the table, and prove the state marker byte-for-byte unchanged with `changed=false` when the previous body carries the old wording, which turns D-07's fingerprint keying from a sentence in a doc into a test, and the same pull request's `self-check / action` run read that property against the live body: job 126493053801 decoded the marker the old renderer had written into issue #6, printed 2308 characters of "no change since the previous run" and said `issue #6 needs no change, left alone`, which is 2291 plus the 17 characters of " of 3 asked about" and nothing else. The suite is 171 where it was 167, `check_action` holds its rules and `roadmap_progress.py --check` exits 0 on this branch, and the two lint steps ran locally because `ruff==0.17.3` and `mypy==2.4.0` were installed from `requirements-dev.txt` into a temporary venv outside the repository: `All checks passed!`, `10 files already formatted` after one wrapped test line was reformatted, and `Success: no issues found in 10 source files`. `README.md`'s schematic sentence is a re-render from the fixture rather than a retyping. 3.7 records the same noun error one section lower, in the heading `## Accounts read`, which is a body string keyed on by five test sites and so is not bundled here. Nothing in `action.yml` changed and no JSON field moved, so `ARCHITECTURE.md` section 2's report contract is untouched; issue #6 keeps its old first line until a run finds a change, because an unchanged issue is left alone by design. | 3.6, 3.7 (added) |
 | 2026-11-04 | 3.7 closes the noun error 3.6 left one section lower: the account table was titled `## Accounts read` above a row whose own Read cell says `(not read)`. The emitted heading is now `## Accounts asked about`, at `scripts/render_report.py:367`, which is the word the summary's denominator already uses for that same set, so the Read column `account_status` writes is the only place left in the body that says what happened to an account. Four cases in `TestAccountsHeading`: the exact string over five fixtures with the row count each one owes; the same rule stated generally, that an account heading may not claim read while any row under it contradicts that in its Read cell, so the bug cannot come back by editing a title; that the unread row stays in the section rather than being dropped to make the title true; and 3.6's D-07 check run against a section name instead of a sentence, where a body titled the old way and fed in as `--previous-body` renders `no change since the previous run` with a byte-identical state marker. At the desk the same render is 2428 characters where the old title gives 2421, and 7 is exactly the width of " asked about", so nothing else moved; the hosted half agrees, because `self-check / action` job 126503764248 re-rendered the live report at 2315 characters, 2308 plus those same 7, printed `no change since the previous run` and said `issue #6 needs no change, left alone`. The five test split sites the done-when names move with the string, as do `README.md`'s schematic, whose annotation column stays at 35, the paragraph under it, the display-only row of `ARCHITECTURE.md` section 2 and `CONTRIBUTING.md`'s fourth constraint, which now says a claim about the account set is derived from `account_status` wherever it appears in the body. `docs/WAVE_SUBMISSION.md`'s Trivial tier says it is empty rather than inventing a replacement. The suite is 175 where it was 171, and both halves were read on a runner: `ci / python` job 126503763136 prints `Ran 175 tests in 6.876s` and `OK`, `All checks passed!`, `10 files already formatted` after one wrapped comprehension was reformatted, `Success: no issues found in 10 source files`, `check_action: action.yml holds its rules` and `roadmap_progress.py --check` exiting 0 with Phase 3 at 4 of 7 and the readiness total at 32 of 38. One formatting repair came with it: the 3.6 row above had been written across five physical lines, which GitHub renders as four table rows with empty cells, so it is one line again. Nothing in `action.yml` changed and no report field moved, so the body a caller reads keeps its shape with one truer title. | 3.7 |
 
+| 2026-11-04 | 3.8 is found by reading the live issue rather than the render: issue #6 still opens with "1 finding open (1 high, 0 warn) across 3 accounts read" and still titles its account section `## Accounts read` above a row whose own Read cell says `(not read)`, because every run since the baseline has found the same posture and `sync_issue.py:287` leaves an unchanged issue alone. 3.6 and 3.7 are therefore true of a render and not yet of the artifact a reader opens first. The rewrite itself has been in the action since the scaffold: `update-on-no-change` becomes `--update-on-no-change` at `action.yml:193`, `tests/test_sync_issue.py:383` asserts it sends one PATCH and no comment, and `ARCHITECTURE.md` section 4 already names it. What was missing was a caller, since `watch.yml` held the input at `"false"` and its `workflow_dispatch` took no inputs at all. This adds one boolean, `refresh_body`, defaulted off, and the step passes it through a fallback to the string false so a `schedule` event, which resolves `inputs` to nothing, still takes the leave-alone path. No Python changed, so the suite is 175 here exactly as it was on `main` at `7ef214e`, and nothing on this row is claimed as observed on a runner: the done-when asks for two dispatches from `main` after this merges, one unticked and one ticked, and until both are read the statement is that the wiring exists and the wiring is what review can see. `README.md` gains the paragraph on when the override is the right call and what it costs, `CONTRIBUTING.md`'s write-path section names the box for whoever fixes a word next, and `docs/WAVE_SUBMISSION.md` is untouched because this is not work a stranger can take: it writes to this repository's own issue. Adding the task moves Phase 3 to 4 of 8 and the readiness total to 32 of 39, which the regeneration below records. | 3.8 (added) |
 ## 9. Last updated line format
 
 `Last updated: <YYYY-MM-DDTHH:MMZ> (<what moved>)`. The minute is when the edit was

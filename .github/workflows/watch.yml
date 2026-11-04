@@ -40,6 +40,16 @@ on:
   # So the first read after a policy change does not wait for Tuesday, and so a run can be
   # produced on purpose the day the workflow merges rather than four days later.
   workflow_dispatch:
+    inputs:
+      refresh_body:
+        type: boolean
+        default: false
+        description: >-
+          Rewrite the tracking issue body even when the finding list has not moved. This is the
+          action's `update-on-no-change`, left off for every scheduled run: a body is written by
+          the code that read the chain, so a fix to the renderer's wording reaches a published
+          issue either at the next change in posture or through this switch. Using it costs the
+          header date its usual meaning, which is why the default is off.
 
 permissions:
   contents: read
@@ -73,7 +83,10 @@ jobs:
           break-build: "false"
           issue-label: account-posture
           title: Account posture watch
-          update-on-no-change: "false"
+          # A scheduled run has no `inputs` context, so the fallback is what keeps the Tuesday
+          # clock on the path that leaves an unchanged issue alone. Only a dispatch with
+          # `refresh_body` ticked reaches the flag, and it rewrites the body without a comment.
+          update-on-no-change: ${{ inputs.refresh_body || 'false' }}
           dry-run: "false"
           # Named rather than left to the action's default, because in a workflow whose whole
           # point is the write the diff should say which token performs it. This is the
