@@ -32,15 +32,19 @@ jobs:
         with:
           persist-credentials: false
           # A pull_request checkout is detached at the merge ref with no base branch, so the
-          # gate would have nothing to diff against.
+          # gate would have nothing to diff against. Depth 0 fetches every branch, which is
+          # what puts origin/<base> in the repository this step reads.
           fetch-depth: 0
 
       - name: ROADMAP.md touched in the same change
         env:
           GITHUB_BASE_REF: ${{ github.base_ref }}
-        run: |
-          git fetch --no-tags origin "${GITHUB_BASE_REF}"
-          scripts/check_roadmap_touched.sh "origin/${GITHUB_BASE_REF}"
+        # No fetch here on purpose. `fetch-depth: 0` above already named every branch, and a
+        # gate that needs to authenticate is a gate that needs the runner's credential left
+        # in place. Observed 2026-11-04: the extra `git fetch` in this step was refused with
+        # "could not read Username", because `persist-credentials: false` had already taken
+        # the credential away. The redundant fetch was the only thing that could fail.
+        run: scripts/check_roadmap_touched.sh "origin/${GITHUB_BASE_REF}"
 
       - name: Progress table agrees with the task lines
         run: python3 scripts/roadmap_progress.py --check ROADMAP.md
