@@ -1,0 +1,9 @@
+# Development tooling only. The three scripts in `scripts/` import nothing outside the
+# standard library, so there is no runtime dependency here and nothing for a consumer to
+# install: the Action runs on the runner's own python3.
+#
+# These two pins are what .github/workflows/ci.yml installs, which is the point: a lint or
+# type result on a laptop has to mean the same thing as the one on GitHub. The pair is the
+# one the fixtures corpus and Airlock already run clean with.
+ruff==0.17.3
+mypy==2.4.0

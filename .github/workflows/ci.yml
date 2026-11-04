@@ -1,0 +1,62 @@
+# Tests, lint and types for the three scripts (task 2.3).
+#
+# Both actions are pinned by commit SHA, with the tag that SHA resolved from in the comment.
+# A SHA pin is only honest if somebody read the diff, and the comment is the only record of
+# which commit was read; these two are the same commits the sibling repositories run, which
+# is why they are not re-argued here. The two dev tools come from requirements-dev.txt so a
+# hosted run lints and types with the version the laptop that wrote the change used.
+#
+# There is no install step for the product: the Action runs on the runner's own python3, and
+# D-02 in ROADMAP.md keeps it that way. If a workflow here ever needs `pip install` outside
+# requirements-dev.txt, that is a decision to record before it is a line to merge.
+#
+# This run is the evidence for gate G1. Until it is green on GitHub the roadmap rows that
+# cite it stay unticked whatever the local output says, and a green run here is not branch
+# protection: 2.7 is the task that makes these checks required.
+
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: ci / python
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          # The floor rather than the newest: tomllib is 3.11, and this is the version the
+          # consumers of this Action are most likely to have on a runner.
+          python-version: "3.11"
+
+      - name: Install the dev tools
+        run: python -m pip install --quiet -r requirements-dev.txt
+
+      # The action first, before any test: a yaml file that does not parse fails the build in
+      # one line rather than in ten subprocesses that each got a file nobody read.
+      - name: action.yml parses, and every input reaches a step
+        run: python3 scripts/check_action.py
+
+      - name: Tests
+        # Named directory and top-level directory: default discovery starts at the repository
+        # root and skips a tests/ tree that is not a package, so a suite nobody names here is
+        # a suite that never runs rather than a suite that fails.
+        run: python -m unittest discover -s tests -t tests
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Format
+        run: ruff format --check .
+
+      - name: Types
+        run: mypy

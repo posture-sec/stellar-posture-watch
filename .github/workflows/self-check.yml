@@ -1,0 +1,51 @@
+# Consume this directory as an action, on the pull request that changed it (task 1.8).
+#
+# `ci / python` proves the three scripts behave; nothing but a runner proves that the step
+# graph in action.yml is valid, that a composite action can fetch and build Go at a pinned
+# sha, and that the render and sync handoff over `$RUNNER_TEMP` files works when the paths
+# come from `$GITHUB_ACTION_PATH` rather than a laptop. `uses: ./` is the only way to find
+# out, and gate G3 starts here rather than in somebody else's repository.
+#
+# This job is deliberately NOT a required status check. It reads a public testnet endpoint
+# and compiles another repository's code, so it can fail for reasons that have nothing to do
+# with the change under review, and a flaky Horizon should not make this repository
+# unmergeable. The two required checks are `ci / python` and `roadmap-check / gate` (2.7).
+# Read this run's output rather than its colour: the evidence is the step list and the
+# rendered body, and `dry-run: true` means it opens or edits nothing.
+#
+# Permissions are the minimum a dry run needs: the token cannot write issues, so a pull
+# request that edits this file and the action at once gains nothing but a wasted runner.
+
+name: self-check
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: read
+
+concurrency:
+  group: self-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  action:
+    name: self-check / action
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The same sha the README example and tests/fixtures were captured from, so a red run
+      # here is comparable to a green run there. Bumping it is a change with a changelog row,
+      # not a refresh: this is the line that decides which Gauge code a run compiles.
+      - name: Watch the example policy, without touching an issue
+        uses: ./
+        with:
+          gauge-ref: da656733fff839d5cf20f795460f4365a7254257
+          config: example/gauge.toml
+          fail-on: warn
+          dry-run: true

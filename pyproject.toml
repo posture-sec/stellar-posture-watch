@@ -1,0 +1,25 @@
+# Tool configuration only. This repository is one composite Action plus four stdlib
+# scripts: there is no package to build and nothing here to install.
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = ["*.md"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.mypy]
+python_version = "3.11"
+files = [
+    "scripts/validate_inputs.py",
+    "scripts/render_report.py",
+    "scripts/sync_issue.py",
+    "scripts/check_action.py",
+    "scripts/roadmap_progress.py",
+    "tests/test_validate_inputs.py",
+    "tests/test_render_report.py",
+    "tests/test_sync_issue.py",
+    "tests/test_check_action.py",
+    "tests/test_roadmap_gate.py",
+]
+check_untyped_defs = true
