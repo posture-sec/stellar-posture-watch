@@ -86,8 +86,17 @@ python3 -c 'import yaml,sys; yaml.safe_load(open("action.yml")); print("parses")
 
 and open the pull request, because `.github/workflows/self-check.yml` consumes the local
 action with `dry-run: true`. That workflow is not a required check: a testnet outage should
-not make this repository unmergeable. Its run is the evidence for 1.8 and G3, so read its
-output rather than its colour.
+not make this repository unmergeable. Its run is the evidence for 1.8, so read its output
+rather than its colour.
+
+It is not the evidence for G3, and cannot be, because the flag is off: `self-check.yml` reaches
+the point where the body exists and stops. `.github/workflows/watch.yml` is the same call with
+`dry-run: "false"` and `issues: write` in place of `issues: read`, on a Tuesday schedule, and it
+runs on `schedule` and `workflow_dispatch` only, never on a pull request. So a change to the write
+path here is reviewed by reading
+`sync_issue.py` and its tests, and observed on the next dispatch, which is the honest shape of
+the risk in a repository whose product is a scheduled write. If you change how the issue is found
+or updated, dispatch that workflow from `main` after your change merges and read the issue.
 
 ## Changing what the issue looks like
 

@@ -8,9 +8,10 @@ is closed, because `ci / python` has been read green on the merge commit of pull
 `main`. What is still unproven is the write, because no issue has ever been opened or edited by
 this action. Every claim below names the run or the file it was read from.
 
-Last updated: 2026-11-04T08:09Z (2.6 and 2.8 close and gate G2 closes with them: the org profile row is
-merged and the first Scorecard run published 5.2. Phase 2 moves to 11 of 13, the readiness total
-to 28 of 36, and the gate row to 2 of 5.)
+Last updated: 2026-11-04T08:32Z (`.github/workflows/watch.yml` lands the schedule with the
+write turned on, so 3.1 and 3.2 gain their plan, their expected finding and the hosted
+`1 open, 1 high` that narrows it. No box moves: the file is the claim and the run is the
+evidence, and the counts stay 28 of 36 with 2 of 5 gates.)
 
 ## 1. What this repository is
 
@@ -80,6 +81,15 @@ Phase 2 is at 11 of 13 and its two open rows are not work at a desk: 2.9 is a do
 site deferred on purpose, and 2.10 is a tag that should not exist before the action has written
 an issue. G2 closed on 2026-11-04, so the public shape is done and the remaining gates are all
 the kind that need a schedule and a reader.
+
+Phase 3 starts where Phase 1 stopped. `.github/workflows/watch.yml` is the same call
+`self-check.yml` makes, with two edits that are one change: `dry-run` off and `issues: write` in
+place of `issues: read`. The write is the only behavioural difference, and the runner is the
+only place it can be made. It audits the two testnet accounts `tests/fixtures/` holds real
+reports for, plus one valid address the endpoint does not have, which means the first issue this
+action files should carry exactly one high `acct-missing` finding. That expectation is what G4 is
+read against: an empty issue would mean the audit step died rather than that the accounts are
+clean, and two findings would mean the pinned Gauge code changed under the sha.
 
 The honest ordering right now is G3, then G4. A green hosted CI run tells us the code builds and
 the suite passes on somebody else's machine; an end-to-end run tells us the issue body is worth
@@ -319,8 +329,17 @@ it is why this repository's value right now is the plumbing rather than the find
 - [ ] **3.1** G3, the first end-to-end run. Done-when: a scheduled workflow in this
   repository audits the two testnet accounts Gauge already keeps fixtures for, and the
   issue it opens or updates is read by a human and matches the report it came from.
+  `.github/workflows/watch.yml` lands the schedule (Tuesday 05:23 UTC, `workflow_dispatch`
+  beside it, `contents: read` plus `issues: write` and nothing else) with `dry-run: "false"`, so
+  the delta against `self-check.yml` is the flag and the permission that makes it mean something.
+  The row stays open until an issue exists and somebody has read it: the file is the claim, the
+  run is the evidence. The count the first issue should carry is already hosted evidence (a
+  `self-check` run on this pull request printed `1 open, 1 high` from the same sha and the same
+  policy); the issue itself is what is missing.
 - [ ] **3.2** The dogfood policy file. Done-when: `example/gauge.toml` is the file 3.1
-  actually runs, not a copy of Gauge's example with the addresses swapped.
+  actually runs, not a copy of Gauge's example with the addresses swapped. `watch.yml` points
+  `config:` at it, so this is the file the schedule reads and not a stand-in; it closes with 3.1,
+  because "actually runs" is a sentence about a run.
 - [ ] **3.3** A mainnet run by the owner. Done-when: one scheduled mainnet audit is
   recorded in `docs/` with its ledger, date and exit code, labeled as the operator's run
   rather than this repository's test. Blocked by D-03, which keeps this repository's own
@@ -368,7 +387,9 @@ it is why this repository's value right now is the plumbing rather than the find
   reader. That is what `Branch-Protection` scoring 4 on the first Scorecard run is measuring.
 - [ ] **G3** The action has run end to end on a GitHub runner and produced or updated an
   issue that matches its report. 1.8 is closed, so the run half has happened; what is missing
-  is the issue, because every runner run so far was a dry run (3.1).
+  is the issue, because every runner run so far was a dry run (3.1). `.github/workflows/watch.yml`
+  is the row that ends this: it merges without writing anything, and the first dispatch after it
+  merges is the run that closes the gate.
 - [ ] **G4** The rendered body has been read against the JSON it came from and every
   number in it traced (3.1, 3.2).
 - [ ] **G5** Someone other than the maintainer has run it, or its absence is stated.
@@ -398,6 +419,7 @@ it is why this repository's value right now is the plumbing rather than the find
 | 2026-11-04 | The last sentence in this repository that said nothing had run on a runner is replaced with the runs. Four documents carried it: `README.md` closed its Checks section with "until those rows are green on GitHub, the sentences above describe a laptop", `CONTRIBUTING.md` opened its Status with "and no hosted run" and added that CI had never executed here, `SECURITY.md` said no runner had executed the code, and `docs/WAVE_SUBMISSION.md` named "Nothing has run" as the second reason not to apply. Each now names the three jobs and what `self-check / action` did, and each still says the write has not happened. Two sentences in `ROADMAP.md` called the end-to-end write a laptop claim, which was never true because no laptop run opened an issue either: the dry run stopped the write everywhere, so both rows now say so plainly. The two 2026-11-04 rows above were also swapped back into date order, because the desk row is where the ten `mypy` errors the 2026-11-03 row defers are listed, and `ROADMAP.md`'s progress table regenerates to 25 of 36 with 1.8 ticked. | 2.1, 2.13 |
 | 2026-11-04 | The repository is public and `main` is bound. `POST /repos/.../rulesets` answers `403 Upgrade to GitHub Pro or make this repository public to enable this feature` while the repository is private, which is the first fact of this row: the protection 2.7 asks for is not available to a private repository on this plan. So the tracked tree at `f1dad23` is grepped for seed-shaped strings, `ghp_` and `github_pat_` tokens and private-key headers, none of the 38 files matches, and `PATCH /repos/posture-sec/stellar-posture-watch` with `private=false` makes it public, confirmed by an unauthenticated `GET` and a `200` on the raw README. Ruleset 26515104 `protect main` follows: `deletion`, `non_fast_forward`, `pull_request` and `required_status_checks` naming `ci / python` and `roadmap-check / gate` with the strict policy on and no bypass actors, copied from the corpus's ruleset rather than invented. A direct push of one commit to `main` is then refused with `Changes must be made through a pull request`, `2 of 2 required status checks are expected` and `! [remote rejected] HEAD -> main (push declined due to repository rule violations)`. A throwaway ruleset on a probe branch (26515121) was refused the same way first and both it and its branch are deleted afterwards, so the attempt against `main` was made knowing what a bound rule prints, and nothing landed on `main` outside a pull request. 2.6 moves as far as a desk can: description, homepage and ten topics read back from the API, the wiki still off, and the row naming this project in `posture-sec/.github` left open because a public profile page should not link to what was private that morning. `.github/workflows/scorecard.yml` lands here for 2.8, pinned to the four commits the siblings run, on push to `main` plus Saturday 01:30 UTC, publishing its result; it has not run yet, so no score is quoted in this repository and the badge line waits with it. The “The repository is published” row above says the repository is still private at the end of 2026-11-04, and it was: that is what its own date records. | 2.6 (part), 2.7, 2.8 (part) |
 | 2026-11-04 | The public shape finishes and a second opinion arrives. 2.6's last done-when was never a change to this tree: pull request #1 in `posture-sec/.github` added this project's row to the org profile page, merged there as `06d2db5` at 08:07:19Z, and the raw profile README answers 200 naming `stellar-posture-watch` four times. `gh repo view` reads back the other three on `main` at `8a308ac`: the description, `homepageUrl`, ten topics, wiki off. 2.8's first run was not the schedule. The merge of pull request #3 pushed `8a308ac` at 08:00:43Z and the `push` trigger fired: `scorecard / analysis` job 126460914087 in run 41796242453, success, and `api.scorecard.dev` answers 200 with the result dated 08:00:51Z at that commit: **5.2** over 18 checks. `README.md` now carries the badge, which was fetched and checked for the number rather than assumed to render, and the paragraph beside it separates what the score measures from what it does not. `Dangerous-Workflow` and `Token-Permissions` are 10, which are the two checks that matter for an action that fetches and compiles another repository's Go. `Branch-Protection` is 4 for the three warnings 2.7 already states as its own limit, so the ruleset requiring no approver now arrives as a number rather than as a footnote. `Pinned-Dependencies` is 6 for one `pip install -r` line in `ci.yml`, the same reason the corpus scores 6, and `Fuzzing` is 0 for a reason that does measure something here: `render_report.py` parses a report whose contents came off the chain and nothing hammers it. `Maintained`, `Code-Review`, `Contributors`, `CII-Best-Practices`, `Dependency-Update-Tool` and `SAST` are states of a one-maintainer repository created this month, and `Packaging` and `Signed-Releases` are -1 because nothing is published from here at all. None of the eighteen touches the sentence a consumer would most want, which is still G3. Gate G2 closes with the two rows it names. Two smaller corrections ride along: section 1 carried the em dash this repository's own writing rule forbids, and the `ci.yml` header still said nothing required the check on `main`. | 2.6, 2.8, G2 |
+| 2026-11-04 | The schedule that writes lands. `.github/workflows/watch.yml` is `self-check.yml`'s call with `dry-run` off: Tuesday 05:23 UTC, `workflow_dispatch` beside it so the first read does not wait for the cron, `contents: read` plus `issues: write` and nothing else, `uses: ./` rather than a sha pin because a local reference resolves from the commit the run is at, `gauge-ref` the same `da656733` and `config` the same `example/gauge.toml` as the dry run. So the delta against `self-check.yml`, which has gone green on all six of its runs here, is the flag, the permission that makes the flag mean something and the token named in the `with:` block rather than defaulted: the accounts, the Gauge sha and the renderer are untouched. The expectation is written down before the run rather than after it: three accounts in the policy, two of them the testnet addresses `tests/fixtures/` holds real reports for and one a valid checksum-correct address the endpoint does not have, so the first issue should carry exactly one high `acct-missing` and exit 1 with the run green. An empty issue would mean the audit step died, not that the accounts are clean, and a second finding would mean the pinned code changed; both readings are G4's job, not this row's, which is why 3.1 and 3.2 gain text and keep their boxes. `self-check` ran again on this pull request (job 126473116440, 08:30:39Z) and its log narrows the expectation without closing it: `gauge exited 1 after writing 4646 bytes of report`, `render_report: wrote /home/runner/work/_temp/issue-body.md (2573 characters); 1 open, 1 high, 0 warn, 0 accepted`, then `sync_issue: dry run, would open an issue titled 'Account posture watch'`. So the number of findings is now an observed hosted fact at this sha against this config; which finding it is stays an inference from the four rules in `da656733` and the three accounts in the policy, because D-06 keeps the report out of the log. Nothing was merged to `main` with the write on, no issue exists yet, and no number in this repository quotes one. | 3.1 (part), 3.2 (part) |
 
 ## 9. Last updated line format
 
