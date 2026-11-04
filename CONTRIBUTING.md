@@ -13,8 +13,12 @@ table below was written from a local checkout: the suite on Python 3.11.16 and 3
 gates are waiting on a runner rather than on code. The same three checks, plus the action
 itself, have since run green on GitHub on pull request #1 at `b107b0f` (2026-11-04), and that
 pull request's push to `main` passed `ci / python` there, which is gate G1. No tag, no release,
-nothing to install. `main` is not yet protected, so until 2.7 lands a merge here is polite
-rather than enforced and the gate is a rule and not a machine.
+nothing to install. `main` is protected as of 2026-11-04: ruleset 26515104 requires a pull
+request and both `ci / python` and `roadmap-check / gate`, and a direct push to `main` was
+observed refused with `push declined due to repository rule violations`. That is the machine
+version of the rules below, and it stops at exactly that: no approving review is required,
+because this repository has one maintainer and an approving review from a single maintainer is
+a formality, not a check.
 
 ## The rules, and what enforces each one
 

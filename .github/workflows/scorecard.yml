@@ -1,0 +1,66 @@
+# An OSSF Scorecard run on `main` (task 2.8).
+#
+# Scorecard reads the default branch, so this runs on a push to `main` and on a schedule
+# rather than on a pull request: a pull request run would grade a branch that has no
+# protection of its own and report `Branch-Protection` as better or worse than the trunk
+# really is. Observed 2026-11-04: `main` carries the `protect main` ruleset (id 26515104),
+# which is the thing that check reads.
+#
+# For this repository Scorecard is grading a different surface than it grades for Gauge.
+# Gauge is a CLI, so its interesting checks are dependency and vulnerability ones. This is a
+# composite Action that fetches and compiles another repository's Go code, so the checks that
+# matter here are `Dangerous-Workflow`, `Pinned-Dependencies`, `Token-Permissions` and
+# `Maintained`, and three of those four are what `action.yml`, `check_action.py` and the sha
+# pins in the sibling workflows already claim about this directory. A score is a second
+# opinion from a tool that is not the author, which is the point of running it.
+#
+# `publish_results: true` sends the result to api.scorecard.dev, which is what makes the
+# README badge render a number rather than a placeholder. That is a publication to a third
+# party: it publishes the repository URI and the score, not the contents, and it is only
+# meaningful now that the repository is public.
+#
+# The pins are the same commits the sibling repositories run, which is why they are not
+# re-argued here. A bump is a deliberate change with its own changelog row, not a refresh.
+
+name: scorecard
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '30 1 * * 6'
+
+permissions:
+  contents: read
+
+jobs:
+  scorecard:
+    name: scorecard / analysis
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # SARIF upload to the code scanning dashboard.
+      security-events: write
+      # OIDC token for publishing results, which feeds api.scorecard.dev.
+      id-token: write
+    steps:
+      - name: checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: run analysis
+        uses: ossf/scorecard-action@fa7117db83c52d787ae5a89f350999701505d78e # v2.5.0
+        with:
+          results_file: results.sarif
+          results_format: sarif
+          publish_results: true
+      - name: upload artifact
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: Scorecard SARIF
+          path: results.sarif
+          retention-days: 5
+      - name: upload to code scanning
+        uses: github/codeql-action/upload-sarif@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
+        with:
+          sarif_file: results.sarif

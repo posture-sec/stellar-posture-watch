@@ -8,8 +8,9 @@ is closed, because `ci / python` has been read green on the merge commit of pull
 `main`. What is still unproven is the write, because no issue has ever been opened or edited by
 this action. Every claim below names the run or the file it was read from.
 
-Last updated: 2026-11-04T07:24Z (G1 closes on the push run on `main`, its table row moves to 1 of
-5, and the four documents that cited it as waiting stop saying so)
+Last updated: 2026-11-04T07:49Z (2.7 closes: the repository is public and ruleset 26515104 binds `main`.
+Phase 2 moves to 9 of 13 and the readiness total to 26 of 36. 2.6 and 2.8 move partially and
+stay open, so gates hold at 1 of 5.)
 
 ## 1. What this repository is
 
@@ -70,8 +71,10 @@ exercised at all and G3 is the row that says so.
 
 G1 closed the same day, on the push that pull request #1's merge produced: `ci / python`
 126445751941 on `db8a5ed`, `ubuntu-26.04`, CPython 3.11.18, nine steps in order. It is the first
-evidence in this repository about the repository rather than about a laptop, and it is still only
-a run: nothing requires it on `main` yet, which is 2.7.
+evidence in this repository about the repository rather than about a laptop. It is also a rule
+now: 2.7 closed on 2026-11-04 when ruleset 26515104 went active on `main` with both checks
+required and a direct push was observed refused, which is the difference between a green that
+means something and a green that means the maintainer felt like running it.
 
 The honest ordering right now is G3, then G4. A green hosted CI run tells us the code builds and
 the suite passes on somebody else's machine; an end-to-end run tells us the issue body is worth
@@ -222,11 +225,49 @@ it is why this repository's value right now is the plumbing rather than the find
 - [x] **2.5** `ARCHITECTURE.md`: the four scripts, the seam the tests drive, the marker, the
   failure modes, what is deliberately absent, and section 2's version contract (1.10).
 - [ ] **2.6** Repository profile: description, topics, homepage, and the org profile row.
-  Done-when: `gh repo view` shows all four and `posture-sec/.github` names this project.
-- [ ] **2.7** `main` protection. Done-when: a ruleset requires a pull request plus both
-  checks, and a direct push is observed refused.
+  Done-when: `gh repo view` shows all four and `posture-sec/.github` names this project. Three
+  of the four are set, read back from the API on 2026-11-04: the description is now
+  "Composite GitHub Action: build stellar-gauge at a pinned sha, audit Stellar accounts on a
+  schedule, and keep one tracking issue current. Read-only, dry-run by default.", the homepage is
+  `https://github.com/posture-sec/stellar-posture-watch#usage`, and ten topics are attached
+  (`account-posture`, `audit`, `ci`, `composite-action`, `github-actions`, `horizon`, `python`,
+  `security`, `stellar`, `stellar-wave`). The description that was set when the repository was
+  created ended with "no GitHub runner has executed it yet", which stopped being true the same
+  morning. The wiki is off, as it is in the three siblings. What is left is the org profile row,
+  which is a change to `posture-sec/.github` rather than to this tree, so this row stays open
+  until that pull request is read merged; the row is worth writing only once this repository is
+  public, because a profile that names a repository nobody outside the org can open is a broken
+  link on a page whose whole job is pointing at things.
+- [x] **2.7** `main` protection. Done-when: a ruleset requires a pull request plus both checks,
+  and a direct push is observed refused. Closed 2026-11-04. The first attempt returned
+  `403 Upgrade to GitHub Pro or make this repository public to enable this feature`, so the
+  repository was made public first: the tracked tree at `f1dad23` was re-grepped for
+  seed-shaped strings, `ghp_` tokens, `github_pat_` tokens and private-key headers and matched
+  none of the 38 files, and `PATCH /repos/posture-sec/stellar-posture-watch` with
+  `private=false` then answered
+  `visibility: public`, which an unauthenticated `GET` and a `200` on the raw README confirmed.
+  Ruleset 26515104 `protect main` was created next: `target: branch`, `enforcement: active`,
+  `~DEFAULT_BRANCH`, with `deletion`, `non_fast_forward`, `pull_request` (zero approving reviews
+  required, stale reviews dismissed on push, resolved threads required, squash and merge allowed)
+  and `required_status_checks` naming `ci / python` and `roadmap-check / gate` with the strict
+  policy on. It is the corpus's ruleset copied rather than re-argued, which is what D-04 means
+  for a GitHub setting. `GET /rulesets?for_ref=refs/heads/main` returns it, so it binds `main`.
+  The refusal was then observed: a direct push of one commit to `refs/heads/main` came back
+  `remote: - Changes must be made through a pull request.`, `remote: - 2 of 2 required status
+  checks are expected.`, `! [remote rejected] HEAD -> main (push declined due to repository rule
+  violations)`. A throwaway ruleset on a probe branch (26515121, deleted with the branch
+  afterwards) produced the same refusal first, so the `main` attempt was made knowing what a
+  bound rule prints; nothing landed on `main` outside a pull request in either case. Note what
+  this does not add: no CODEOWNERS approval is required, because
+  `.github/CODEOWNERS` names one owner and `require_code_owner_review` is off, so the machine
+  now enforces "through a pull request with these two checks green", which is the whole claim.
 - [ ] **2.8** An OSSF Scorecard run and the README badge. Done-when: a scheduled
   `scorecard-action` job publishes a result for this repository and the badge renders.
+  `.github/workflows/scorecard.yml` is written and pinned to the same four commits the siblings
+  run, `ossf/scorecard-action` at `fa7117db` v2.5.0 included, on push to `main` plus
+  `cron: '30 1 * * 6'`, with `publish_results: true`. It has not run yet, so no score is quoted
+  anywhere in this repository, and the badge line waits for the first result rather than
+  pointing at an empty `api.scorecard.dev` slot.
 - [ ] **2.9** A documentation site. Deferred deliberately: the two siblings have one each
   and this repository's surface is one yaml file plus a worked example. Revisit after G3.
 - [ ] **2.10** A first release. Done-when: `v0.1.0` is tagged and `action.yml` is consumed
@@ -298,11 +339,15 @@ it is why this repository's value right now is the plumbing rather than the find
   all nine steps in order, with the log carrying `check_action: action.yml holds its rules`,
   `Ran 167 tests in 6.301s`, `OK`, `All checks passed!`, `10 files already formatted` and
   `Success: no issues found in 10 source files`. That is the merged-commit half, read rather than
-  predicted. Note what this gate is and is not: `ci / python` passing on `main` is an observed
-  fact, not a rule. Nothing prevents a direct push to `main` yet, and `roadmap-check / gate`
-  deliberately does not run there at all, because with no pull request to diff it would say
-  "nothing changed" and pass. 2.7 is the row that turns this green into a requirement.
-- [ ] **G2** `main` protected and the profile filled in (2.6, 2.7).
+  predicted. Note what this gate is and was not when it closed: `ci / python` passing on `main`
+  is an observed fact, and on the day G1 closed nothing yet required it, so the gate records an
+  observation rather than a rule. The rule is 2.7, which landed later the same day; what stays
+  outside both is `roadmap-check / gate`, which does not run on a push to `main` at all, because
+  with no pull request to diff it would say "nothing changed" and pass.
+- [ ] **G2** `main` protected and the profile filled in (2.6, 2.7). 2.7 is closed and
+  `main` is bound by ruleset 26515104; 2.6 has its description, topics and homepage set and is
+  waiting on the row in `posture-sec/.github` that names this repository, which is a pull request
+  in another repository. This gate closes when that one merges.
 - [ ] **G3** The action has run end to end on a GitHub runner and produced or updated an
   issue that matches its report. 1.8 is closed, so the run half has happened; what is missing
   is the issue, because every runner run so far was a dry run (3.1).
@@ -317,10 +362,10 @@ it is why this repository's value right now is the plumbing rather than the find
 |---|---|---|---|---|
 | 0 | Ground work | 7 | 7 | 100% |
 | 1 | The action | 10 | 11 | 91% |
-| 2 | Public shape | 8 | 13 | 62% |
+| 2 | Public shape | 9 | 13 | 69% |
 | 3 | Real use | 0 | 5 | 0% |
 | 9 (backlog) | Backlog, not scheduled | 0 | 4 | 0% |
-| **All phases** | **Readiness total** | **25** | **36** | **69%** |
+| **All phases** | **Readiness total** | **26** | **36** | **72%** |
 | Gates | G1 to G5 | 1 | 5 | 20% |
 <!-- PROGRESS:END -->
 
@@ -331,8 +376,9 @@ it is why this repository's value right now is the plumbing rather than the find
 | 2026-11-03 | The scaffold lands as one commit: `action.yml` with ten inputs and the exit-code mapping, `validate_inputs.py`, `render_report.py` and `sync_issue.py`, six report fixtures with a provenance table naming which four are real testnet reads, the copied roadmap guards with their self-test, and the README, CONTRIBUTING, SECURITY, ARCHITECTURE and `.github` shape. 129 tests pass locally with the transport seam and a loopback server, `ruff check` and `ruff format --check` are clean on Python 3.12.3, and no runner has executed any of it. Corrected 2026-11-04: this row also said `mypy` was clean, and it was not. Ten type errors were found the next day and are listed in the row below. | 0.1 to 0.7, 1.1 to 1.7, 2.1 to 2.5 |
 | 2026-11-04 | Phase 1's two desk tasks close and the example layer lands. 1.10: `ARCHITECTURE.md` section 2 is the version contract, naming the report paths whose absence the renderer refuses and the ones deliberately not load bearing. 1.11: `scripts/check_action.py`, a stdlib text scanner for the two `action.yml` rules a reviewer can miss in a diff (any expression inside a `run:` block, and a third-party step not pinned by a full sha with its release named beside it), also refusing an undeclared input, a declared input bound nowhere, an unpinnable `gauge-ref` and an output naming a step id that does not exist; 20 tests, one of which runs it against the shipped `action.yml`, and `ci.yml` runs it before the suite. 2.11 to 2.13: `example/gauge.toml`, `example/workflow.yml`, `self-check.yml`, `.gitignore` and `docs/WAVE_SUBMISSION.md`. The suite is 167 cases (41 validate, 42 render, 46 sync, 18 roadmap gate, 20 checker) and passes on Python 3.11.16 and 3.12.3; `ruff check`, `ruff format --check` (ruff 0.17.3) and `mypy` 2.4.0 are clean on the ten typed files, run from the pinned tool venv, whose own interpreter is 3.14.0 rather than the CI floor. The ten `mypy` errors the previous row claimed away were a `strkey` shape property that blocked a narrowing, an HTTP-date `Retry-After` branch that returned nothing at all, a test attribute named `responses` colliding with `BaseHTTPRequestHandler`'s own, a sleep stub with the wrong signature, three places where an `assertIsNotNone` did not narrow what followed it, and one attribute the stubs do not carry. One manual composition of the real pipeline against live Horizon testnet, observed 2026-11-03 with its artifacts written outside the tree: `validate_inputs.py` exit 0 on `example/gauge.toml`, `stellar-gauge audit` built at the pinned `da65673` exit 1 with one high `acct-missing` finding, `render_report.py` a 2 573-character body. That is a laptop run and is labeled as one, and 1.8, G1 and G3 stayed open until a runner did it: the row below closes 1.8 and closes neither gate. Gauge merged its 3.5 identity rules on 2026-11-03, three rule ids this pinned sha does not carry, which section 4 now says. | 1.10, 1.11, 2.11 to 2.13 |
 | 2026-11-04 | The repository is published and its own pipeline runs on a runner. `posture-sec/stellar-posture-watch` is created with GitHub's own `auto_init` commit, so nothing was hand-committed to `main`; the 38-file tree above goes in as pull request #1 (`5d3dea1`), and the roadmap gate's first hosted run fails on its own second step (`Process completed with exit code 128`, `fatal: could not read Username for 'https://github.com'`): the workflow fetched its base ref with `persist-credentials: false` already in force, and `fetch-depth: 0` had named every branch anyway. Fixed in `b107b0f` by deleting the fetch rather than restoring the credential. Then, on `b107b0f`: `ci / python` 126439899511 passes on CPython 3.11.17 with `check_action: action.yml holds its rules`, `Ran 167 tests in 5.837s`, `All checks passed!`, `10 files already formatted` and `Success: no issues found in 10 source files`; `roadmap-check / gate` 126439899465 passes; and `self-check / action` 126439899851 runs the composite action itself, fetching Gauge at `da656733`, resolving Go 1.27.3 from its `go.mod`, logging `gauge exited 1 after writing 4646 bytes of report`, `render_report: wrote /home/runner/work/_temp/issue-body.md (2573 characters); 1 open, 1 high, 0 warn, 0 accepted` and `sync_issue: dry run, would open an issue titled 'Account posture watch'`. That is 1.8 closed and 2.12's claim replaced by a run; the byte-identical body against the laptop composition of 2026-11-03 is the first evidence that the two paths agree. G3 stays open because nothing was written, and the repository is still private until 2.6 and 2.7 land. | 1.8, 2.4, 2.10, 2.12 |
-| 2026-11-04 | G1 closes on a push rather than on a prediction. Pull request #1's third commit `c76c20e`, the document corrections in the row above, goes green on all three jobs (`ci / python` 126445174034, `roadmap-check / gate` 126445174604, `self-check / action` 126445174797) and merges as `db8a5ed` at 07:19:54Z. The push that merge produced ran `ci / python` on `main`: job 126445751941 on `ubuntu-26.04`, setup-python resolving CPython 3.11.18, `check_action: action.yml holds its rules`, `Ran 167 tests in 6.301s`, `OK`, `All checks passed!`, `10 files already formatted`, `Success: no issues found in 10 source files`. That is the merged-commit half the gate's own wording waited on. The self-check job on the same commit is a third run of the same sequence with identical output: `gauge exited 1 after writing 4646 bytes of report`, 2 573 characters, `1 open, 1 high, 0 warn, 0 accepted`, `dry run, would open an issue titled 'Account posture watch'`. Two corrections ride along: the row above named G1 in its task column and did not close it, and the four documents now say what G1 is rather than what it was waiting for. Nothing is required on `main` yet, so this gate records an observed run and 2.7 is the row that records the rule. | G1, 2.1, 2.13 |
+| 2026-11-04 | G1 closes on a push rather than on a prediction. Pull request #1's third commit `c76c20e`, the document corrections in the row above, goes green on all three jobs (`ci / python` 126445174034, `roadmap-check / gate` 126445174604, `self-check / action` 126445174797) and merges as `db8a5ed` at 07:19:54Z. The push that merge produced ran `ci / python` on `main`: job 126445751941 on `ubuntu-26.04`, setup-python resolving CPython 3.11.18, `check_action: action.yml holds its rules`, `Ran 167 tests in 6.301s`, `OK`, `All checks passed!`, `10 files already formatted`, `Success: no issues found in 10 source files`. That is the merged-commit half the gate's own wording waited on. The self-check job on the same commit is a third run of the same sequence with identical output: `gauge exited 1 after writing 4646 bytes of report`, 2 573 characters, `1 open, 1 high, 0 warn, 0 accepted`, `dry run, would open an issue titled 'Account posture watch'`. Two corrections ride along: the row above named G1 in its task column and did not close it, and the four documents now say what G1 is rather than what it was waiting for. Nothing was required on `main` when this row was written, so it records an observed run; 2.7 is the task that turns it into a rule. | G1, 2.1, 2.13 |
 | 2026-11-04 | The last sentence in this repository that said nothing had run on a runner is replaced with the runs. Four documents carried it: `README.md` closed its Checks section with "until those rows are green on GitHub, the sentences above describe a laptop", `CONTRIBUTING.md` opened its Status with "and no hosted run" and added that CI had never executed here, `SECURITY.md` said no runner had executed the code, and `docs/WAVE_SUBMISSION.md` named "Nothing has run" as the second reason not to apply. Each now names the three jobs and what `self-check / action` did, and each still says the write has not happened. Two sentences in `ROADMAP.md` called the end-to-end write a laptop claim, which was never true because no laptop run opened an issue either: the dry run stopped the write everywhere, so both rows now say so plainly. The two 2026-11-04 rows above were also swapped back into date order, because the desk row is where the ten `mypy` errors the 2026-11-03 row defers are listed, and `ROADMAP.md`'s progress table regenerates to 25 of 36 with 1.8 ticked. | 2.1, 2.13 |
+| 2026-11-04 | The repository is public and `main` is bound. `POST /repos/.../rulesets` answers `403 Upgrade to GitHub Pro or make this repository public to enable this feature` while the repository is private, which is the first fact of this row: the protection 2.7 asks for is not available to a private repository on this plan. So the tracked tree at `f1dad23` is grepped for seed-shaped strings, `ghp_` and `github_pat_` tokens and private-key headers, none of the 38 files matches, and `PATCH /repos/posture-sec/stellar-posture-watch` with `private=false` makes it public, confirmed by an unauthenticated `GET` and a `200` on the raw README. Ruleset 26515104 `protect main` follows: `deletion`, `non_fast_forward`, `pull_request` and `required_status_checks` naming `ci / python` and `roadmap-check / gate` with the strict policy on and no bypass actors, copied from the corpus's ruleset rather than invented. A direct push of one commit to `main` is then refused with `Changes must be made through a pull request`, `2 of 2 required status checks are expected` and `! [remote rejected] HEAD -> main (push declined due to repository rule violations)`. A throwaway ruleset on a probe branch (26515121) was refused the same way first and both it and its branch are deleted afterwards, so the attempt against `main` was made knowing what a bound rule prints, and nothing landed on `main` outside a pull request. 2.6 moves as far as a desk can: description, homepage and ten topics read back from the API, the wiki still off, and the row naming this project in `posture-sec/.github` left open because a public profile page should not link to what was private that morning. `.github/workflows/scorecard.yml` lands here for 2.8, pinned to the four commits the siblings run, on push to `main` plus Saturday 01:30 UTC, publishing its result; it has not run yet, so no score is quoted in this repository and the badge line waits with it. The “The repository is published” row above says the repository is still private at the end of 2026-11-04, and it was: that is what its own date records. | 2.6 (part), 2.7, 2.8 (part) |
 
 ## 9. Last updated line format
 
