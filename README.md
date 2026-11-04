@@ -26,9 +26,10 @@ tests/                  167 cases, loopback only, run against captured reports
 Functional alpha, and hosted. The three scripts and `action.yml` exist and pass 167 tests
 against real testnet reports captured from Gauge, and a GitHub runner has now run them: on
 2026-11-04 `ci / python`, `roadmap-check / gate` and `self-check / action` were all green on
-pull request #1, and that last job executed this action itself against live testnet. What has
-not happened is the write: the run was a dry run, so **no issue has ever been opened or edited
-by this action**. `ROADMAP.md` section 6 lists the gates that turn those sentences into
+pull request #1, and that last job executed this action itself against live testnet. The pull
+request then merged, and its push to `main` passed `ci / python` there, which closes gate G1.
+What has not happened is the write: every run was a dry run, so **no issue has ever been opened
+or edited by this action**. `ROADMAP.md` section 6 lists the gates that turn those sentences into
 something else, and section 4 says which one is next. Nothing here is a tag, and there is no
 released version to depend on.
 
@@ -180,10 +181,11 @@ and the same clean lint, format and type output, `roadmap-check / gate` (1264398
 after its own first run failed on a fetch it did not need, and `self-check / action`
 (126439899851) ran this action end to end: it fetched Gauge at the pinned sha, built it, read
 `example/gauge.toml` against live testnet, and the syncer stopped at the dry run it was told
-to stop at. Two things are still not proven. G1 waits on the push run on `main` rather than a
-pull request run, and G3 waits on an issue, because every run so far has opened or edited
-nothing. A green hosted run and a hosted write are different claims, and the sentences above
-are evidence for the first only.
+to stop at. G1 is closed, because the push that merge produced ran `ci / python` on `main`
+itself: job 126445751941 on `db8a5ed`, CPython 3.11.18, the same 167 cases green on the trunk
+rather than on a branch. One thing is still not proven: G3 waits on an issue, because every run
+so far has opened or edited nothing. A green hosted run and a hosted write are different claims,
+and the sentences above are evidence for the first only.
 
 ## Siblings and licence
 

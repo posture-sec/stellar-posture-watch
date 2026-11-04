@@ -36,8 +36,9 @@ Four reasons, in order of how long each takes to clear.
    dashboard-only facts.
 2. **The write has not run.** The action executed on a GitHub runner once, on 2026-11-04 in
    `self-check / action` at `b107b0f`: it built Gauge at the pinned sha, read a live testnet
-   account and rendered the body. It opened no issue, edited none, and has no tag. Gates G1 to
-   G5 in `ROADMAP.md` are all open, and G3 ("the action has run end to end and produced an
+   account and rendered the body. It opened no issue, edited none, and has no tag. Gates G2 to
+   G5 in `ROADMAP.md` are open, G1 closed on 2026-11-04 when that pull request's push to `main`
+   passed `ci / python`, and G3 ("the action has run end to end and produced an
    issue that matches its report") is the one every claim in the README depends on. The run
    proves the plumbing loads; the sentence a reviewer would actually be checking, that the
    issue stays current, is still unproven. A submission would then invite the reviewer to
@@ -71,7 +72,10 @@ list. They are the parts a maintainer has to own, because each is a decision dre
 
 ## 4. What has to be true before this is a candidate
 
-- [ ] G1: `ci / python` and `roadmap-check / gate` green on `main`, observed rather than local.
+- [x] G1: `ci / python` and `roadmap-check / gate` green on `main`, observed rather than local.
+  Closed 2026-11-04: pull request #1's push to `main` (`db8a5ed`) passed `ci / python` as job
+  126445751941 on CPython 3.11.18 with all 167 cases, and the gate ran green on that pull
+  request. A green run on `main` is an observation, not a rule; `main` is still unprotected.
 - [ ] G2: `main` protected, profile filled in, and the org profile row (`posture-sec/.github`).
 - [ ] G3: the action has run end to end on a runner and produced or updated an issue.
 - [ ] G4: that issue body read against the JSON it came from, every number traced.

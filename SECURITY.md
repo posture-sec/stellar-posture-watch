@@ -79,10 +79,11 @@ where it would be visible in a step log and in `ps`.
 
 **Unaudited.** No third party has reviewed this code. It has run on GitHub's runners: three
 jobs green on pull request #1 at `b107b0f` on 2026-11-04, including `self-check / action`,
-which builds Gauge at the pinned sha and audits a live testnet account. Running it is not the
-same as its write having been exercised: that job ran with `dry-run: true`, `main` has no
-required checks yet, and no issue has been opened or edited by this action. `ROADMAP.md` gates
-G1 and G3 are the rows that will change this sentence.
+which builds Gauge at the pinned sha and audits a live testnet account, and `ci / python` green
+on the resulting push to `main` at `db8a5ed`. Running it is not the same as its write having
+been exercised: that job ran with `dry-run: true`, `main` has no required checks yet, and no
+issue has been opened or edited by this action. `ROADMAP.md` gates G3 and G2 are the rows that
+will change this sentence.
 
 **The renderer is only as strict as its tests.** 167 cases cover the refusals above, and the
 ones that matter for the wire were observed against a loopback server rather than asserted
