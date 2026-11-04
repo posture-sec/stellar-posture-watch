@@ -1,0 +1,228 @@
+name: Stellar posture watch
+description: Run stellar-gauge against a policy file on a schedule and keep one tracking issue current.
+author: posture-sec
+
+branding:
+  icon: shield
+  color: gray-dark
+
+inputs:
+  gauge-ref:
+    description: >-
+      Full 40-character commit sha of the Gauge checkout to build and run. Required and
+      deliberately without a default: this action compiles Go code from that commit, so a
+      branch or tag name would let the code that runs change without the workflow file
+      changing. Bump it in a pull request the same way you bump an action's sha.
+    required: true
+  gauge-repo:
+    description: owner/name of the Gauge repository to build.
+    required: false
+    default: posture-sec/guage
+  config:
+    description: Path to the Gauge policy file, relative to the caller's workspace.
+    required: false
+    default: gauge.toml
+  fail-on:
+    description: Severity Gauge needs to reach before it exits 1, high or warn.
+    required: false
+    default: high
+  break-build:
+    description: >-
+      Fail the workflow run when Gauge reports findings at or above fail-on. Off by default,
+      because the tracking issue is the signal on a schedule. A usage error (exit 2) or an
+      unreadable endpoint (exit 3) always fails the run regardless of this input.
+    required: false
+    default: "false"
+  issue-label:
+    description: Label on the tracking issue this action maintains.
+    required: false
+    default: account-posture
+  title:
+    description: Title of the tracking issue.
+    required: false
+    default: Account posture watch
+  update-on-no-change:
+    description: >-
+      Rewrite the issue body even when the finding list is identical to the previous run. Off
+      by default so the header date means "the run that changed something" and the run history
+      means "the newest read".
+    required: false
+    default: "false"
+  dry-run:
+    description: Render the body and report what would change, without opening or editing an issue.
+    required: false
+    default: "false"
+  github-token:
+    description: >-
+      Token used for the issue API only, passed through an environment variable so it never
+      appears in an argument list or a step log. Needs issues: write.
+    required: false
+    default: ${{ github.token }}
+
+outputs:
+  exit-code:
+    description: Gauge's exit code. 0 clean, 1 findings, 2 usage, 3 the account could not be read.
+    value: ${{ steps.gauge.outputs.exit-code }}
+  changed:
+    description: true when the open finding list differs from the one in the tracking issue body.
+    value: ${{ steps.write.outputs.changed }}
+  issue-number:
+    description: Number of the tracking issue, empty on a dry run that found none.
+    value: ${{ steps.write.outputs.issue-number }}
+  report-path:
+    description: Path of the JSON report inside the runner, never printed to the log.
+    value: ${{ steps.gauge.outputs.report-path }}
+
+runs:
+  using: composite
+  # No input is interpolated into a shell command below. Every one arrives as an
+  # environment variable, because a reusable action cannot assume the caller's workflow
+  # file is the thing that was reviewed.
+  steps:
+    - name: Check the inputs
+      shell: bash
+      env:
+        GAUGE_REF: ${{ inputs.gauge-ref }}
+        GAUGE_REPO: ${{ inputs.gauge-repo }}
+        CONFIG: ${{ inputs.config }}
+        FAIL_ON: ${{ inputs.fail-on }}
+        ISSUE_LABEL: ${{ inputs.issue-label }}
+        TITLE: ${{ inputs.title }}
+      run: |
+        python3 "$GITHUB_ACTION_PATH/scripts/validate_inputs.py" \
+          --config "$CONFIG" \
+          --gauge-repo "$GAUGE_REPO" \
+          --gauge-ref "$GAUGE_REF" \
+          --fail-on "$FAIL_ON" \
+          --issue-label "$ISSUE_LABEL" \
+          --title "$TITLE"
+
+    - name: Fetch the pinned Gauge commit
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        repository: ${{ inputs.gauge-repo }}
+        ref: ${{ inputs.gauge-ref }}
+        path: .posture-watch/gauge
+        persist-credentials: false
+        fetch-depth: 1
+
+    - name: Install Go from the pinned commit
+      uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      with:
+        go-version-file: .posture-watch/gauge/go.mod
+        check-latest: false
+
+    - name: Build stellar-gauge
+      shell: bash
+      run: |
+        set -euo pipefail
+        cd "$GITHUB_WORKSPACE/.posture-watch/gauge"
+        go build -o "$RUNNER_TEMP/stellar-gauge" ./cmd/stellar-gauge
+        "$RUNNER_TEMP/stellar-gauge" version
+
+    - name: Run the audit
+      id: gauge
+      shell: bash
+      env:
+        CONFIG: ${{ inputs.config }}
+        FAIL_ON: ${{ inputs.fail-on }}
+      run: |
+        set -uo pipefail
+        ec=0
+        "$RUNNER_TEMP/stellar-gauge" audit \
+          --config "$CONFIG" \
+          --format json \
+          --fail-on "$FAIL_ON" \
+          > "$RUNNER_TEMP/report.json" 2> "$RUNNER_TEMP/gauge-stderr.log" || ec=$?
+        echo "exit-code=$ec" >> "$GITHUB_OUTPUT"
+        echo "report-path=$RUNNER_TEMP/report.json" >> "$GITHUB_OUTPUT"
+        echo "gauge exited $ec after writing $(wc -c < "$RUNNER_TEMP/report.json") bytes of report"
+        exit 0
+
+    - name: Find the tracking issue
+      id: find
+      shell: bash
+      env:
+        POSTURE_WATCH_TOKEN: ${{ inputs.github-token }}
+        ISSUE_LABEL: ${{ inputs.issue-label }}
+        TITLE: ${{ inputs.title }}
+      run: |
+        set -euo pipefail
+        python3 "$GITHUB_ACTION_PATH/scripts/sync_issue.py" find \
+          --label "$ISSUE_LABEL" \
+          --title "$TITLE" \
+          --previous-body-out "$RUNNER_TEMP/previous-body.md"
+
+    - name: Render the issue body
+      shell: bash
+      env:
+        CONFIG: ${{ inputs.config }}
+        GAUGE_REF: ${{ inputs.gauge-ref }}
+        GAUGE_REPO: ${{ inputs.gauge-repo }}
+        FAIL_ON: ${{ inputs.fail-on }}
+        GAUGE_EXIT: ${{ steps.gauge.outputs.exit-code }}
+      run: |
+        set -euo pipefail
+        python3 "$GITHUB_ACTION_PATH/scripts/render_report.py" \
+          --report "$RUNNER_TEMP/report.json" \
+          --out "$RUNNER_TEMP/issue-body.md" \
+          --summary-out "$RUNNER_TEMP/summary.json" \
+          --previous-body "$RUNNER_TEMP/previous-body.md" \
+          --as-of "$(date -u +%F)" \
+          --config "$CONFIG" \
+          --gauge-repo "$GAUGE_REPO" \
+          --gauge-ref "$GAUGE_REF" \
+          --fail-on "$FAIL_ON" \
+          --exit-code "$GAUGE_EXIT"
+
+    - name: Update the tracking issue
+      id: write
+      shell: bash
+      env:
+        POSTURE_WATCH_TOKEN: ${{ inputs.github-token }}
+        ISSUE_LABEL: ${{ inputs.issue-label }}
+        TITLE: ${{ inputs.title }}
+        NUMBER: ${{ steps.find.outputs.issue-number }}
+        DRY_RUN: ${{ inputs.dry-run }}
+        UPDATE_ON_NO_CHANGE: ${{ inputs.update-on-no-change }}
+      run: |
+        set -euo pipefail
+        args=()
+        if [ -n "$NUMBER" ]; then args+=(--number "$NUMBER"); fi
+        if [ "$DRY_RUN" = "true" ]; then args+=(--dry-run); fi
+        if [ "$UPDATE_ON_NO_CHANGE" = "true" ]; then args+=(--update-on-no-change); fi
+        python3 "$GITHUB_ACTION_PATH/scripts/sync_issue.py" write \
+          --label "$ISSUE_LABEL" \
+          --title "$TITLE" \
+          --body "$RUNNER_TEMP/issue-body.md" \
+          --summary "$RUNNER_TEMP/summary.json" \
+          "${args[@]}"
+
+    - name: Upload Gauge's diagnostics when the run failed outright
+      if: failure()
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        name: gauge-diagnostics
+        path: ${{ runner.temp }}/gauge-stderr.log
+        if-no-files-found: ignore
+        retention-days: 7
+
+    - name: Propagate a hard failure, and findings only when asked
+      shell: bash
+      env:
+        GAUGE_EXIT: ${{ steps.gauge.outputs.exit-code }}
+        BREAK_BUILD: ${{ inputs.break-build }}
+      run: |
+        set -uo pipefail
+        case "$GAUGE_EXIT" in
+          0) exit 0 ;;
+          1) if [ "$BREAK_BUILD" = "true" ]; then
+               echo "gauge reported findings and break-build is true"
+               exit 1
+             fi
+             echo "gauge reported findings; the tracking issue carries them"
+             exit 0 ;;
+          2) echo "gauge refused the configuration (exit 2)"; exit 2 ;;
+          3) echo "gauge could not read the account (exit 3)"; exit 3 ;;
+          *) echo "gauge exited with $GAUGE_EXIT, which this action does not understand"; exit 2 ;;
+        esac

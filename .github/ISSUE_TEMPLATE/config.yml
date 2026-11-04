@@ -1,0 +1,13 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security report
+    url: https://github.com/posture-sec/stellar-posture-watch/security/advisories/new
+    about: >-
+      A refusal that does not refuse, markup that survives the renderer, the report reaching a
+      log, or anything about the token goes here, privately. The posture of an account this
+      action watches is a finding for Gauge, not a report.
+  - name: Gauge, which produces the findings
+    url: https://github.com/posture-sec/guage/issues
+    about: >-
+      A rule that is wrong, missing or arguing about severity belongs to Gauge. This repository
+      owns the plumbing and the pin, not the answer.

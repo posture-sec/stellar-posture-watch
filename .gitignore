@@ -1,0 +1,38 @@
+# Python and tool caches. Nothing here is built or installed: the Action runs on the
+# runner's own python3, and the two dev tools come from requirements-dev.txt. If that
+# changes, add the artifacts rather than loosening a rule.
+__pycache__/
+*.py[cod]
+.ruff_cache/
+.mypy_cache/
+.coverage
+.venv/
+venv/
+
+# What a run writes. The report and the rendered body are handed over as files under a
+# temporary directory, and a copy that lands in the worktree is one a developer would
+# rather not have offered to the next commit.
+report.json
+issue-body.md
+summary.json
+previous-body.md
+posture-report.json
+
+# The Gauge checkout and the built binary, as a local run of the action would create them.
+.posture-watch/
+stellar-gauge
+
+# Scorecard writes its SARIF beside the workspace on a push to main.
+results.sarif
+
+# Local briefing copies of the planning documents; the root copies are authoritative.
+/files/
+
+# Editor and OS noise, and anything that looks like a credential file. A .env here would
+# hold the one thing this repository must never have: a token or a seed.
+.idea/
+.vscode/
+*.swp
+.DS_Store
+.env
+.env.*

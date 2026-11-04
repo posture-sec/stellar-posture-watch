@@ -1,0 +1,64 @@
+# The policy this repository's own watch runs, and the worked example for a consumer.
+#
+# Two accounts and one absence. The live testnet state below was read with stellar-gauge
+# 0.1.0-dev built from da656733fff839d5cf20f795460f4365a7254257 at ledger 5536846 on
+# 2026-11-03, and it is the reason each expectation is written the way it is: an example
+# policy that disagrees with the account it names teaches the wrong lesson.
+#
+# There is no signer rule and no threshold rule in Gauge yet (its 3.1, behind its 0.7). The
+# expected_signers and expected_thresholds below record what the operator wants and are
+# validated for shape, but nothing evaluates them at this commit. That is why the first
+# account is declared as a 5-of-6 multisig and the watch still reports nothing about it.
+
+version = 1
+network = "testnet"
+endpoints = ["https://horizon-testnet.stellar.org"]
+
+[[account]]
+# A testnet custody account: five signers at weight 1, master key at weight 0, thresholds
+# 3/3/3, no flags, no home domain, one balance. Declared as it is, so the run is clean here
+# and a drift on the flags is the only thing this policy can currently catch.
+id = "GBQHXYDEJD6NEIUQ5NYDBVNTRCACJXMLO32JUQHBGO524NMVYOMIN5CP"
+name = "custody-testnet"
+role = "other"
+expected_signers = [
+  { key = "GA5J6K77LKAXSRM4VRKBXAOQXVOVYWARIG7NQURWGBXMQWIXS7R5KHRV", weight = 1 },
+  { key = "GABVD2TOKWRPASQUCSOYD6V5GMFOVTSSLMGBGDHQANZPMCKSLGKQU7JQ", weight = 1 },
+  { key = "GAKECSILEKZCLRPOMPRYTRFCOXWSSJRJ5BCHZ53BMJNL4AAQ3RKOZ5CO", weight = 1 },
+  { key = "GBRTKUSLK55UOXBT34X2LNJ7VXJTSE7T5J5PBV7SV73QL3YAROHK3W22", weight = 1 },
+  { key = "GD2SIZATHHGBMHJEAEGJBQTASQYE3ZW2BCLSOJPD6AJPHFWXIWYO7PN7", weight = 1 },
+  { key = "GBQHXYDEJD6NEIUQ5NYDBVNTRCACJXMLO32JUQHBGO524NMVYOMIN5CP", weight = 0 },
+]
+expected_thresholds = { low = 3, medium = 3, high = 3 }
+expected_flags = { auth_required = false, auth_revocable = false, auth_immutable = false, clawback = false }
+expect_locked = false
+
+[[account]]
+# An issuer on testnet that has clawback, auth_required and auth_revocable set and publishes
+# a home domain. Declaring clawback = true is the difference between a warning that says
+# "nobody said this was intended" and a record that says somebody did.
+id = "GDSX2WUFUT7KCMTUNG3IUQWIUQSC4XNKQ5NTGEZRKLTMLCSJTCUVBEVG"
+name = "issuer-testnet"
+role = "issuer"
+expected_flags = { auth_required = true, auth_revocable = true, auth_immutable = false, clawback = true }
+home_domain = "komunitin.org"
+expect_locked = false
+
+[[account]]
+# The finding this repository exists to keep in front of somebody. This account was read at
+# ledger 5535642 and was gone by 5536846: testnet recycles, and a policy that names an
+# account the endpoint no longer has is exactly the drift a weekly watch catches. acct-missing
+# is high and cannot be accepted away, so `fail-on: warn` leaves one high finding open here.
+id = "GC2HHIM66CBKJFMYOHECBMKD4NWRGWJ3FEXFDPWPT4TLS7OFR43LO2II"
+name = "gone-testnet"
+role = "other"
+expect_locked = false
+
+# Accepted risk is the owner's act, always with a reason, and never for a rule that hides a
+# missing account, a network mismatch or an unreachable threshold. Left commented because this
+# file is an example and nobody has accepted anything in it.
+# [[accept]]
+# rule = "flag-drift"
+# account = "GDSX2WUFUT7KCMTUNG3IUQWIUQSC4XNKQ5NTGEZRKLTMLCSJTCUVBEVG"
+# reason = "which one flag is expected, and why the chain value is the one to keep"
+# expires = "2027-04-27"

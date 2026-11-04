@@ -1,0 +1,91 @@
+# The worked example for a consumer: one repository's account posture, on a schedule, in
+# this repository's issue tracker. Copy it into `.github/workflows/` in the repository that
+# owns the accounts, replace the placeholder sha, and keep the policy file beside it.
+#
+# Two things here are load bearing and easy to get wrong. The `gauge-ref` is the code that
+# produces the answer, so it belongs in a diff you review; it takes no default and no branch
+# name. And `issues: write` is the only elevated permission the job needs: nothing here reads
+# your code, touches an environment secret or builds a transaction.
+
+name: account posture
+
+on:
+  schedule:
+    # 06:17 UTC on Mondays. A prime minute and a mid-week-free slot so this run does not
+    # land in the same window as every other cron on the runner, which is how a scheduled
+    # audit ends up queued behind a backlog and reports nothing for a day.
+    - cron: '17 6 * * 1'
+  # So an operator can force a read after changing the policy, without waiting for Monday.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: account-posture
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    name: watch / audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out this repository, without leaving credentials behind
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Audit the policy and update the tracking issue
+        id: watch
+        # Replace this with the full 40-character commit sha of
+        # https://github.com/posture-sec/stellar-posture-watch that you read before using.
+        # A tag name would let the code that runs change without a diff reaching your
+        # repository, which is the same argument D-01 makes about Gauge's sha.
+        uses: posture-sec/stellar-posture-watch@REPLACE-WITH-A-SHA-YOU-READ
+        with:
+          # The Gauge commit to fetch and compile. Findings come from this code, so the issue
+          # body prints it next to the ledger: an answer you cannot trace is not evidence.
+          gauge-ref: da656733fff839d5cf20f795460f4365a7254257
+
+          # The policy file, relative to this workspace. example/gauge.toml beside this file
+          # is the one this repository's own self-check runs against testnet.
+          config: .posture/gauge.toml
+
+          # The severity Gauge needs to reach before it exits 1. `warn` means an undeclared
+          # clawback reaches the issue instead of sitting in a report nobody opened.
+          fail-on: warn
+
+          # The signal on a schedule (D-05): findings live in the issue, and the run stays
+          # green so a known WARN does not mail you. Leave this off on a cron. Set it to true
+          # in a pull_request workflow, where a finding should stop a merge.
+          break-build: "false"
+
+          # One issue per policy file, found by the state marker in its body rather than by
+          # title, so renaming it does not orphan the history.
+          issue-label: account-posture
+          title: Account posture watch
+
+          # Rewrite the body even when nothing moved, which makes the header date mean "the
+          # newest read" instead of "the run that changed something". Off by default.
+          update-on-no-change: "false"
+
+          # Render and report what would change without opening or editing anything. The
+          # first run on a new policy is worth doing this way.
+          dry-run: "false"
+
+          # Passed through an environment variable, never an argument, so it appears in no
+          # step log and no process list. Needs issues: write and nothing else.
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      # The action exits 0 with the run green even when Gauge had findings, so a workflow that
+      # wants the counts in its own log or a later step reads the four outputs above. Nothing
+      # here prints the report itself: D-06 keeps the JSON in a file inside the runner and the
+      # log to one line per step.
+      - name: Record what the run saw
+        env:
+          GAUGE_EXIT: ${{ steps.watch.outputs.exit-code }}
+          ISSUE: ${{ steps.watch.outputs.issue-number }}
+          CHANGED: ${{ steps.watch.outputs.changed }}
+        run: |
+          echo "gauge exited $GAUGE_EXIT, tracking issue ${ISSUE:-none}, changed=$CHANGED"

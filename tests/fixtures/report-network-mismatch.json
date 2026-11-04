@@ -1,0 +1,45 @@
+{
+  "tool_version": "0.1.0-dev",
+  "network": "Test SDF Network ; September 2015",
+  "ledger": 5535646,
+  "accounts": [
+    {
+      "snapshot": {
+        "id": "GDSX2WUFUT7KCMTUNG3IUQWIUQSC4XNKQ5NTGEZRKLTMLCSJTCUVBEVG",
+        "network": "Test SDF Network ; September 2015",
+        "endpoint": "https://horizon-testnet.stellar.org",
+        "ledger": 0,
+        "sequence": "",
+        "thresholds": {
+          "low": 0,
+          "medium": 0,
+          "high": 0
+        },
+        "signers": [],
+        "flags": {
+          "auth_required": false,
+          "auth_revocable": false,
+          "auth_immutable": false,
+          "clawback_enabled": false
+        },
+        "home_domain": "",
+        "sponsor": "",
+        "balances": []
+      },
+      "findings": [
+        {
+          "rule_id": "acct-network-mismatch",
+          "severity": "high",
+          "account": "GDSX2WUFUT7KCMTUNG3IUQWIUQSC4XNKQ5NTGEZRKLTMLCSJTCUVBEVG",
+          "message": "the endpoint is on a different network than the run requested, so the account was not read",
+          "evidence": "expected Public Global Stellar Network ; September 2015, endpoint reports Test SDF Network ; September 2015",
+          "fingerprint": "5544e902f1071f796082dec0c77610c3b4e7251134c83ddd7c1dfdc26f3ab463",
+          "accepted": false
+        }
+      ],
+      "skipped": "the endpoint is on a different network"
+    }
+  ],
+  "exit_code": 1,
+  "limits": "Gauge reads public ledger state only. It cannot see who holds a key, whether signers are separate people, or off-chain controls. A clean report is a posture result, not proof that the account cannot be compromised."
+}

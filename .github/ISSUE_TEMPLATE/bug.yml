@@ -1,0 +1,80 @@
+name: Bug report
+description: The action, a refusal or the issue body does not behave as documented.
+labels: ["type: bug", "needs triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This action publishes somebody else's findings into somebody else's issue tracker, so a
+        bug is anything that softens a refusal, prints what it was handed, or writes a body that
+        disagrees with the report it came from. Do not paste a secret seed here. If one reached a
+        file in this tree, treat the key as live, move it, then report through the security
+        advisory.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: >-
+        The workflow file or the command, the step it failed in, the exit code and the output. A
+        traceback counts as a bug: these scripts report problems, they do not raise them.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What the docs say should happen
+      description: >-
+        Cite the `README.md` claim, the `ARCHITECTURE.md` section or the roadmap task. Section 2
+        of ARCHITECTURE.md is the contract if the renderer refused or accepted a report.
+    validations:
+      required: true
+  - type: input
+    id: gauge-ref
+    attributes:
+      label: gauge-ref
+      description: >-
+        The full 40-character sha of the Gauge commit the run built. Findings come from that
+        code, so the sha is the difference between a bug here and a bug there.
+    validations:
+      required: true
+  - type: textarea
+    id: body
+    attributes:
+      label: The issue body, or the part that is wrong
+      description: >-
+        Paste the rendered markdown, not a link, if the body itself is the problem. Strip the
+        state marker at the foot unless the marker is what broke. Nothing in an issue body is
+        secret; account ids and ledgers are the evidence.
+      render: markdown
+    validations:
+      required: false
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Which part
+      options:
+        - validate_inputs.py
+        - render_report.py
+        - sync_issue.py
+        - action.yml or a workflow here
+        - A fixture or a test
+    validations:
+      required: true
+  - type: input
+    id: commit
+    attributes:
+      label: Commit or tag
+      description: There is no release yet, so this is a commit sha of this repository.
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Where it ran
+      description: >-
+        A GitHub Actions runner and its event (schedule, workflow_dispatch, pull_request), or a
+        local run with `python3 --version`. The floor is 3.11 because `tomllib` is the standard
+        library from there on.
+    validations:
+      required: true
