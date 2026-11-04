@@ -9,7 +9,8 @@ changes for the organization now that this repository exists, and what has to be
 before this repository is a candidate.
 
 Last read of the program itself: 2026-11-02, in the Gauge packet. Nothing here claims this
-repository is approved, applied to, or eligible. It is four days old as a repository.
+repository is approved, applied to, or eligible. Its git history is just over an hour old
+(first commit 2026-11-04T06:58Z) and its first pull request is still open.
 
 ## 1. What this repository adds to the argument
 
@@ -33,11 +34,14 @@ Four reasons, in order of how long each takes to clear.
 1. **No cycle is open.** The Gauge packet records that as of 2026-11-02 the Stellar Wave
    page shows no active or upcoming wave. There is nothing to apply into, and the caps are
    dashboard-only facts.
-2. **Nothing has run.** The action has never executed on a GitHub runner, opened no issue,
-   and has no tag. Gates G1 to G5 in `ROADMAP.md` are all open, and G3 ("the action has run
-   end to end and produced an issue that matches its report") is the one every claim in the
-   README depends on. A submission whose central artifact has never run is a submission that
-   invites the reviewer to check, which is the worst thing to hand a stranger.
+2. **The write has not run.** The action executed on a GitHub runner once, on 2026-11-04 in
+   `self-check / action` at `b107b0f`: it built Gauge at the pinned sha, read a live testnet
+   account and rendered the body. It opened no issue, edited none, and has no tag. Gates G1 to
+   G5 in `ROADMAP.md` are all open, and G3 ("the action has run end to end and produced an
+   issue that matches its report") is the one every claim in the README depends on. The run
+   proves the plumbing loads; the sentence a reviewer would actually be checking, that the
+   issue stays current, is still unproven. A submission would then invite the reviewer to
+   check the one promise the README makes, which is the worst thing to hand a stranger.
 3. **The findings are thin because Gauge's are.** Four rules, no signer family, no threshold
    rule, blocked behind Gauge's 0.7, which needs a transaction Gauge is written never to
    build. A scheduled watch that reports a vanished account and a moved network is real;

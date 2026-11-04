@@ -7,12 +7,13 @@ did not happen. Read `ARCHITECTURE.md` section 2 before touching the renderer an
 
 ## Status
 
-Three scripts, one `action.yml`, 167 tests, and no hosted run. Everything in the table below
-was observed in a local checkout: the suite on Python 3.11.16 and 3.12.3, and `ruff` and `mypy`
-at their pinned versions from the tool venv, and `ROADMAP.md` says which
-gates are waiting on a runner rather than on code. No tag, no release, nothing to install.
-`main` is not yet protected and CI has never executed here, so until 2.7 and G1 land the gate
-is a rule and not a machine.
+Three scripts, one `action.yml`, 167 tests, and one hosted run of the action itself. The
+table below was written from a local checkout: the suite on Python 3.11.16 and 3.12.3, and
+`ruff` and `mypy` at their pinned versions from the tool venv, and `ROADMAP.md` says which
+gates are waiting on a runner rather than on code. The same three checks, plus the action
+itself, have since run green on GitHub on pull request #1 at `b107b0f` (2026-11-04). No tag,
+no release, nothing to install. `main` is not yet protected, so until 2.7 and G1 land a merge
+here is polite rather than enforced and the gate is a rule and not a machine.
 
 ## The rules, and what enforces each one
 

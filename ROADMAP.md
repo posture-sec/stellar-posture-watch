@@ -1,11 +1,15 @@
 # ROADMAP: stellar-posture-watch
 
-Status: **functional alpha.** The action exists, its three scripts are written and
-tested against real captured reports, and nothing about it has run on a GitHub runner
-yet. Every claim below names the run or the file it was read from.
+Status: **functional alpha, and hosted.** The action exists, its three scripts are written and
+tested against real captured reports, and a GitHub runner has now executed all three workflows
+and the action itself: `self-check / action` fetched Gauge at the pinned sha, built it, read the
+example policy from live testnet and rendered the issue body, stopping at the dry run. What is
+still unproven is the write, because no issue has ever been opened or edited by this action.
+Every claim below names the run or the file it was read from.
 
-Last updated: 2026-11-04T06:50Z (1.10 and 1.11 close at the desk, the example layer lands as
-2.11 to 2.13, and the suite reaches 167 cases with `mypy` genuinely clean)
+Last updated: 2026-11-04T07:20Z (the four documents that said nothing had run on a runner now
+name the runs, the progress table regenerates at 25 of 36, and the two 2026-11-04 rows are
+back in date order)
 
 ## 1. What this repository is
 
@@ -52,9 +56,17 @@ repository states the working conventions this repository keeps.
 
 ## 4. Current focus
 
-Phase 1 is done in code and unproven on a runner. Phase 2 is the public shape of the
+Phase 1 is done in code and has been executed on a runner. Phase 2 is the public shape of the
 repository, and Phase 3 is the part that cannot be written at a desk: pointing this at a
 real account, on a real schedule, and reading what the issue says.
+
+1.8 closed on 2026-11-04, so the yaml is no longer an unexecuted claim: the composite action
+was run by `self-check / action`, Gauge was fetched and built at the pinned sha, the audit step
+reached live testnet with `example/gauge.toml` and exited 1, the renderer wrote a 2 573-character
+body, and the syncer stopped at the dry run it was told to stop at. What that leaves unproven is
+the write. No issue has been opened or edited by this action, on a runner or at a desk, so the
+sentence a consumer would most want, "it keeps the tracking issue current", has never been
+exercised at all and G3 is the row that says so.
 
 The honest ordering right now is G1, then G3, then G4. A green hosted run tells us the
 yaml is valid; an end-to-end run tells us the issue body is worth reading; and only after
@@ -132,14 +144,26 @@ it is why this repository's value right now is the plumbing rather than the find
 - [x] **1.7** Change detection budget. The marker carries up to 200 findings or 20 000
   characters, whichever comes first, and when anything is left out the body says so in
   bold with both numbers rather than reporting a clean comparison.
-- [ ] **1.8** Hosted validation of `action.yml`. Done-when: a workflow in this repository
-  consumes the local action on a `pull_request` event and the run reaches the audit step
-  with the pinned sha. Not done: no runner has executed this file yet, which is gate G3
-  and cannot be ticked from a laptop.
+- [x] **1.8** Hosted validation of `action.yml`. Observed on GitHub 2026-11-04: job
+  `self-check / action` 126439899851 ran this repository's own `self-check.yml` on commit
+  `b107b0f` for pull request #1, and the step graph reached the audit step with the pinned sha:
+  `actions/checkout` fetched Gauge at `da656733fff839d5cf20f795460f4365a7254257`, `setup-go`
+  resolved 1.27.3 from that tree's `go.mod`, the build produced the binary, and the log line
+  reads `gauge exited 1 after writing 4646 bytes of report`. The render step then wrote
+  2 573 characters and reported `1 open, 1 high, 0 warn, 0 accepted`, and the sync step said
+  `dry run, would open an issue titled 'Account posture watch'`. The same sequence ran on the
+  first commit of that pull request (job 126438382017) with byte-identical counts, which is what
+  a deterministic render over a testnet account that has not moved should look like. What this
+  does not do is G3: `dry-run: true` means no issue was created, here or on a runner, so the
+  end-to-end write has never happened anywhere.
 - [ ] **1.9** Refuse a policy whose accounts no consumer will read. Done-when: a policy
   file with an `[[account]]` whose id is valid but which the run cannot reach produces the
   exit 3 path and no issue update. The behaviour is coded; it has not been observed on a
-  runner against a deleted account.
+  runner against a deleted account. Part of the distinction was observed on 2026-11-04: the
+  first account in `example/gauge.toml` is a valid checksummed address the endpoint does not
+  have, and the runner reported it as one high finding with exit 1 and still wrote the body,
+  which is the correct half. The other half, an endpoint that cannot be read at all, is exit 3
+  and no body, and no run here has produced it.
 - [x] **1.10** Document the version contract. `ARCHITECTURE.md` section 2 lists the
   load-bearing report fields path by path, names which of them the renderer refuses on and
   which it renders as absent, and states the consequence a Gauge change has to live with: a
@@ -157,11 +181,12 @@ it is why this repository's value right now is the plumbing rather than the find
 
 ### Phase 2: Public shape
 
-- [x] **2.1** `README.md`, `CONTRIBUTING.md`, `SECURITY.md`. Written 2026-11-03: the README
-  names the four rules that exist and states that there is no signer or threshold rule yet;
-  `CONTRIBUTING.md` lists each rule with the code that refuses it; `SECURITY.md` carries a
-  four-surface threat model (input to shell, fetched code, chain-authored markup, the token)
-  and a limits section that says plainly that no runner has executed any of this.
+- [x] **2.1** `README.md`, `CONTRIBUTING.md`, `SECURITY.md`. Written 2026-11-03 and re-read
+  against the hosted runs on 2026-11-04: the README names the four rules that exist at the
+  pinned sha, states that there is no signer or threshold rule yet, and names the three identity
+  rules Gauge merged after that sha; `CONTRIBUTING.md` lists each rule with the code that refuses
+  it; `SECURITY.md` carries a four-surface threat model (input to shell, fetched code,
+  chain-authored markup, the token) and a limits section that says what has been run where.
 - [x] **2.2** `.github/CODEOWNERS`, a pull request template and two issue templates.
   CODEOWNERS names `@bolabeatz` and lists the contracts and the guards; the PR template asks
   for real output and has a checkbox for the report contract; `bug.yml` asks for the
@@ -172,11 +197,22 @@ it is why this repository's value right now is the plumbing rather than the find
   both actions pinned by sha. Job name `ci / python`, Python 3.11 as the floor. The suite runs
   locally on 3.11.16 and 3.12.3; `ruff` and `mypy` at their pins run locally from a venv whose
   interpreter is 3.14.0, which is the one place this repository's local evidence is not on the
-  CI floor. This file has not been executed by a runner.
+  CI floor. Executed by a runner since 2026-11-04: job `ci / python` 126439899511 on
+  `ubuntu-26.04` set up CPython 3.11.17 and passed every step in order, with the log carrying
+  `check_action: action.yml holds its rules`, `Ran 167 tests in 5.837s`, `OK`,
+  `All checks passed!`, `10 files already formatted` and
+  `Success: no issues found in 10 source files`.
 - [x] **2.4** `roadmap-check.yml` running both guard scripts. Job name
-  `roadmap-check / gate`, `fetch-depth: 0` plus an explicit base fetch so the diff has a
-  target, and the copied guards are themselves tested by `tests/test_roadmap_gate.py` (18
-  cases) inside `ci / python`, so the gate that is required to merge is a gate with tests.
+  `roadmap-check / gate`, `fetch-depth: 0` so every branch ref including the base is in the
+  repository before the gate reads it, and the copied guards are themselves tested by
+  `tests/test_roadmap_gate.py` (18 cases) inside `ci / python`, so the gate that is required to
+  merge is a gate with tests. Its first hosted run caught a fault in the workflow itself: the
+  step also ran `git fetch origin "$GITHUB_BASE_REF"`, which exited 128 with "could not read
+  Username" because `persist-credentials: false` had already removed the credential the fetch
+  needed. Fixed in `b107b0f` by deleting the redundant fetch rather than by re-enabling
+  credentials; the gate passed on the same commit afterwards (run 41789685726), which is the
+  evidence this task wanted and the reason a guard that needs network is a guard that should
+  not.
 - [x] **2.5** `ARCHITECTURE.md`: the four scripts, the seam the tests drive, the marker, the
   failure modes, what is deliberately absent, and section 2's version contract (1.10).
 - [ ] **2.6** Repository profile: description, topics, homepage, and the org profile row.
@@ -188,7 +224,9 @@ it is why this repository's value right now is the plumbing rather than the find
 - [ ] **2.9** A documentation site. Deferred deliberately: the two siblings have one each
   and this repository's surface is one yaml file plus a worked example. Revisit after G3.
 - [ ] **2.10** A first release. Done-when: `v0.1.0` is tagged and `action.yml` is consumed
-  by ref from another repository. Nothing is tagged until the action has run once.
+  by ref from another repository. Nothing is tagged yet: the action has now run once on a runner
+  (1.8), but in dry run, so the one thing a consumer would be pinning an expectation about, the
+  issue it maintains, has not been produced by it.
 - [x] **2.11** `example/`. `example/gauge.toml` is a testnet policy for three accounts: a
   declared five-of-six signer set (five keys at weight 1 plus the master at weight 0) at
   thresholds 3/3/3 with every flag off, an issuer with `auth_required`, `auth_revocable` and
@@ -202,9 +240,10 @@ it is why this repository's value right now is the plumbing rather than the find
 - [x] **2.12** `.github/workflows/self-check.yml`. The repository consumes itself: `uses: ./` with
   the pinned `gauge-ref`, `example/gauge.toml`, `fail-on: warn` and `dry-run: true`, so a
   `pull_request` run executes the composite steps instead of only parsing their yaml. It is
-  deliberately not a required check, because a testnet outage must not block a merge. The file
-  parses with `yaml.safe_load` locally; whether a runner takes it is 1.8 and G3, and this task
-  exists because `check_action.py` guards `action.yml` and no workflow file.
+  deliberately not a required check, because a testnet outage must not block a merge. Run by a
+  runner since 2026-11-04 on both commits of pull request #1, with the step evidence recorded
+  under 1.8; the file also parses with `yaml.safe_load` locally. This task exists because
+  `check_action.py` guards `action.yml` and no workflow file.
 - [x] **2.13** `.gitignore` and `docs/WAVE_SUBMISSION.md`. The ignore file names the caches the
   checks write, the five run artifacts a manual pipeline run leaves in the working directory
   (`report.json`, `issue-body.md`, `summary.json`, `previous-body.md`, `posture-report.json`),
@@ -243,11 +282,17 @@ it is why this repository's value right now is the plumbing rather than the find
 
 ## 6. Gates
 
-- [ ] **G1** CI green on `main`: both `ci / python` and `roadmap-check / gate` passing on
-  the merged commit rather than locally.
+- [ ] **G1** CI green on `main`: `ci / python` passing on the merged commit, and
+  `roadmap-check / gate` passing on the pull request whose merge produced it rather than
+  locally. Both were green on pull request #1's head (jobs 126439899511 and 126439899465 on
+  `b107b0f`, 2026-11-04), and `ci / python` also fires on a push to `main`, so the merged-commit
+  half is one run away. The gate deliberately does not run on `main`: with no pull request to
+  diff it would say "nothing changed" and pass, which is a green nobody should read as evidence.
+  This row closes when somebody has read the push run on `main`, not before.
 - [ ] **G2** `main` protected and the profile filled in (2.6, 2.7).
 - [ ] **G3** The action has run end to end on a GitHub runner and produced or updated an
-  issue that matches its report (1.8, 3.1).
+  issue that matches its report. 1.8 is closed, so the run half has happened; what is missing
+  is the issue, because every runner run so far was a dry run (3.1).
 - [ ] **G4** The rendered body has been read against the JSON it came from and every
   number in it traced (3.1, 3.2).
 - [ ] **G5** Someone other than the maintainer has run it, or its absence is stated.
@@ -258,11 +303,11 @@ it is why this repository's value right now is the plumbing rather than the find
 | Phase | Name | Done | Total | Progress |
 |---|---|---|---|---|
 | 0 | Ground work | 7 | 7 | 100% |
-| 1 | The action | 9 | 11 | 82% |
+| 1 | The action | 10 | 11 | 91% |
 | 2 | Public shape | 8 | 13 | 62% |
 | 3 | Real use | 0 | 5 | 0% |
 | 9 (backlog) | Backlog, not scheduled | 0 | 4 | 0% |
-| **All phases** | **Readiness total** | **24** | **36** | **67%** |
+| **All phases** | **Readiness total** | **25** | **36** | **69%** |
 | Gates | G1 to G5 | 0 | 5 | 0% |
 <!-- PROGRESS:END -->
 
@@ -271,7 +316,9 @@ it is why this repository's value right now is the plumbing rather than the find
 | Date (UTC) | Change | Tasks |
 | --- | --- | --- |
 | 2026-11-03 | The scaffold lands as one commit: `action.yml` with ten inputs and the exit-code mapping, `validate_inputs.py`, `render_report.py` and `sync_issue.py`, six report fixtures with a provenance table naming which four are real testnet reads, the copied roadmap guards with their self-test, and the README, CONTRIBUTING, SECURITY, ARCHITECTURE and `.github` shape. 129 tests pass locally with the transport seam and a loopback server, `ruff check` and `ruff format --check` are clean on Python 3.12.3, and no runner has executed any of it. Corrected 2026-11-04: this row also said `mypy` was clean, and it was not. Ten type errors were found the next day and are listed in the row below. | 0.1 to 0.7, 1.1 to 1.7, 2.1 to 2.5 |
-| 2026-11-04 | Phase 1's two desk tasks close and the example layer lands. 1.10: `ARCHITECTURE.md` section 2 is the version contract, naming the report paths whose absence the renderer refuses and the ones deliberately not load bearing. 1.11: `scripts/check_action.py`, a stdlib text scanner for the two `action.yml` rules a reviewer can miss in a diff (any expression inside a `run:` block, and a third-party step not pinned by a full sha with its release named beside it), also refusing an undeclared input, a declared input bound nowhere, an unpinnable `gauge-ref` and an output naming a step id that does not exist; 20 tests, one of which runs it against the shipped `action.yml`, and `ci.yml` runs it before the suite. 2.11 to 2.13: `example/gauge.toml`, `example/workflow.yml`, `self-check.yml`, `.gitignore` and `docs/WAVE_SUBMISSION.md`. The suite is 167 cases (41 validate, 42 render, 46 sync, 18 roadmap gate, 20 checker) and passes on Python 3.11.16 and 3.12.3; `ruff check`, `ruff format --check` (ruff 0.17.3) and `mypy` 2.4.0 are clean on the ten typed files, run from the pinned tool venv, whose own interpreter is 3.14.0 rather than the CI floor. The ten `mypy` errors the previous row claimed away were a `strkey` shape property that blocked a narrowing, an HTTP-date `Retry-After` branch that returned nothing at all, a test attribute named `responses` colliding with `BaseHTTPRequestHandler`'s own, a sleep stub with the wrong signature, three places where an `assertIsNotNone` did not narrow what followed it, and one attribute the stubs do not carry. One manual composition of the real pipeline against live Horizon testnet, observed 2026-11-03 with its artifacts written outside the tree: `validate_inputs.py` exit 0 on `example/gauge.toml`, `stellar-gauge audit` built at the pinned `da65673` exit 1 with one high `acct-missing` finding, `render_report.py` a 2 573-character body. That is a laptop run and is labeled as one: 1.8, G1 and G3 stay open until a runner does it. Gauge merged its 3.5 identity rules on 2026-11-03, three rule ids this pinned sha does not carry, which section 4 now says. | 1.10, 1.11, 2.11 to 2.13 |
+| 2026-11-04 | Phase 1's two desk tasks close and the example layer lands. 1.10: `ARCHITECTURE.md` section 2 is the version contract, naming the report paths whose absence the renderer refuses and the ones deliberately not load bearing. 1.11: `scripts/check_action.py`, a stdlib text scanner for the two `action.yml` rules a reviewer can miss in a diff (any expression inside a `run:` block, and a third-party step not pinned by a full sha with its release named beside it), also refusing an undeclared input, a declared input bound nowhere, an unpinnable `gauge-ref` and an output naming a step id that does not exist; 20 tests, one of which runs it against the shipped `action.yml`, and `ci.yml` runs it before the suite. 2.11 to 2.13: `example/gauge.toml`, `example/workflow.yml`, `self-check.yml`, `.gitignore` and `docs/WAVE_SUBMISSION.md`. The suite is 167 cases (41 validate, 42 render, 46 sync, 18 roadmap gate, 20 checker) and passes on Python 3.11.16 and 3.12.3; `ruff check`, `ruff format --check` (ruff 0.17.3) and `mypy` 2.4.0 are clean on the ten typed files, run from the pinned tool venv, whose own interpreter is 3.14.0 rather than the CI floor. The ten `mypy` errors the previous row claimed away were a `strkey` shape property that blocked a narrowing, an HTTP-date `Retry-After` branch that returned nothing at all, a test attribute named `responses` colliding with `BaseHTTPRequestHandler`'s own, a sleep stub with the wrong signature, three places where an `assertIsNotNone` did not narrow what followed it, and one attribute the stubs do not carry. One manual composition of the real pipeline against live Horizon testnet, observed 2026-11-03 with its artifacts written outside the tree: `validate_inputs.py` exit 0 on `example/gauge.toml`, `stellar-gauge audit` built at the pinned `da65673` exit 1 with one high `acct-missing` finding, `render_report.py` a 2 573-character body. That is a laptop run and is labeled as one, and 1.8, G1 and G3 stayed open until a runner did it: the row below closes 1.8 and closes neither gate. Gauge merged its 3.5 identity rules on 2026-11-03, three rule ids this pinned sha does not carry, which section 4 now says. | 1.10, 1.11, 2.11 to 2.13 |
+| 2026-11-04 | The repository is published and its own pipeline runs on a runner. `posture-sec/stellar-posture-watch` is created with GitHub's own `auto_init` commit, so nothing was hand-committed to `main`; the 38-file tree above goes in as pull request #1 (`5d3dea1`), and the roadmap gate's first hosted run fails on its own second step (`Process completed with exit code 128`, `fatal: could not read Username for 'https://github.com'`): the workflow fetched its base ref with `persist-credentials: false` already in force, and `fetch-depth: 0` had named every branch anyway. Fixed in `b107b0f` by deleting the fetch rather than restoring the credential. Then, on `b107b0f`: `ci / python` 126439899511 passes on CPython 3.11.17 with `check_action: action.yml holds its rules`, `Ran 167 tests in 5.837s`, `All checks passed!`, `10 files already formatted` and `Success: no issues found in 10 source files`; `roadmap-check / gate` 126439899465 passes; and `self-check / action` 126439899851 runs the composite action itself, fetching Gauge at `da656733`, resolving Go 1.27.3 from its `go.mod`, logging `gauge exited 1 after writing 4646 bytes of report`, `render_report: wrote /home/runner/work/_temp/issue-body.md (2573 characters); 1 open, 1 high, 0 warn, 0 accepted` and `sync_issue: dry run, would open an issue titled 'Account posture watch'`. That is 1.8 closed and 2.12's claim replaced by a run; the byte-identical body against the laptop composition of 2026-11-03 is the first evidence that the two paths agree. G3 stays open because nothing was written, and the repository is still private until 2.6 and 2.7 land. | 1.8, 2.4, 2.10, 2.12, G1 |
+| 2026-11-04 | The last sentence in this repository that said nothing had run on a runner is replaced with the runs. Four documents carried it: `README.md` closed its Checks section with "until those rows are green on GitHub, the sentences above describe a laptop", `CONTRIBUTING.md` opened its Status with "and no hosted run" and added that CI had never executed here, `SECURITY.md` said no runner had executed the code, and `docs/WAVE_SUBMISSION.md` named "Nothing has run" as the second reason not to apply. Each now names the three jobs and what `self-check / action` did, and each still says the write has not happened. Two sentences in `ROADMAP.md` called the end-to-end write a laptop claim, which was never true because no laptop run opened an issue either: the dry run stopped the write everywhere, so both rows now say so plainly. The two 2026-11-04 rows above were also swapped back into date order, because the desk row is where the ten `mypy` errors the 2026-11-03 row defers are listed, and `ROADMAP.md`'s progress table regenerates to 25 of 36 with 1.8 ticked. | 2.1, 2.13 |
 
 ## 9. Last updated line format
 

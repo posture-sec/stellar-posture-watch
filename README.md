@@ -18,17 +18,19 @@ scripts/
   render_report.py      one Gauge report in, one issue body out
   sync_issue.py         the GitHub issue API, one issue, no redirects
   check_action.py       the action.yml invariants CI enforces instead of asserting in prose
-tests/                  167 cases, local, run against captured reports
+tests/                  167 cases, loopback only, run against captured reports
 ```
 
 ## Status
 
-Functional alpha. The three scripts and `action.yml` exist and pass 167 local tests against
-real testnet reports captured from Gauge, and **no GitHub runner has executed any of it
-yet**: `ci / python` and `roadmap-check / gate` have not had a hosted run, and the action
-has never opened an issue. `ROADMAP.md` section 6 lists the gates that turn those sentences
-into something else, and section 4 says which one is next. Nothing here is a tag, and there
-is no released version to depend on.
+Functional alpha, and hosted. The three scripts and `action.yml` exist and pass 167 tests
+against real testnet reports captured from Gauge, and a GitHub runner has now run them: on
+2026-11-04 `ci / python`, `roadmap-check / gate` and `self-check / action` were all green on
+pull request #1, and that last job executed this action itself against live testnet. What has
+not happened is the write: the run was a dry run, so **no issue has ever been opened or edited
+by this action**. `ROADMAP.md` section 6 lists the gates that turn those sentences into
+something else, and section 4 says which one is next. Nothing here is a tag, and there is no
+released version to depend on.
 
 ## What it catches today, stated plainly
 
@@ -170,9 +172,18 @@ come from a pinned tool venv whose own interpreter is 3.14.0. That is what `ROAD
 claims and nothing more. `.github/workflows/ci.yml` runs them on 3.11 on
 every pull request and every push to `main`, `.github/workflows/roadmap-check.yml` is the
 roadmap gate, and `.github/workflows/self-check.yml` consumes this directory as an action
-with `dry-run: true` so the yaml is executed rather than only parsed. A hosted run is the
-evidence for gates G1 and G3; until those rows are green on GitHub, the sentences above
-describe a laptop.
+with `dry-run: true` so the yaml is executed rather than only parsed.
+
+Those three have since run on GitHub rather than here: on 2026-11-04, at `b107b0f` on pull
+request #1, `ci / python` (job 126439899511) passed on CPython 3.11.17 with the same 167 cases
+and the same clean lint, format and type output, `roadmap-check / gate` (126439899465) passed
+after its own first run failed on a fetch it did not need, and `self-check / action`
+(126439899851) ran this action end to end: it fetched Gauge at the pinned sha, built it, read
+`example/gauge.toml` against live testnet, and the syncer stopped at the dry run it was told
+to stop at. Two things are still not proven. G1 waits on the push run on `main` rather than a
+pull request run, and G3 waits on an issue, because every run so far has opened or edited
+nothing. A green hosted run and a hosted write are different claims, and the sentences above
+are evidence for the first only.
 
 ## Siblings and licence
 
