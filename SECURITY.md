@@ -80,9 +80,12 @@ where it would be visible in a step log and in `ps`.
 **Unaudited.** No third party has reviewed this code. It has run on GitHub's runners: three
 jobs green on pull request #1 at `b107b0f` on 2026-11-04, including `self-check / action`,
 which builds Gauge at the pinned sha and audits a live testnet account, and `ci / python` green
-on the resulting push to `main` at `db8a5ed`. Running it is not the same as its write having
-been exercised: that job ran with `dry-run: true`, and no issue has been opened or edited by
-this action. `ROADMAP.md` gate G3 is the row that will change this sentence. What is enforced
+on the resulting push to `main` at `db8a5ed`. Its write has since been exercised, by a fourth
+workflow rather than by those jobs: `watch / audit` ran with `dry-run` off on 2026-11-04, opened
+issue #6 in this repository at 08:36:02Z, and at 08:39:51Z a second run found that issue by
+the state marker in its body and left it byte-identical. `ROADMAP.md` gates G3 and G4 record what
+those two runs prove and what they do not: an issue written by unaudited code is still written by
+unaudited code. What is enforced
 now is the path into `main`: ruleset 26515104 refuses a direct push and requires both
 `ci / python` and `roadmap-check / gate`, so anything on the default branch arrived as a pull
 request with those two green. It does not require a second reader, and with one maintainer it

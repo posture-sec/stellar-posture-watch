@@ -36,10 +36,11 @@ against real testnet reports captured from Gauge, and a GitHub runner has now ru
 2026-11-04 `ci / python`, `roadmap-check / gate` and `self-check / action` were all green on
 pull request #1, and that last job executed this action itself against live testnet. The pull
 request then merged, and its push to `main` passed `ci / python` there, which closes gate G1.
-What has not happened is the write: every run was a dry run, so **no issue has ever been opened
-or edited by this action**. `ROADMAP.md` section 6 lists the gates that turn those sentences into
-something else, and section 4 says which one is next. Nothing here is a tag, and there is no
-released version to depend on.
+And the write has happened. On 2026-11-04 `.github/workflows/watch.yml` ran with `dry-run` off,
+built Gauge at the same pinned sha, and **opened issue #6 in this repository** with one high
+finding; a second run at 08:39:51Z found that issue by the state marker in its body and
+left it untouched. `ROADMAP.md` section 6 records which gates those two runs close and what is
+still open. Nothing here is a tag, and there is no released version to depend on.
 
 ## What it catches today, stated plainly
 
@@ -73,8 +74,8 @@ placeholder with the sha of the commit of *this* repository you read before usin
 This repository runs it too. `.github/workflows/watch.yml` is the file above with `dry-run` off
 and `uses: ./` in place of the pin, pointed at `example/gauge.toml`: a local action reference is
 resolved from the commit the schedule ran at, so there is no second sha to bump in the diff that
-changes the code it points to. That is the dogfood. Until a run of it files an issue, the write
-is still the unproven part, and `ROADMAP.md` gate G3 is the row that says so.
+changes the code it points to. That is the dogfood, and it has run: issue #6 is what that
+schedule writes, and `ROADMAP.md` 3.1 names the two dispatches and what each printed.
 
 ```yaml
 name: account posture
@@ -188,7 +189,7 @@ every pull request and every push to `main`, `.github/workflows/roadmap-check.ym
 roadmap gate, and `.github/workflows/self-check.yml` consumes this directory as an action
 with `dry-run: true` so the yaml is executed rather than only parsed.
 `.github/workflows/watch.yml` is the same call with `dry-run: "false"`, on a Tuesday schedule,
-and it is the file that was written to make the write stop being the unproven part.
+and it is the file that wrote issue #6.
 
 Those three have since run on GitHub rather than here: on 2026-11-04, at `b107b0f` on pull
 request #1, `ci / python` (job 126439899511) passed on CPython 3.11.17 with the same 167 cases
@@ -198,9 +199,12 @@ after its own first run failed on a fetch it did not need, and `self-check / act
 `example/gauge.toml` against live testnet, and the syncer stopped at the dry run it was told
 to stop at. G1 is closed, because the push that merge produced ran `ci / python` on `main`
 itself: job 126445751941 on `db8a5ed`, CPython 3.11.18, the same 167 cases green on the trunk
-rather than on a branch. One thing is still not proven: G3 waits on an issue, because every run
-so far has opened or edited nothing. A green hosted run and a hosted write are different claims,
-and the sentences above are evidence for the first only.
+rather than on a branch. The write came the same day, from a fourth workflow: `watch / audit`
+(job 126475427542, 08:36:02Z) opened issue #6 carrying one high `acct-missing`, on a green job
+while Gauge exited 1, and job 126477058944 at 08:39:51Z found that issue by its state marker,
+rendered 2291 characters of no change and left the body byte-identical with `updated_at` unmoved.
+Gates G3 and G4 close on those two runs and on reading the body against a report reproduced from
+the same sha on the desk, which is `ROADMAP.md` 3.1 and G4.
 
 The path into `main` is enforced as of 2026-11-04: ruleset 26515104 refuses a direct push and
 requires both `ci / python` and `roadmap-check / gate`, and the refusal was observed rather than
@@ -223,7 +227,8 @@ this month, no OpenSSF badge registered, no update bot, and no code-analysis too
 commits. `Fuzzing` is a seventh zero and it is not about the setup: `render_report.py` parses a
 report whose contents came off the chain, and nothing hammers it. `Packaging` and `Signed-Releases` are -1 because
 nothing is published from this repository at all. None of the eighteen measures the sentence a
-consumer would most want, and G3 is still the row that says it has not happened.
+consumer would most want. That sentence is now issue #6, and the gate that used to say it had not
+happened is closed.
 [Full result](https://scorecard.dev/viewer/?uri=github.com/posture-sec/stellar-posture-watch).
 
 ## Siblings and licence

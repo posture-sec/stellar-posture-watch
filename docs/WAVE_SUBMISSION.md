@@ -9,8 +9,9 @@ changes for the organization now that this repository exists, and what has to be
 before this repository is a candidate.
 
 Last read of the program itself: 2026-11-02, in the Gauge packet. Nothing here claims this
-repository is approved, applied to, or eligible. Its git history is just over an hour old
-(first commit 2026-11-04T06:58Z) and its first pull request is still open.
+repository is approved, applied to, or eligible. Its git history is two hours old (first commit
+2026-11-04T06:58Z), five pull requests have merged into `main`, and it maintains one scheduled
+tracking issue, #6.
 
 ## 1. What this repository adds to the argument
 
@@ -34,16 +35,15 @@ Four reasons, in order of how long each takes to clear.
 1. **No cycle is open.** The Gauge packet records that as of 2026-11-02 the Stellar Wave
    page shows no active or upcoming wave. There is nothing to apply into, and the caps are
    dashboard-only facts.
-2. **The write has not run.** The action executed on a GitHub runner once, on 2026-11-04 in
-   `self-check / action` at `b107b0f`: it built Gauge at the pinned sha, read a live testnet
-   account and rendered the body. It opened no issue, edited none, and has no tag. Gates G3 to
-   G5 in `ROADMAP.md` are open: G1 closed on 2026-11-04 when pull request #1's push to `main`
-   passed `ci / python`, and G2 closed the same morning when `main` took its ruleset and the org
-   profile page gained its row. G3 ("the action has run end to end and produced an
-   issue that matches its report") is the one every claim in the README depends on. The run
-   proves the plumbing loads; the sentence a reviewer would actually be checking, that the
-   issue stays current, is still unproven. A submission would then invite the reviewer to
-   check the one promise the README makes, which is the worst thing to hand a stranger.
+2. **What a reviewer would check is now real, and only one person has checked it.** The write
+   ran on 2026-11-04: `watch / audit` job 126475427542 built Gauge at the pinned sha, read
+   `example/gauge.toml` against live testnet and opened issue #6 with one high `acct-missing`,
+   on a green job while Gauge exited 1; job 126477058944 at 08:39:51Z found that issue by
+   the state marker in its body, rendered 2291 characters of no change and left it byte-identical.
+   Gates G1 to G4 are closed on those runs and on the body having been read against a report
+   reproduced at the same sha. What has not changed is who did the reading and what is pinned to
+   it: there is no tag (2.10, whose blocker cleared with the write), no consumer but this
+   repository (3.4, G5), and nobody second who would notice a wrong finding.
 3. **The findings are thin because Gauge's are.** Four rules, no signer family, no threshold
    rule, blocked behind Gauge's 0.7, which needs a transaction Gauge is written never to
    build. A scheduled watch that reports a vanished account and a moved network is real;
@@ -61,9 +61,9 @@ the program's three, and they are a guess about effort, not a label.
 
 | Shape | Work | Why it suits a contributor |
 |---|---|---|
-| Medium | Get G3 true: a scheduled workflow in this repository, on testnet, that opens the tracking issue, plus the reading of the body against the JSON it came from (roadmap 3.1, 3.2, G3, G4). | It is an operator task with a checklist, and the acceptance criterion is a link to a run. |
+| Trivial | Close 3.6: the first line of a body says "across 3 accounts read" when one of those three was never read. The renderer, its tests and the golden bodies move together (roadmap 3.6). | The bug is one sentence, the change is table-driven, and the evidence is a rendered fixture. |
 | Medium | The escape surface as a test matrix: hostile `home_domain`, data values and messages assembled into one fixture per markdown construct, each with the render it must not produce (roadmap 1.2 follow-on). | Pure, self-contained, and the failure mode is visible in the diff. |
-| Trivial | `docs/` page with a rendered example issue beside the report that produced it, with ledger and date. | Reading is the deliverable. |
+| Medium | A documentation site for the action (roadmap 2.9), with a rendered example issue beside the report that produced it. | Deferred by the maintainer on purpose, so it is work a stranger can own without a design argument. |
 | Medium | A second consumer: point this action at one of the organization's own repositories watching a real treasury policy, or write down that nobody uses it (roadmap 3.4, G5). | The honest version is two paragraphs and one decision. |
 | High | SARIF output so findings land in a repository's security tab (roadmap 9.1). | Needs a severity mapping nobody has agreed on and a SARIF writer in Gauge, so it is a design task first. |
 | Medium | Upstream to Gauge: the signer and threshold rule families this watch cannot report without (Gauge 3.1, and its 0.7 blocker). | The highest-value work in the organization is not in this repository, and a contributor should know that. |
@@ -84,8 +84,12 @@ list. They are the parts a maintainer has to own, because each is a decision dre
   Its first Scorecard run on the same morning reads **5.2** over 18 checks, with
   `Branch-Protection` at 4 because the ruleset requires the pull request and the two checks and
   no approving review.
-- [ ] G3: the action has run end to end on a runner and produced or updated an issue.
-- [ ] G4: that issue body read against the JSON it came from, every number traced.
+- [x] G3: the action has run end to end on a runner and produced or updated an issue. Closed
+  2026-11-04: `watch / audit` opened issue #6 (job 126475427542) and a second dispatch found and
+  left it alone (126477058944, `changed=false`).
+- [x] G4: that issue body read against the JSON it came from, every number traced. Closed the same
+  day against a report reproduced on the desk at `da656733`, which is 4646 bytes for the runner's
+  4646 bytes; `ROADMAP.md` G4 lists the field behind each number.
 - [ ] G5: somebody other than the maintainer has run it, or the README says nobody has.
 - [ ] `v0.1.0` tagged, so a consumer can pin a release rather than a commit nobody named.
 - [ ] A screen recording of a scheduled run and the issue it updated, which the program
