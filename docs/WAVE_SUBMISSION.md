@@ -36,9 +36,10 @@ Four reasons, in order of how long each takes to clear.
    dashboard-only facts.
 2. **The write has not run.** The action executed on a GitHub runner once, on 2026-11-04 in
    `self-check / action` at `b107b0f`: it built Gauge at the pinned sha, read a live testnet
-   account and rendered the body. It opened no issue, edited none, and has no tag. Gates G2 to
-   G5 in `ROADMAP.md` are open, G1 closed on 2026-11-04 when that pull request's push to `main`
-   passed `ci / python`, and G3 ("the action has run end to end and produced an
+   account and rendered the body. It opened no issue, edited none, and has no tag. Gates G3 to
+   G5 in `ROADMAP.md` are open: G1 closed on 2026-11-04 when pull request #1's push to `main`
+   passed `ci / python`, and G2 closed the same morning when `main` took its ruleset and the org
+   profile page gained its row. G3 ("the action has run end to end and produced an
    issue that matches its report") is the one every claim in the README depends on. The run
    proves the plumbing loads; the sentence a reviewer would actually be checking, that the
    issue stays current, is still unproven. A submission would then invite the reviewer to
@@ -77,7 +78,12 @@ list. They are the parts a maintainer has to own, because each is a decision dre
   126445751941 on CPython 3.11.18 with all 167 cases, and the gate ran green on that pull
   request. A green run on `main` is an observation, and since 2026-11-04 it is also a rule:
   ruleset 26515104 refuses a direct push to `main` and requires both checks.
-- [ ] G2: `main` protected, profile filled in, and the org profile row (`posture-sec/.github`).
+- [x] G2: `main` protected, profile filled in, and the org profile row (`posture-sec/.github`).
+  Closed 2026-11-04: ruleset 26515104 was observed refusing a direct push to `main`, the four
+  profile fields read back from the API, and the row landed in `posture-sec/.github` as `06d2db5`.
+  Its first Scorecard run on the same morning reads **5.2** over 18 checks, with
+  `Branch-Protection` at 4 because the ruleset requires the pull request and the two checks and
+  no approving review.
 - [ ] G3: the action has run end to end on a runner and produced or updated an issue.
 - [ ] G4: that issue body read against the JSON it came from, every number traced.
 - [ ] G5: somebody other than the maintainer has run it, or the README says nobody has.

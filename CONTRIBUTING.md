@@ -18,7 +18,9 @@ request and both `ci / python` and `roadmap-check / gate`, and a direct push to 
 observed refused with `push declined due to repository rule violations`. That is the machine
 version of the rules below, and it stops at exactly that: no approving review is required,
 because this repository has one maintainer and an approving review from a single maintainer is
-a formality, not a check.
+a formality, not a check. `.github/workflows/scorecard.yml` runs on every push to `main` and
+weekly, and publishes its result: it grades the workflows in this directory, so an edit to a
+`uses:` pin or a `permissions:` block moves a number that strangers can read.
 
 ## The rules, and what enforces each one
 
