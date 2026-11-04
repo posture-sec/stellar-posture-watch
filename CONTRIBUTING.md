@@ -101,7 +101,7 @@ dispatches recorded in `ROADMAP.md` 3.1 are what a reading of it looks like.
 
 ## Changing what the issue looks like
 
-The body is the product. Three constraints hold it together:
+The body is the product. Four constraints hold it together:
 
 - The fingerprint, not the message, is a finding's identity. Do not key change detection on
   text: Gauge rewords messages, and a reword would read as one finding resolved and another
@@ -111,6 +111,12 @@ The body is the product. Three constraints hold it together:
 - Every string that came from the chain, the policy file or the report goes through `escape()`
   or `fenced()` at the point it is written. A new table row that forgets it is a way for an
   account owner to format your issue.
+- A count in the summary sentence is derived from the same function as the rows it counts. 3.6
+  was the case for it: the first line counted `report["accounts"]` and called the result "read",
+  so a policy naming three accounts of which the endpoint had two printed "across 3 accounts
+  read" above a row that said `(not read)`. The sentence now takes its numerator from
+  `account_status`, which is the function that writes that column, and a new summary figure has
+  to be derived the same way rather than recomputed from a length.
 
 Golden-style bodies are written per test into a temporary directory; there is no `-update`
 flag, because a body that changes shape should be argued about in a pull request rather than
