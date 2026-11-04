@@ -1,5 +1,13 @@
 # stellar-posture-watch
 
+<p align="center">
+  <a href="https://github.com/posture-sec/stellar-posture-watch/actions/workflows/ci.yml"><img src="https://github.com/posture-sec/stellar-posture-watch/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+  <a href="https://github.com/posture-sec/stellar-posture-watch/actions/workflows/roadmap-check.yml"><img src="https://github.com/posture-sec/stellar-posture-watch/actions/workflows/roadmap-check.yml/badge.svg" alt="Roadmap check" /></a>
+  <a href="https://scorecard.dev/viewer/?uri=github.com/posture-sec/stellar-posture-watch"><img src="https://api.scorecard.dev/projects/github.com/posture-sec/stellar-posture-watch/badge" alt="OpenSSF Scorecard" /></a>
+  <a href="SECURITY.md"><img src="https://img.shields.io/badge/status-unaudited-orange" alt="Unaudited" /></a>
+  <a href="ROADMAP.md"><img src="https://img.shields.io/badge/status-functional%20alpha-orange" alt="Functional alpha" /></a>
+</p>
+
 A composite GitHub Action that runs `stellar-gauge` on a schedule and keeps one tracking
 issue current.
 
@@ -186,6 +194,30 @@ itself: job 126445751941 on `db8a5ed`, CPython 3.11.18, the same 167 cases green
 rather than on a branch. One thing is still not proven: G3 waits on an issue, because every run
 so far has opened or edited nothing. A green hosted run and a hosted write are different claims,
 and the sentences above are evidence for the first only.
+
+The path into `main` is enforced as of 2026-11-04: ruleset 26515104 refuses a direct push and
+requires both `ci / python` and `roadmap-check / gate`, and the refusal was observed rather than
+assumed. What it does not require is an approving review, because this repository has one
+maintainer; `ROADMAP.md` 2.7 states that limit.
+
+The first OpenSSF Scorecard result is the `scorecard / analysis` job 126460914087 on the push
+that pull request #3 merged into `main` at `8a308ac`, published 2026-11-04T08:00:51Z: **5.2**
+over 18 checks, which is the number in the badge above. Read it against what this repository
+actually is. `Dangerous-Workflow`, `Token-Permissions`, `CI-Tests`, `Binary-Artifacts`,
+`Vulnerabilities`, `Security-Policy` and `License` score 10, and the first two are the checks
+that matter for an action whose job is fetching and compiling another repository's Go code.
+`Branch-Protection` is 4 for the three warnings its siblings carry: the ruleset requires the
+pull request and the checks but no approver. `Pinned-Dependencies` is 6 because one `pip install`
+line in `ci.yml` installs the dev tools by requirement file rather than by hash, which is the
+same reason the corpus scores 6. `Maintained`, `Code-Review`, `Contributors`,
+`CII-Best-Practices`, `Dependency-Update-Tool` and `SAST` are 0 for six facts about the setup
+rather than the code: one maintainer reviewing only their own pull requests, a repository created
+this month, no OpenSSF badge registered, no update bot, and no code-analysis tool running on its
+commits. `Fuzzing` is a seventh zero and it is not about the setup: `render_report.py` parses a
+report whose contents came off the chain, and nothing hammers it. `Packaging` and `Signed-Releases` are -1 because
+nothing is published from this repository at all. None of the eighteen measures the sentence a
+consumer would most want, and G3 is still the row that says it has not happened.
+[Full result](https://scorecard.dev/viewer/?uri=github.com/posture-sec/stellar-posture-watch).
 
 ## Siblings and licence
 
