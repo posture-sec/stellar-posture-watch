@@ -116,7 +116,11 @@ The body is the product. Four constraints hold it together:
   so a policy naming three accounts of which the endpoint had two printed "across 3 accounts
   read" above a row that said `(not read)`. The sentence now takes its numerator from
   `account_status`, which is the function that writes that column, and a new summary figure has
-  to be derived the same way rather than recomputed from a length.
+  to be derived the same way rather than recomputed from a length. 3.7 is the same bug one line
+  lower: the section title `## Accounts read` sat above a row whose own Read cell said
+  `(not read)`, so the title is now `## Accounts asked about`, a name every row under it
+  satisfies, and a test refuses any account heading that claims read while a row beneath it
+  disagrees.
 
 Golden-style bodies are written per test into a temporary directory; there is no `-update`
 flag, because a body that changes shape should be argued about in a pull request rather than

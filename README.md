@@ -137,7 +137,7 @@ with --fail-on warn.
 ## Resolved since the previous run
 ## Current findings
 ## Accepted in the policy          (only when the policy has [[accept]] entries)
-## Accounts read                   (ledger, thresholds, signer and balance counts, flags, home domain)
+## Accounts asked about            (ledger, thresholds, signer and balance counts, flags, home domain)
 ## What this cannot see            (Gauge's own limits footer, verbatim)
 ```
 
@@ -150,6 +150,9 @@ The first line counts the accounts the run actually read. "across 1 account read
 about" means the policy named two and the endpoint had one of them; an account that is not
 there is a finding in its own right, not a read that came up empty, so it is left out of the
 numerator. When every account was read the sentence says so plainly and carries no denominator.
+The table beneath it is titled `## Accounts asked about` because it carries every account the
+policy named, read or not, and its `Read` column is where a run says what happened to each one.
+A heading that claimed "read" would contradict the row directly underneath it.
 
 Everything chain-derived goes through escaping before it reaches the body. A `home_domain`
 is chosen by the account's owner, and a tool that pastes it into markdown would let a

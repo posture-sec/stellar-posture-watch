@@ -121,7 +121,7 @@ class TestFirstRun(Renderer):
 
     def test_a_missing_account_does_not_borrow_the_zero_snapshot_as_data(self) -> None:
         _, body, _, _ = self.render("report-findings.json")
-        accounts = body.split("## Accounts read")[1].split("## What this cannot see")[0]
+        accounts = body.split("## Accounts asked about")[1].split("## What this cannot see")[0]
         row = next(line for line in accounts.splitlines() if ABSENT in line)
         self.assertIn("(not read)", row)
         self.assertNotIn("0/0/0", accounts)
@@ -202,7 +202,7 @@ class TestSummaryAccountCounts(Renderer):
 
     def test_the_counts_behind_the_sentence_agree_with_the_table(self) -> None:
         _, body, summary, _ = self.render("report-findings.json")
-        accounts = body.split("## Accounts read")[1].split("## What this cannot see")[0]
+        accounts = body.split("## Accounts asked about")[1].split("## What this cannot see")[0]
         rows = [line for line in accounts.splitlines() if line.startswith("| `")]
         read = [row for row in rows if row.rstrip().endswith("| read |")]
         self.assertEqual(len(read), 1, "one row the table itself calls read")
@@ -221,6 +221,86 @@ class TestSummaryAccountCounts(Renderer):
         code, again, summary, err = self.render("report-findings.json", previous)
         self.assertEqual(code, 0, err)
         self.assertFalse(summary["changed"])
+        fresh, carried = MARKER_RE.search(again), MARKER_RE.search(old)
+        if fresh is None or carried is None:
+            self.fail("a rendered body carries no state marker")
+        self.assertEqual(fresh.group(1), carried.group(1))
+
+
+class TestAccountsHeading(Renderer):
+    """3.7: a section title is a claim about every row underneath it.
+
+    3.6 fixed the summary sentence and left the heading below it, so one body could say
+    "across 1 account read of 2 asked about" and then title the same table "## Accounts read"
+    above a row whose own Read cell says "(not read)". The section is the set the denominator
+    names, so it takes the denominator's word; the Read column is where a run says what
+    happened to each account in it.
+    """
+
+    @staticmethod
+    def accounts_section(body: str) -> tuple[str, list[str]]:
+        """The heading above the account table and the data rows beneath it."""
+        head = next(
+            (line for line in body.splitlines() if line.startswith("## ") and "ccount" in line),
+            "",
+        )
+        if not head:
+            return "", []
+        before_footer = body.split("## What this cannot see")[0]
+        rows = [
+            line for line in before_footer.split(head, 1)[1].splitlines() if line.startswith("| `")
+        ]
+        return head, rows
+
+    def test_the_accounts_heading_names_the_set_the_sentence_counts(self) -> None:
+        cases = [
+            ("report-findings.json", 2),
+            ("report-accepted.json", 2),
+            ("report-network-mismatch.json", 1),
+            ("report-clean.json", 1),
+            ("report-warn.json", 1),
+        ]
+        for name, asked in cases:
+            with self.subTest(fixture=name):
+                _, body, _, err = self.render(name)
+                head, rows = self.accounts_section(body)
+                self.assertEqual("## Accounts asked about", head, f"{name}: {err}")
+                self.assertEqual(len(rows), asked, f"{name}: rows {rows}")
+
+    def test_a_heading_may_claim_read_only_if_every_row_under_it_was_read(self) -> None:
+        for name in sorted(p.name for p in FIXTURES.glob("report-*.json")):
+            with self.subTest(fixture=name):
+                _, body, _, _ = self.render(name)
+                head, rows = self.accounts_section(body)
+                unread = [row for row in rows if not row.rstrip().endswith("| read |")]
+                if not unread:
+                    continue
+                self.assertIsNone(
+                    re.search(r"\bread\b", head, re.IGNORECASE),
+                    f"{name}: {head!r} titles {len(unread)} row(s) the table does not call read",
+                )
+
+    def test_a_row_the_table_calls_not_read_still_appears_under_the_heading(self) -> None:
+        _, body, _, _ = self.render("report-findings.json")
+        _, rows = self.accounts_section(body)
+        unread = [row for row in rows if not row.rstrip().endswith("| read |")]
+        self.assertEqual(len(unread), 1, "the absent account is in scope, so it is in the table")
+        self.assertIn(ABSENT, unread[0])
+        self.assertIn("(not read)", unread[0])
+
+    def test_the_renamed_heading_is_not_read_as_changed_posture(self) -> None:
+        # D-07 again, for a wording change: detection keys on the fingerprint, so the live
+        # body titled "## Accounts read" must still match a render titled "## Accounts
+        # asked about" for the same report, marker to marker.
+        _, body, _, _ = self.render("report-findings.json")
+        old = body.replace("## Accounts asked about", "## Accounts read", 1)
+        self.assertTrue(old != body, "the replacement has to have found the heading")
+        previous = self.tmp / "previous.md"
+        previous.write_text(old, encoding="utf-8")
+        code, again, summary, err = self.render("report-findings.json", previous)
+        self.assertEqual(code, 0, err)
+        self.assertFalse(summary["changed"])
+        self.assertIn("## Accounts asked about", again)
         fresh, carried = MARKER_RE.search(again), MARKER_RE.search(old)
         if fresh is None or carried is None:
             self.fail("a rendered body carries no state marker")
@@ -246,7 +326,7 @@ class TestChangeDetection(Renderer):
         self.assertTrue(summary["changed"])
         self.assertEqual((summary["new"], summary["resolved"]), (0, 1))
         self.assertIn("Posture changed since the previous run", body)
-        current = body.split("## Current findings")[1].split("## Accounts read")[0]
+        current = body.split("## Current findings")[1].split("## Accounts asked about")[0]
         self.assertNotIn(ABSENT, current)
         resolved = body.split("## Resolved since the previous run")[1].split("## Current")[0]
         self.assertIn(ABSENT, resolved)
