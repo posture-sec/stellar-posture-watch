@@ -474,7 +474,7 @@ class TestBodyLimit(Stubbed):
             ]
         )
         head = "intro\n\n## Current findings\n\n"
-        tail = "\n\n## Accounts read\n\n| a |\n| - |\n" + ("pad " * 200 + "\n") * 8
+        tail = "\n\n## Accounts asked about\n\n| a |\n| - |\n" + ("pad " * 200 + "\n") * 8
         return head + table + tail
 
     def test_a_short_body_is_returned_unchanged(self) -> None:
@@ -491,7 +491,7 @@ class TestBodyLimit(Stubbed):
         self.assertGreater(removed, 0)
         self.assertIn("more finding(s) truncated here", trimmed)
         self.assertIn("## Current findings", trimmed)
-        self.assertIn("## Accounts read", trimmed)
+        self.assertIn("## Accounts asked about", trimmed)
 
     def test_a_body_that_loses_rows_says_how_many_in_the_log(self) -> None:
         self.env()

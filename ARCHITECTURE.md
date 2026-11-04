@@ -52,7 +52,7 @@ Load bearing, checked in `read_report` and `collect_findings` (`scripts/render_r
 | `accounts[].findings[].message` | string, escaped | Only display; an absent message renders empty rather than failing. |
 | `accounts[].findings[].accepted` | `true` splits it out | Anything that is not exactly `true` counts as open, which is the unsafe direction. |
 | `accounts[].missing`, `accounts[].skipped` | optional | A missing account with no findings is not a clean account; see `account_status`. |
-| `accounts[].snapshot.{thresholds,signers,balances,flags,home_domain}` | display only | Absent or partial renders as zeros, `none` or `(none)` in the Accounts table. |
+| `accounts[].snapshot.{thresholds,signers,balances,flags,home_domain}` | display only | Absent or partial renders as zeros, `none` or `(none)` in the `## Accounts asked about` table. That heading names the whole set the run was asked about, so the `Read` column written by `account_status` stays the only place saying whether a row was read (3.6, 3.7). |
 
 Deliberately not load bearing: `accounts[].snapshot.sequence`, `sponsor`, `endpoint`,
 `balances[].*` beyond their count, and `evidence`. Gauge's report carries them and the

@@ -362,7 +362,9 @@ def render(args: argparse.Namespace) -> tuple[str, dict[str, object]]:
             "the policy file, so they do not count as open and do not reappear in the lists "
             f"above.\n\n{finding_rows(accepted)}"
         )
-    parts.append(f"\n## Accounts read\n\n{account_rows(report)}")
+    # 3.7: the heading takes the summary's word for the whole set. "## Accounts read" titled a
+    # table whose own Read column says "(not read)", the same claim 3.6 removed from the sentence.
+    parts.append(f"\n## Accounts asked about\n\n{account_rows(report)}")
     parts.append(f"\n## What this cannot see\n\n> {escape(report['limits'])}\n")
     parts.append(
         "\n---\n\n"
