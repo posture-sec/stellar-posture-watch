@@ -10,9 +10,9 @@
 # D-02 in ROADMAP.md keeps it that way. If a workflow here ever needs `pip install` outside
 # requirements-dev.txt, that is a decision to record before it is a line to merge.
 #
-# This run is the evidence for gate G1. Until it is green on GitHub the roadmap rows that
-# cite it stay unticked whatever the local output says, and a green run here is not branch
-# protection: 2.7 is the task that makes these checks required.
+# This run is the evidence for gate G1, which closed 2026-11-04 when it was read green on the
+# push `main` received from pull request #1. What a green run here is not: branch protection.
+# Nothing requires this check on `main` yet, and 2.7 is the task that makes it required.
 
 name: ci
 
