@@ -81,9 +81,12 @@ where it would be visible in a step log and in `ps`.
 jobs green on pull request #1 at `b107b0f` on 2026-11-04, including `self-check / action`,
 which builds Gauge at the pinned sha and audits a live testnet account, and `ci / python` green
 on the resulting push to `main` at `db8a5ed`. Running it is not the same as its write having
-been exercised: that job ran with `dry-run: true`, `main` has no required checks yet, and no
-issue has been opened or edited by this action. `ROADMAP.md` gates G3 and G2 are the rows that
-will change this sentence.
+been exercised: that job ran with `dry-run: true`, and no issue has been opened or edited by
+this action. `ROADMAP.md` gate G3 is the row that will change this sentence. What is enforced
+now is the path into `main`: ruleset 26515104 refuses a direct push and requires both
+`ci / python` and `roadmap-check / gate`, so anything on the default branch arrived as a pull
+request with those two green. It does not require a second reader, and with one maintainer it
+cannot: `ROADMAP.md` 2.7 states that limit rather than hiding it.
 
 **The renderer is only as strict as its tests.** 167 cases cover the refusals above, and the
 ones that matter for the wire were observed against a loopback server rather than asserted

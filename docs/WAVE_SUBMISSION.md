@@ -75,7 +75,8 @@ list. They are the parts a maintainer has to own, because each is a decision dre
 - [x] G1: `ci / python` and `roadmap-check / gate` green on `main`, observed rather than local.
   Closed 2026-11-04: pull request #1's push to `main` (`db8a5ed`) passed `ci / python` as job
   126445751941 on CPython 3.11.18 with all 167 cases, and the gate ran green on that pull
-  request. A green run on `main` is an observation, not a rule; `main` is still unprotected.
+  request. A green run on `main` is an observation, and since 2026-11-04 it is also a rule:
+  ruleset 26515104 refuses a direct push to `main` and requires both checks.
 - [ ] G2: `main` protected, profile filled in, and the org profile row (`posture-sec/.github`).
 - [ ] G3: the action has run end to end on a runner and produced or updated an issue.
 - [ ] G4: that issue body read against the JSON it came from, every number traced.

@@ -11,8 +11,10 @@
 # requirements-dev.txt, that is a decision to record before it is a line to merge.
 #
 # This run is the evidence for gate G1, which closed 2026-11-04 when it was read green on the
-# push `main` received from pull request #1. What a green run here is not: branch protection.
-# Nothing requires this check on `main` yet, and 2.7 is the task that makes it required.
+# push `main` received from pull request #1. Since that day the check is also required: ruleset
+# 26515104 binds `main`, refuses a direct push, and lists `ci / python` and
+# `roadmap-check / gate` as required status checks, so a green run here is a gate and not only
+# an observation. It does not require an approving review, and ROADMAP.md 2.7 says so.
 
 name: ci
 
