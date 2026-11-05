@@ -15,6 +15,15 @@
 #
 # Permissions are the minimum a dry run needs: the token cannot write issues, so a pull
 # request that edits this file and the action at once gains nothing but a wasted runner.
+#
+# The second job is the exit-3 probe (task 1.9). `ARCHITECTURE.md` section 7 claims that a
+# read which fails outright produces no report, no body and no issue update, and nothing in
+# `ci / python` can show it, because the refusal lives in the handoff between two scripts
+# over `$RUNNER_TEMP` files. So this job hands the action a policy whose endpoint cannot be
+# resolved and then asserts the shape of the wreckage: the audit step ran, wrote nothing,
+# and the renderer never made a body for the syncer to send. `continue-on-error` is what
+# keeps the job green when the probe behaves, and the assertions are what turn it red when
+# it fails for the wrong reason, which is the difference between evidence and noise.
 
 name: self-check
 
@@ -49,3 +58,55 @@ jobs:
           config: example/gauge.toml
           fail-on: warn
           dry-run: true
+
+  exit3:
+    name: self-check / exit-3 probe
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The same pinned sha as the job above, so the only variable is the policy file. The
+      # probe policy is shaped to pass every check before the fetch, which
+      # `tests/test_validate_inputs.py` holds a test for; `.invalid` is a domain no resolver
+      # answers for, so the run has to stop at `internal/run` returning no report.
+      # `dry-run: true` means this step could not write an issue whatever it did, and the
+      # assertions below are about the files, not about the flag.
+      - name: Audit a policy whose endpoint cannot be read
+        id: probe
+        uses: ./
+        continue-on-error: true
+        with:
+          gauge-ref: da656733fff839d5cf20f795460f4365a7254257
+          config: tests/fixtures/policy-unreachable-endpoint.toml
+          fail-on: warn
+          dry-run: true
+
+      # Four claims, each ruling out a way the job could go green or red without proving
+      # 1.9: the run must have failed, the audit step must have run at all (a policy this
+      # script refuses dies in step one and writes no report file either), that run must
+      # have written an empty stdout, and the renderer must have stopped before producing a
+      # body. The exit code is checked when the failed composite step still exports it, and
+      # not required when it does not, because the four file claims already fix the reason.
+      - name: Require that the unreadable read stopped before any body existed
+        env:
+          OUTCOME: ${{ steps.probe.outcome }}
+          GAUGE_EXIT: ${{ steps.probe.outputs.exit-code }}
+        run: |
+          set -uo pipefail
+          fail() {
+            echo "exit-3 probe: $*" >&2
+            exit 1
+          }
+          [ "$OUTCOME" = "failure" ] || fail "the run survived an endpoint that cannot be read"
+          [ -f "$RUNNER_TEMP/report.json" ] \
+            || fail "no report file exists, so the audit step never ran and something else failed"
+          [ ! -s "$RUNNER_TEMP/report.json" ] \
+            || fail "gauge wrote $(wc -c < "$RUNNER_TEMP/report.json") bytes of report against an unreadable endpoint"
+          [ ! -e "$RUNNER_TEMP/issue-body.md" ] \
+            || fail "a body was rendered from a run that could not read anything"
+          if [ -n "$GAUGE_EXIT" ] && [ "$GAUGE_EXIT" != "3" ]; then
+            fail "gauge exited $GAUGE_EXIT, and 3 is the code this probe is about"
+          fi
+          echo "exit-3 probe: no report, no body, no issue touched, as section 7 claims"
