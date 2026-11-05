@@ -15,20 +15,19 @@ G4 are closed below, on the runs and on the reading of the body against the repo
 and 3.4 did not close it: one maintainer wrote both callers. Every claim here names the run or
 the file it was read from.
 
-Last updated: 2026-11-05T09:07Z (the eleven issues published this morning now carry one shape
-rather than three, because a contributor who picked up two of them learned no format at all. The
-organization's `ISSUE_CONTRACT.md` in `posture-sec/.github` defines PI-1: a marker line naming the
-repository, the roadmap row, the kind and the wave tier, then nine numbered sections in the order a
-person starting cold needs them. Two rules this repository already holds are written into the shape
-rather than added to it: the roadmap row is the source of truth, so a body quotes its row and a
-disagreement is corrected in `ROADMAP.md` first, and a claim names the run that produced it or says
-it is local, so every body splits proof into the half a desk can produce and the half only a runner
-carries. #15 to #25 were rewritten to it and each kept its title and its labels; #6 stayed as it is,
-because its body is `render_report.py`'s output and the D-07 marker inside it is what the next run
-believes it already saw. `CONTRIBUTING.md` states the contract, `.github/ISSUE_TEMPLATE/task.yml`
-prefills the nine headings, and the issue picker links the file. Nothing in `action.yml`, the four
-scripts or their tests moves, so the suite is 177 here exactly as on `main`, and the readiness total
-is unchanged at 34 of 39.)
+Last updated: 2026-11-05T10:49Z (the escape surface has its matrix and the matrix found two holes.
+Task 9.5 asked for one case per construct the renderer emits into, each asserting the render it
+must not produce, and nineteen cases exist beside the hostile-string test rather than replacing
+it. Four of them failed against `main`: a line break inside a `message` or a `home_domain` ended
+the table row and the remainder rendered as a row the report never contained, and a mention
+inside a fenced rule id still notified because `escape()` broke mentions and `fenced()` did not.
+Both are fixed in `render_report.py`, which is why the protected path moves: `cell()` collapses a
+break to the space it stood for, and `fenced()` breaks mentions the same way `escape()` does.
+Fifteen cases already held and are pinned, including the one I expected to fail and had to check
+against GitHub's renderer before writing: a trailing backslash does not escape a closing backtick,
+so `fenced()` needed no change for it. Every case asserts the state marker still decodes to the run
+that wrote it, and a value carrying the marker text cannot shadow the real one. Suite 177 to 196,
+section 9 to 1 of 6, readiness unchanged at 34 of 39 and the gates at 4 of 5.)
 
 ## 1. What this repository is
 
@@ -631,12 +630,20 @@ it is why this repository's value right now is the plumbing rather than the find
   contract, and a second file needs a state marker per file. **Issue:** #22.
 - [ ] **9.4** Pinning Gauge by release tag once Gauge is tagged. Waiting on Gauge's v0.1.0,
   which does not exist yet; D-01 stays until it does. **Issue:** #23.
-- [ ] **9.5** The escape surface as a test matrix. Added 2026-11-05 out of the wave packet's
+- [x] **9.5** The escape surface as a test matrix. Added 2026-11-05 out of the wave packet's
   Medium tier rather than out of a failure: `render_report.py` builds an issue body out of strings
   that came off the chain, 1.2 proves the sanitizer holds one input at a time, and nothing here
   states, per markdown construct, the render a hostile value must not produce. The case that
   matters most is a `home_domain` that can close D-07's state comment, because that comment is
   what the next run believes it already saw. **Issue:** #24.
+  Closed 2026-11-05: `TestHostileStrings` gains a `TestEscapeMatrix` class of nineteen cases, one
+  per construct, each asserting the render that must not appear beside the escaped render that
+  must. Two holes were found against `main` and fixed with the tests: a line break in a `message`
+  or `home_domain` split the row and injected a row the report never had (`cell()` now collapses
+  it to a space), and a mention in a fenced value still notified (`fenced()` now breaks mentions
+  as `escape()` already did). Removed either fix and the cases that cover it fail; the state
+  marker decodes unchanged under every case. `render_report.py` moves, so the owner's review is
+  required per section 8 of the issue. Issue: #24.
 - [ ] **9.6** The Scorecard gaps this repository can close. Added 2026-11-05 from 2.8's own
   reading, which named four checks and left them as numbers: `Pinned-Dependencies` 6 for the
   unpinned `pip install -r` line in `ci.yml`, `Dependency-Update-Tool` for no
@@ -709,7 +716,7 @@ it is why this repository's value right now is the plumbing rather than the find
 | 1 | The action | 11 | 11 | 100% |
 | 2 | Public shape | 11 | 13 | 85% |
 | 3 | Real use | 5 | 8 | 62% |
-| 9 (backlog) | Backlog, not scheduled | 0 | 6 | 0% |
+| 9 (backlog) | Backlog, not scheduled | 1 | 6 | 17% |
 | **All phases** | **Readiness total** | **34** | **39** | **87%** |
 | Gates | G1 to G5 | 4 | 5 | 80% |
 <!-- PROGRESS:END -->
@@ -736,6 +743,7 @@ it is why this repository's value right now is the plumbing rather than the find
 | 2026-11-05 | The sentence in 2.10 that said the action had only ever run in dry run is false and is replaced with the runs. It was written when G3 was still open; `watch / audit` 126475427542 opened issue #6 from a live testnet read on 2026-11-04, 126477058944 and 126543269815 found the finding list unchanged and left it alone, and 126544009391 rewrote it at 11:28:15Z, so G3 and G4 have been closed for a day and the row's own reason for holding the tag went stale with them. What remains is stated as what it is: the tag is the owner's judgement about what a release commits a consumer to, and the done-when's second half is 3.4. No code, test or document other than this file moves, so the suite stays 177 and the table stays 33 of 39 with 4 of 5 gates. It was found by grepping the shipped documents for claims about the write path rather than by a run, which is the cheapest way to catch a row that a later piece of work left behind. | 2.10 (text) |
 | 2026-11-05 | 3.4 closes on a runner that is not this repository's. `posture-sec/stellar-account-fixtures` merged pull request #28 as `71dfffc` at 08:08:42Z, and its `.github/workflows/posture-watch.yml` is the first call of this action written outside this repository: `uses: posture-sec/stellar-posture-watch@deaf7dcc482525c4583660643cf8251146afb466`, the pinned form rather than the dogfood's `uses: ./`, against that repository's own `.posture/gauge.toml` and the one testnet account its corpus captures. Job 127127136762 at 08:09:18Z ran it with `dry_run` ticked and printed `gauge exited 0 after writing 2346 bytes of report`, then `render_report: wrote /home/runner/work/_temp/issue-body.md (1313 characters); 0 open, 0 high, 0 warn, 0 accepted`, then `sync_issue: dry run, would open an issue titled 'Fixture account drift'`. Job 127127900716 at 08:11:19Z, flag off, printed `sync_issue: opened issue #29 as the baseline` and `gauge exited 0, tracking issue 29, changed=true`. Job 127128709833 at 08:13:13Z found that issue by its state marker, rendered 1312 characters of `no change since the previous run`, said `issue #29 needs no change, left alone` and reported `changed=false`; the issue reads back through the API at 1313 characters, label `fixture-drift`, `updated_at` equal to `created_at` at 08:11:50Z and 0 comments. So two shapes this action has never produced on a runner arrived in one afternoon: a clean report, whose every findings section says `None.`, and `gauge exited 0`, where every hosted run here and there before this one exited 1 on the `acct-missing` the dogfood policy declares on purpose. The runner also proved the pin before using it, printing `Download action repository 'posture-sec/stellar-posture-watch@deaf7dcc...' (SHA:deaf7dcc...)`, which is the evidence 2.10's second done-when half waits on, so that row loses the clause claiming no other repository pins the ref. G5 does not move with 3.4 and says why in its own text: both callers are the same author, so the code path doubled and the reader count did not. Four stale sentences came out of the same grep that found the 2.10 one. `docs/WAVE_SUBMISSION.md` gave "no consumer but this repository" as a reason not to apply, listed a second consumer as work left for a stranger, said `three of those six` about a checklist whose counts had moved, and closed with `written, tested, documented, and unexecuted`, which stopped being true the morning issue #6 opened; its header also still said five pull requests and one tracking issue where the API now answers twelve merged and two kept. `README.md`'s Usage paragraph names the pinned consumer as the worked example to copy, because until now the only caller in this repository's own docs was the one with no pin. Nothing here changed to produce any of this: no script, no test, no workflow, so the suite stays 177 and the table below regenerates to Phase 3 at 5 of 8 and the readiness total at 34 of 39, with the gates unchanged at 4 of 5. | 3.4, 2.10 (text) |
 | 2026-11-05 | The backlog goes public on a date rather than on an approval, which is D-10. The program page read this morning shows Stellar Wave #11 upcoming from November 18 to 25 with a $75,000 budget and a cap of five repositories per contributor and five per organization, so the clause in 3.5 that nothing wave-shaped is published before the organization's application is approved was the last sentence here waiting on a window that now has a date in it. `CONTRIBUTING.md` has said since the scaffold that every open roadmap task gets one issue carrying that task's done-when as its acceptance criteria, and it had never happened: the repository had one open issue, the tracking one, and it has twelve now. Eleven are the open rows of sections 5 and 9, numbered #15 to #25, each with a `type:`, an `area:` and a `complexity:` tier beside it, and six of them carry the label `Stellar Wave` as this repository's stand-in for the program's initiative identifier until the maintainer console says otherwise. Issue #6 stays what it always was, an artifact a schedule writes rather than work to take. Two roadmap rows are new because two of the issues described real work no task tracked: 9.5, the markdown escape surface as a fixture matrix, and 9.6, the four Scorecard checks 2.8's own run printed and named, hashed dev dependencies, an update tool, an analyzer and a matrix or fuzz target for the renderer. `docs/WAVE_SUBMISSION.md` gained an Issue column and lost its first reason: "no cycle is open", dated 2026-11-02 from the Gauge packet, is now a cycle thirteen days out and a decision about which of four repositories takes a capped slot, which is the owner's act and not this file's. The gate rows stayed out of the tracker as `CONTRIBUTING.md` requires, so G5 has no issue and the reason it cannot have one is written into the row instead. Nothing in `action.yml`, the three scripts or their tests moves, so the suite is 177 here exactly as on `main`, and the regenerated table shows section 9 at 0 of 6 with the readiness total unchanged at 34 of 39, because `roadmap_progress.py` keeps the backlog outside that sum by design and this row says so rather than claiming a dip. | 3.5 (part), 9.5, 9.6 (added) |
+| 2026-11-05 | The escape surface is a matrix, and it found two holes on the first run. 9.5 wanted a case per construct the renderer emits into, asserting the render a hostile value must not produce rather than proving `escape()` returned something; nineteen cases now sit beside `TestHostileStrings`, each paired with its escaped form, and each carrying the state-marker check so the marker is exercised by every case instead of by a fixture. Four failed against `main`. A newline inside a `message` or a `home_domain` ended the row and the rest of the value rendered as a row the report never contained, which a reader cannot tell from a real one; `cell()` collapses a break to the space it stood for and the three cases cover message, carriage return and the accounts table. A mention inside a fenced rule id also still notified, because `escape()` broke mentions and `fenced()` did not; `fenced()` now calls the same substitution. Fifteen cases already held and are pinned rather than fixed, and one of them was checked against GitHub's own renderer before it was written: a trailing backslash does not escape a closing backtick in a code span, so the case asserts the pass instead of demanding a change to `fenced()` for it. Neither fix touches an existing expectation, the body keeps its shape, and `escape()` itself is unchanged so the prose call sites still see line endings. Suite 177 to 196, section 9 to 1 of 6, readiness unchanged at 34 of 39 and gates at 4 of 5. `render_report.py` is a protected path and needs the owner's review. | 9.5 |
 | 2026-11-05 | Every open issue in this repository moves onto one page shape, because three repositories had three formats and a contributor who picked up two of them learned none. `posture-sec/.github` carries `ISSUE_CONTRACT.md` now: a marker line naming the repository, the roadmap row, the kind and the wave tier, then nine numbered sections in the order a person starting cold needs them, with the two rules this organization already holds written into the shape. The row is the source of truth, so a body quotes it and names the row a disagreement gets fixed in. And a claim names its run or says it is local, so every body splits proof into the half a desk can produce and the half only a runner carries. Eleven issues here were rewritten to it, #15 to #25, and the two bodies a schedule writes stayed out: #6's shape belongs to `render_report.py` and to the D-07 marker inside it, and editing it by hand would be overwritten by the next run anyway. `CONTRIBUTING.md` states the contract in its `## Issues` section, `.github/ISSUE_TEMPLATE/task.yml` prefills the nine headings, and the issue picker now links the contract itself. No script, test or workflow moves. | 3.5 (part), docs only |
 
 ## 9. Last updated line format
