@@ -151,7 +151,10 @@ written by the code that read the chain, so a corrected sentence reaches an exis
 the next change in posture or not at all. `watch.yml` therefore takes a `refresh_body` box on a
 manual dispatch, which is the action's `update-on-no-change` input and nothing else. It rewrites
 the body and posts no comment, and it moves the header date without moving the posture. That is
-the cost, and it is why the scheduled run never has it on.
+the cost, and it is why the scheduled run never has it on. Issue #6 is the proof it works: its
+first line now reads "across 2 accounts read of 3 asked about" and its account section is titled
+`## Accounts asked about`, on the same finding and the same state marker the run that opened it
+wrote.
 
 The first line counts the accounts the run actually read. "across 1 account read of 2 asked
 about" means the policy named two and the endpoint had one of them; an account that is not
