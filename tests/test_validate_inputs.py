@@ -11,6 +11,7 @@ import base64
 import io
 import os
 import re
+import shutil
 import sys
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
@@ -29,6 +30,9 @@ PIN = "da656733fff839d5cf20f795460f4365a7254257"
 ACCOUNT = "GBQHXYDEJD6NEIUQ5NYDBVNTRCACJXMLO32JUQHBGO524NMVYOMIN5CP"
 ISSUER = "GDSX2WUFUT7KCMTUNG3IUQWIUQSC4XNKQ5NTGEZRKLTMLCSJTCUVBEVG"
 MULTIPART = "MDAH5J2NNNMS6PGXA4APQF6KZ2B5VH4VQ3H5T6XQF2M7K2H5T6XQF2M7K"
+# The policy the `self-check / exit-3 probe` job hands to the action. This test only reads
+# its shape, so it stays inside the rule that no test here touches the network.
+PROBE_POLICY = ROOT / "tests" / "fixtures" / "policy-unreachable-endpoint.toml"
 
 
 def strkey(version_byte: int, body: bytes) -> str:
@@ -366,6 +370,29 @@ class TestSeedShapeDetection(unittest.TestCase):
     def test_two_tokens_in_one_blob_produce_two_messages(self) -> None:
         text = f"{fake_seed()}\n{lookalike_seed()}"
         self.assertEqual(len(validate_inputs.seed_findings(text)), 2)
+
+
+class TestProbePolicy(Harness):
+    """`tests/fixtures/policy-unreachable-endpoint.toml` has to fail at the fetch, not here.
+
+    The probe job asserts that a run against this policy writes no report and renders no
+    body. If the policy were refused by this script the job would still go red, for a
+    reason that says nothing about an unreadable endpoint, so the file's shape is a test
+    rather than a comment.
+    """
+
+    def test_the_probe_policy_passes_every_check_before_the_network(self) -> None:
+        shutil.copy(PROBE_POLICY, "gauge.toml")
+        code, out, err = self.run_cli(config="gauge.toml")
+        self.assertEqual(code, 0, err)
+        self.assertIn("gauge-ref is pinned at da65673", out)
+        self.assertEqual(err, "")
+
+    def test_the_probe_endpoint_cannot_be_resolved(self) -> None:
+        # RFC 6761 reserves `.invalid`, and this script only requires https plus a host,
+        # so the unreachable half is the file's own claim rather than anything it enforces.
+        text = PROBE_POLICY.read_text(encoding="utf-8")
+        self.assertIn('endpoints = ["https://horizon.invalid"]', text)
 
 
 if __name__ == "__main__":

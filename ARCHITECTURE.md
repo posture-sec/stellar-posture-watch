@@ -176,6 +176,14 @@ the intended behavior: a broken read must not look like a fixed account. Exit 2 
 are therefore both loud and both inert, and the artifact in the run history is where the
 reason lives.
 
+The exit-3 row is the one this repository can prove rather than describe. Every pull request
+runs `self-check / exit-3 probe`, which hands the action
+`tests/fixtures/policy-unreachable-endpoint.toml` and then requires the shape above: the
+audit step ran, so `report.json` exists, it wrote nothing to stdout, so that file is empty,
+and the renderer refused, so there is no `issue-body.md` for the syncer to be pointed at. The
+handoff is the thing under test, not the refusal inside either script, which is why it is a
+job on a runner and not a case in `ci / python`.
+
 ## 8. What is deliberately not here
 
 No detection logic, so no rule can be argued with here; take it to Gauge. No SARIF, no

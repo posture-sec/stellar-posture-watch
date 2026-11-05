@@ -10,16 +10,15 @@ because `ci / python` has been read green on the merge commit of pull request #1
 `main`. Gates G3 and G4 are closed below, on the runs and on the reading of the body against
 the report. Every claim here names the run or the file it was read from.
 
-Last updated: 2026-11-04T11:39Z (3.8's two dispatches ran from `main` at `2f5e1ec`, the merge of the
-pull request that added the input. Unticked, `watch / audit` job 126543269815 renders
-`update-on-no-change: false` and prints `issue #6 needs no change, left alone` with the issue still
-at 08:36:02Z; ticked, job 126544009391 renders true and prints `updated issue #6 without a comment`
-on the same 2315-character render and the same 400-character state marker saved from the body
-beforehand. So issue #6 opens with "across 2 accounts read of 3 asked about" above a section titled
-`## Accounts asked about`, which is 3.6 and 3.7 published at last. The row stays unticked for one
-clause of its done-when: only Tuesday's scheduled run, 2026-11-10 at 05:23 UTC, shows the fallback
-standing in for an event with no `inputs` context at all. Counts stay 32 of 39 with 4 of 5 gates, and
-the changelog table regained a blank line that had pushed the 3.8 row out of it.)
+Last updated: 2026-11-05T07:43Z (1.9 is closed and it closed on a runner, in the pull
+request that built the probe: `self-check / exit-3 probe` job 127116146401 ran the action against
+`tests/fixtures/policy-unreachable-endpoint.toml`, printed `gauge exited 3 after writing 0 bytes
+of report`, watched `render_report` refuse the empty file at exit 2, recorded
+`probe.write; outcome=skipped`, and still went green because its own assertions read
+`OUTCOME: failure` and `GAUGE_EXIT: 3`. Issue #6 did not move: `updated_at` is still
+2026-11-04T11:28:15Z with 0 comments, so the no-update half is a skipped step rather than the
+dry-run flag. Phase 1 is now 11 of 11 and the readiness total 33 of 39, with 4 of 5 gates. The
+probe is a permanent job, so every pull request from here re-reads the same claim.)
 
 ## 1. What this repository is
 
@@ -125,6 +124,15 @@ wrote and with no comment posted. The row stays unticked for one clause of its o
 `scheduled` run shows what an event with no `inputs` context does with the new fallback, and that is
 Tuesday 2026-11-10 at 05:23 UTC.
 
+1.9's gap was not a missing behaviour but a missing failure. `ARCHITECTURE.md` section 7 has
+always said an unreadable endpoint leaves no report, no body and no issue update, and
+`ci / python` can only test each script on its own side of the `$RUNNER_TEMP` handoff, so the
+claim was one a reader had to take on trust. The probe in the task row is now a second job in
+`self-check.yml`, which means every pull request pays about a minute of Go build to make that
+row checkable, and the assertions are written so a run that dies before the audit step reads
+as a failure rather than as a pass. It has been read once, in the pull request that added it:
+job 127116146401 took 22 seconds, refused to render an empty report and skipped the write
+step, and issue #6 did not move.
 The ordering that held this repository back was G3, then G4, and both are now closed. A green
 hosted CI run told us the code builds and the suite passes on somebody else's machine; an
 end-to-end run had to tell us whether the issue body is worth reading, and issue #6 does: one
@@ -216,14 +224,36 @@ it is why this repository's value right now is the plumbing rather than the find
   a deterministic render over a testnet account that has not moved should look like. What this
   does not do is G3: `dry-run: true` means no issue was created, here or on a runner, so the
   end-to-end write has never happened anywhere.
-- [ ] **1.9** Refuse a policy whose accounts no consumer will read. Done-when: a policy
-  file with an `[[account]]` whose id is valid but which the run cannot reach produces the
-  exit 3 path and no issue update. The behaviour is coded; it has not been observed on a
-  runner against a deleted account. Part of the distinction was observed on 2026-11-04: the
-  first account in `example/gauge.toml` is a valid checksummed address the endpoint does not
-  have, and the runner reported it as one high finding with exit 1 and still wrote the body,
-  which is the correct half. The other half, an endpoint that cannot be read at all, is exit 3
-  and no body, and no run here has produced it.
+- [x] **1.9** Refuse a policy whose accounts no consumer will read. Done-when: a policy file
+  whose endpoint cannot be read at all produces the exit 3 path and no issue update, observed
+  on a runner. Half of this was already read: the first account in `example/gauge.toml` is a
+  valid checksummed address the endpoint does not have, and the runner reported it as one high
+  finding with exit 1 and still wrote the body, which is the correct outcome for an absence.
+  The other half is the one no desk can produce, because it needs a fetch that genuinely fails
+  rather than a server that answers with nothing. It is now built rather than described.
+  `tests/fixtures/policy-unreachable-endpoint.toml` points at `https://horizon.invalid`, the
+  top-level domain RFC 6761 reserves and no resolver answers for, and `self-check.yml` gained a
+  second job, `self-check / exit-3 probe`, which runs the action against it with
+  `continue-on-error: true` and then requires four things: the step failed, `report.json`
+  exists, `report.json` is empty, and `issue-body.md` does not exist. The second claim is what
+  keeps the probe honest, because a policy `validate_inputs.py` refuses dies before the audit
+  step and writes no report either, which is the same green-looking shape for the wrong reason.
+  So that fixture has two shape tests in `tests/test_validate_inputs.py`, one that it passes
+  every check before the network and one that its endpoint is the reserved domain, the job's
+  own assertions are written out in `CONTRIBUTING.md`, and `ARCHITECTURE.md` section 7 says
+  which of its rows a job now proves rather than claims. Closed on 2026-11-05 by the probe's
+  own job in the pull request that added it, `self-check / exit-3 probe` 127116146401:
+  `gauge exited 3 after writing 0 bytes of report`, then `sync_issue: found issue to update
+  (#6)` from the read-only find step, then `render_report: refused: report
+  /home/runner/work/_temp/report.json: is empty` and exit code 2, then
+  `probe.write; outcome=skipped`. The failed step still exported its outputs, so the assertion
+  read `OUTCOME: failure` and `GAUGE_EXIT: 3`, printed `exit-3 probe: no report, no body, no
+  issue touched, as section 7 claims` and left the job green. Gauge's stderr went up as the
+  `gauge-diagnostics` artifact (278 bytes, ID 13397322544), and issue #6 still reads
+  `updated_at` 2026-11-04T11:28:15Z with 0 comments, which is the no-update half proven by a
+  skipped step rather than by a dry-run flag. A desk run of the same build at the same sha
+  gives the three facts the job asks for: exit 3, zero bytes on stdout, and a stderr naming
+  `lookup horizon.invalid: no such host`.
 - [x] **1.10** Document the version contract. `ARCHITECTURE.md` section 2 lists the
   load-bearing report fields path by path, names which of them the renderer refuses on and
   which it renders as absent, and states the consequence a Gauge change has to live with: a
@@ -569,11 +599,11 @@ it is why this repository's value right now is the plumbing rather than the find
 | Phase | Name | Done | Total | Progress |
 |---|---|---|---|---|
 | 0 | Ground work | 7 | 7 | 100% |
-| 1 | The action | 10 | 11 | 91% |
+| 1 | The action | 11 | 11 | 100% |
 | 2 | Public shape | 11 | 13 | 85% |
 | 3 | Real use | 4 | 8 | 50% |
 | 9 (backlog) | Backlog, not scheduled | 0 | 4 | 0% |
-| **All phases** | **Readiness total** | **32** | **39** | **82%** |
+| **All phases** | **Readiness total** | **33** | **39** | **85%** |
 | Gates | G1 to G5 | 4 | 5 | 80% |
 <!-- PROGRESS:END -->
 
@@ -594,6 +624,8 @@ it is why this repository's value right now is the plumbing rather than the find
 | 2026-11-04 | 3.7 closes the noun error 3.6 left one section lower: the account table was titled `## Accounts read` above a row whose own Read cell says `(not read)`. The emitted heading is now `## Accounts asked about`, at `scripts/render_report.py:367`, which is the word the summary's denominator already uses for that same set, so the Read column `account_status` writes is the only place left in the body that says what happened to an account. Four cases in `TestAccountsHeading`: the exact string over five fixtures with the row count each one owes; the same rule stated generally, that an account heading may not claim read while any row under it contradicts that in its Read cell, so the bug cannot come back by editing a title; that the unread row stays in the section rather than being dropped to make the title true; and 3.6's D-07 check run against a section name instead of a sentence, where a body titled the old way and fed in as `--previous-body` renders `no change since the previous run` with a byte-identical state marker. At the desk the same render is 2428 characters where the old title gives 2421, and 7 is exactly the width of " asked about", so nothing else moved; the hosted half agrees, because `self-check / action` job 126503764248 re-rendered the live report at 2315 characters, 2308 plus those same 7, printed `no change since the previous run` and said `issue #6 needs no change, left alone`. The five test split sites the done-when names move with the string, as do `README.md`'s schematic, whose annotation column stays at 35, the paragraph under it, the display-only row of `ARCHITECTURE.md` section 2 and `CONTRIBUTING.md`'s fourth constraint, which now says a claim about the account set is derived from `account_status` wherever it appears in the body. `docs/WAVE_SUBMISSION.md`'s Trivial tier says it is empty rather than inventing a replacement. The suite is 175 where it was 171, and both halves were read on a runner: `ci / python` job 126503763136 prints `Ran 175 tests in 6.876s` and `OK`, `All checks passed!`, `10 files already formatted` after one wrapped comprehension was reformatted, `Success: no issues found in 10 source files`, `check_action: action.yml holds its rules` and `roadmap_progress.py --check` exiting 0 with Phase 3 at 4 of 7 and the readiness total at 32 of 38. One formatting repair came with it: the 3.6 row above had been written across five physical lines, which GitHub renders as four table rows with empty cells, so it is one line again. Nothing in `action.yml` changed and no report field moved, so the body a caller reads keeps its shape with one truer title. | 3.7 |
 | 2026-11-04 | 3.8 is found by reading the live issue rather than the render: issue #6 still opens with "1 finding open (1 high, 0 warn) across 3 accounts read" and still titles its account section `## Accounts read` above a row whose own Read cell says `(not read)`, because every run since the baseline has found the same posture and `sync_issue.py:287` leaves an unchanged issue alone. 3.6 and 3.7 are therefore true of a render and not yet of the artifact a reader opens first. The rewrite itself has been in the action since the scaffold: `update-on-no-change` becomes `--update-on-no-change` at `action.yml:193`, `tests/test_sync_issue.py:383` asserts it sends one PATCH and no comment, and `ARCHITECTURE.md` section 4 already names it. What was missing was a caller, since `watch.yml` held the input at `"false"` and its `workflow_dispatch` took no inputs at all. This adds one boolean, `refresh_body`, defaulted off, and the step passes it through a fallback to the string false so a `schedule` event, which resolves `inputs` to nothing, still takes the leave-alone path. No Python changed, so the suite is 175 here exactly as it was on `main` at `7ef214e`, and nothing on this row is claimed as observed on a runner: the done-when asks for two dispatches from `main` after this merges, one unticked and one ticked, and until both are read the statement is that the wiring exists and the wiring is what review can see. `README.md` gains the paragraph on when the override is the right call and what it costs, `CONTRIBUTING.md`'s write-path section names the box for whoever fixes a word next, and `docs/WAVE_SUBMISSION.md` is untouched because this is not work a stranger can take: it writes to this repository's own issue. Adding the task moves Phase 3 to 4 of 8 and the readiness total to 32 of 39, which the regeneration below records. | 3.8 (added) |
 | 2026-11-04 | 3.8's two dispatches ran from `main` at `2f5e1ec`, the merge of the pull request that added the input. Unticked first, so the fallback is read before the override is used: `watch / audit` job 126543269815 at 11:26:11Z shows the input rendered as `update-on-no-change: false`, prints `render_report: wrote /home/runner/work/_temp/issue-body.md (2315 characters); no change since the previous run (1 open, 1 high, 0 warn, 0 accepted)` and then `sync_issue: issue #6 needs no change, left alone`, with `gauge exited 1, tracking issue 6, changed=false` on the last step and the issue still at `updated_at` 08:36:02Z and no comments. Ticked second: job 126544009391 at 11:27:48Z shows `update-on-no-change: true`, prints the same 2315 characters over the same unchanged finding list and then `sync_issue: updated issue #6 without a comment`. Read back from the API the body is 2316 characters, which is the render plus the newline after the marker line, its first line is "1 finding open (1 high, 0 warn) across 2 accounts read of 3 asked about, unchanged since the previous run.", its account section is titled `## Accounts asked about` over the two accounts the endpoint had and the one whose Read cell says `not found on this endpoint`, the state marker is the same 400 base64url characters saved from the body before the run byte for byte, and `updated_at` is 11:28:15Z. So 3.6's sentence and 3.7's heading are published at last, written by the code that read the chain at ledger 5553610 rather than typed into the issue. The row stays unticked for its third done-when clause: a `schedule` event has no `inputs` context at all rather than a declared boolean set to false, GitHub's or-operator treats them the same, and only Tuesday 2026-11-10 at 05:23 UTC can show the path a consumer gets, so the entry names the run it waits for instead of reasoning the operator away. No code or test moved here, so the suite is 175 and the table below is the same 32 of 39 as when 3.8 was added. One defect in the previous row came out of reading the file rather than the render: the 3.8 row had been inserted after the blank line that closes the changelog table, which makes it its own one-row table on the rendered page, so it sits with its neighbours again and the section heading keeps its separator. | 3.8 |
+| 2026-11-05 | The exit-3 path stops being a claim. 1.9 needs a fetch that genuinely fails, which no desk run can produce, so the repository now produces one on every pull request: `tests/fixtures/policy-unreachable-endpoint.toml` points at `https://horizon.invalid`, the top-level domain RFC 6761 reserves and no resolver answers for, and `self-check.yml` gains a second job, `self-check / exit-3 probe`, that runs the action against the file with `continue-on-error: true` and then requires four things, that the step failed, that `report.json` exists, that it holds zero bytes and that `issue-body.md` was never written. The second claim is what keeps the probe honest: a policy `validate_inputs.py` refuses dies before the audit step and leaves no report either, so the wrong failure would look exactly like the right result. Two shape tests in `tests/test_validate_inputs.py` hold the fixture up, that it passes every check before the network and that its endpoint is the reserved domain, which takes the suite from 175 cases to 177, and `ARCHITECTURE.md` section 7, `CONTRIBUTING.md` and `README.md` name the row a job now proves. A desk run of the pinned build against this fixture gives exit 3, zero bytes of stdout and a stderr naming `lookup horizon.invalid: no such host`, which is the shape the job then requires; the hosted reading is the row below, from the same pull request. | 1.9 (part) |
+| 2026-11-05 | 1.9 closes on its own pull request. `self-check / exit-3 probe` job 127116146401 ran the action against `tests/fixtures/policy-unreachable-endpoint.toml` and printed, in order: `gauge exited 3 after writing 0 bytes of report`, `sync_issue: found issue to update (#6)`, `render_report: refused: report /home/runner/work/_temp/report.json: is empty`, `##[error]Process completed with exit code 2`, and then `probe.write; outcome=skipped`. The failed composite step still exported its outputs, so the assertion step read `OUTCOME: failure` and `GAUGE_EXIT: 3`, printed `exit-3 probe: no report, no body, no issue touched, as section 7 claims`, and the job finished green in 22 seconds. Gauge's stderr went up as the `gauge-diagnostics` artifact (278 bytes, ID 13397322544) and issue #6 still reads `updated_at` 2026-11-04T11:28:15Z with 0 comments, which is the no-update half proven by a skipped step rather than by `dry-run`. Phase 1 is 11 of 11 and the total 33 of 39. | 1.9 (done) |
 
 ## 9. Last updated line format
 

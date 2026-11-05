@@ -41,6 +41,16 @@ Horizon serves it back unchanged, so it is the field a hostile value would arriv
 Whether a real account on testnet or mainnet actually carries such a value has not been
 checked, and no test here claims it has.
 
+## The one file that is not a report
+
+`policy-unreachable-endpoint.toml` is a Gauge policy, not a captured run, and nothing here
+executes it against a network. `tests/test_validate_inputs.py` reads it to check its shape,
+and the hosted `self-check / exit-3 probe` job hands it to the action on every pull request,
+which is the only way this repository gets to an endpoint it genuinely cannot read. It stays
+in this directory because a run against it is a fixture in the other sense: a fixed input a
+job is asserted against. Its header says why its endpoint is in the `.invalid` domain and
+why nobody should point a schedule at it.
+
 ## Perishability
 
 These are reports, not ledger reads, so a testnet reset cannot make a test fail: the files
