@@ -11,3 +11,8 @@ contact_links:
     about: >-
       A rule that is wrong, missing or arguing about severity belongs to Gauge. This repository
       owns the plumbing and the pin, not the answer.
+  - name: The PI-1 issue contract
+    url: https://github.com/posture-sec/.github/blob/main/ISSUE_CONTRACT.md
+    about: >-
+      What every issue in this organization has to carry, section by section, and why the roadmap
+      row rather than the issue is the source of truth. Read it before opening a task.

@@ -154,12 +154,34 @@ One issue per open roadmap task, with the task's `Done when` line as the accepta
 `ROADMAP.md` section 5 rows that name a gate (G1 to G5) are not issues: they are claims that
 need an observed run, and nobody should close one with a code change.
 
+Every issue follows PI-1, the organization's issue contract, defined in
+`posture-sec/.github`'s `ISSUE_CONTRACT.md` and prefilled by `.github/ISSUE_TEMPLATE/task.yml`: a
+marker line naming this repository and the task, then nine numbered sections in the order a person
+picking the work cold needs them. Two of the contract's rules are this repository's rules restated.
+The roadmap row is the source of truth, so an issue quotes it and a disagreement is fixed in
+`ROADMAP.md` first, in the same pull request. And a claim names the run that produced it or says it
+is local, which is why section 6 of every issue here splits proof in two: the half a desk can
+produce, which is `python3 -m unittest discover -s tests -t tests` and the lint steps under Checks
+above, and the half that only a runner carries, which is a `self-check`, `watch / audit` or
+`ci / python` job id and needs write access to say so.
+
+Three things are repository-specific to a PI-1 body here. Section 3 cites paths that exist, so run
+the check before you cite one. Section 5 names the two to five rows from the rule table above that
+the change can actually break, never the whole table. Section 7 says out loud that a new module, a
+pinned sha bump or a widened refusal needs the owner's agreement before the work rather than in the
+review after it.
+
 Every issue carries a `type:` label, the `area:` it touches and a `complexity:` tier, which are
 `trivial` (under a couple of hours), `medium` (about half a day) and `high` (one day or more). The
 ones shaped for someone outside this organization also carry `Stellar Wave`; that label is a
 statement about the shape of the work, not about a reward, and `ROADMAP.md` D-10 records why the
 backlog is public before any application is confirmed. Take the issue's acceptance criteria from
 the roadmap row it names, and if the two disagree, the file is right and the issue is stale.
+
+The bodies a schedule writes are exempt from all of this, in this repository and in every consumer's:
+issue #6 here and issue #29 in `posture-sec/stellar-account-fixtures` come out of
+`scripts/render_report.py`, and their shape belongs to that renderer and to the D-07 state marker
+inside them.
 
 ## Naming and writing
 
