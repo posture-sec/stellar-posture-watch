@@ -102,8 +102,11 @@ dispatches recorded in `ROADMAP.md` 3.1 are what a reading of it looks like.
 A manual dispatch of that workflow takes one input, `refresh_body`, and it exists for the case
 this file runs into twice: a fix to the words in the body, on an issue whose posture has not
 moved. It maps to the action's `update-on-no-change`, so the body is rewritten and no comment is
-posted, and a scheduled run cannot reach it because the fallback in the yaml is what a `schedule`
-event resolves `inputs` to. Use it once, read the issue, and say what moved.
+posted; both halves of that were read on 2026-11-04 in the two dispatches `ROADMAP.md` 3.8 records,
+one unticked leaving issue #6 alone and one ticked updating it with the state marker unchanged. A
+scheduled run cannot reach it: a `schedule` event resolves `inputs` to nothing and the step's
+fallback supplies the string false. Use the box once, read the issue afterwards, and say what
+moved.
 
 ## Changing what the issue looks like
 
