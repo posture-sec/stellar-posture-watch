@@ -1,25 +1,30 @@
 # ROADMAP: stellar-posture-watch
 
-Status: **functional alpha, and hosted, and it has written.** The action exists, its three
-scripts are written and tested against real captured reports, and a GitHub runner has now
-executed all four workflows and the action itself: `self-check / action` fetched Gauge at the
-pinned sha, built it, read the example policy from live testnet and rendered the issue body,
-stopping at the dry run. `watch / audit` does the same with the flag off, and on 2026-11-04 it
-opened issue #6 in this repository and then left it alone on a second run. Gate G1 is closed,
-because `ci / python` has been read green on the merge commit of pull request #1 on
-`main`. Gates G3 and G4 are closed below, on the runs and on the reading of the body against
-the report. Every claim here names the run or the file it was read from.
+Status: **functional alpha, hosted, it has written, and something else uses it.** The action
+exists, its three scripts are written and tested against real captured reports, and a GitHub
+runner has now executed all four workflows and the action itself: `self-check / action` fetched
+Gauge at the pinned sha, built it, read the example policy from live testnet and rendered the
+issue body, stopping at the dry run. `watch / audit` does the same with the flag off, and on
+2026-11-04 it opened issue #6 in this repository and then left it alone on a second run. Since
+2026-11-05 a second repository calls it by sha rather than by `uses: ./`:
+`posture-sec/stellar-account-fixtures` audited its own policy through this action, opened its
+issue #29 with no findings, and left that issue alone on the run after, which is roadmap 3.4 and
+the first `gauge exited 0` and clean body rendered on a runner. Gate G1 is closed, because
+`ci / python` has been read green on the merge commit of pull request #1 on `main`. Gates G3 and
+G4 are closed below, on the runs and on the reading of the body against the report. G5 is not,
+and 3.4 did not close it: one maintainer wrote both callers. Every claim here names the run or
+the file it was read from.
 
-Last updated: 2026-11-05T07:49Z (Phase 1 closed at 11 of 11 when 1.9 ticked on its own pull
-request: `self-check / exit-3 probe` job 127116146401 printed `gauge exited 3 after writing 0
-bytes of report`, watched `render_report` refuse the empty file at exit 2, recorded
-`probe.write; outcome=skipped`, and went green because its assertions read `OUTCOME: failure` and
-`GAUGE_EXIT: 3`, while issue #6 stayed at `updated_at` 2026-11-04T11:28:15Z with 0 comments. That
-job is permanent, so every pull request from here re-reads the same claim. The readiness total is
-33 of 39 with 4 of 5 gates. What moved since is a row that a finished piece of work left behind:
-2.10 still said the action had only ever run in dry run, which G3 closed on 2026-11-04, and its
-text now names the four hosted runs instead. No code, test or other document moves here, so the
-suite stays 177.)
+Last updated: 2026-11-05T08:27Z (Phase 3 moves to 5 of 8 and the readiness total to 34 of 39 on
+3.4, closed by `posture-sec/stellar-account-fixtures`: its `posture-watch.yml` pins this action at
+`deaf7dcc`, three dispatches from its `main` at `71dfffc` printed `gauge exited 0`, opened its
+issue #29 with `0 open, 0 high, 0 warn, 0 accepted` and left that issue alone on the run after with
+`changed=false`. That is the first call of this action written outside this repository, the first
+clean body and the first exit 0 rendered on a runner. G5 stays open because both callers are the
+same author, and 2.10 keeps its box for the tag alone now that its second done-when half is
+satisfied. `docs/WAVE_SUBMISSION.md` loses four sentences that a finished piece of work left
+behind, including one that still called this repository unexecuted, and `README.md` names the
+pinned consumer as the example to copy. No code, test or workflow moves, so the suite stays 177.)
 
 ## 1. What this repository is
 
@@ -101,9 +106,11 @@ else: `gauge exited 1 after writing 4646 bytes of report`, `1 open, 1 high, 0 wa
 a half minutes later (job 126477058944) found the issue by its state marker, rendered 2291
 characters of "no change since the previous run" and left the body byte-identical.
 
-What is left in Phase 3 is not plumbing. 3.3 is a mainnet read the owner has to make, 3.4 is
-somebody else's repository, and 3.5 is the wave-shaped backlog, which stays unpublished until
-the application is approved. 3.6 and 3.7 are the wording bugs that reading found, and both are
+What is left in Phase 3 is not plumbing. 3.3 is a mainnet read the owner has to make, and 3.5 is
+the wave-shaped backlog, which stays unpublished until the application is approved. 3.4 is
+closed: a second repository consumes the action by sha, and its three runs are recorded in that
+row. 3.6 and 3.7
+are the wording bugs that reading found, and both are
 closed: the summary line used to say "across 3 accounts read" for a set in which one account was
 never read, and it now says "across 2 accounts read of 3 asked about"; the heading one section
 lower was "## Accounts read" above a row reading "(not read)", and it is now
@@ -134,6 +141,21 @@ row checkable, and the assertions are written so a run that dies before the audi
 as a failure rather than as a pass. It has been read once, in the pull request that added it:
 job 127116146401 took 22 seconds, refused to render an empty report and skipped the write
 step, and issue #6 did not move.
+
+3.4 closed on somebody else's repository, which is the difference between this row and every run
+before it. `posture-sec/stellar-account-fixtures` carries `.github/workflows/posture-watch.yml`,
+whose `uses:` line is this repository at `deaf7dcc`, a sha rather than the dogfood's `uses: ./`,
+and whose `config:` is that repository's own `.posture/gauge.toml`, holding the one testnet account
+its corpus captures. Three dispatches of it from that repository's `main`: a dry run that printed
+`gauge exited 0 after writing 2346 bytes of report` and `0 open, 0 high, 0 warn, 0 accepted`, a
+write that opened its issue #29 as the baseline, and a third that found the issue by its state
+marker and left it alone with `changed=false`. So two shapes this action had never produced on a
+runner arrived together: a clean report, whose every findings section says `None.`, and an exit 0
+from Gauge, where every run here and there before it exited 1 on the `acct-missing` the dogfood
+policy declares on purpose. It is also the first policy file the action has read that this
+repository did not write, and the first in a subdirectory. G5 does not move with any of this: the
+same maintainer wrote both callers, so what doubled is the code path, not the number of readers.
+
 The ordering that held this repository back was G3, then G4, and both are now closed. A green
 hosted CI run told us the code builds and the suite passes on somebody else's machine; an
 end-to-end run had to tell us whether the issue body is worth reading, and issue #6 does: one
@@ -368,8 +390,9 @@ it is why this repository's value right now is the plumbing rather than the find
   audit` job 126475427542 opened issue #6 from a live testnet read on 2026-11-04, and
   126477058944 and 126543269815 left it alone while 126544009391 rewrote it, which is G3 and G4
   closed. What still holds the tag is the owner's judgement about what a release commits a
-  consumer to, and the second half of the done-when waits on 3.4: no repository other than this
-  one pins the ref yet.
+  consumer to, and the second half of the done-when is now satisfied: `stellar-account-fixtures`
+  pins this repository by sha at `deaf7dcc` and a runner has fetched and executed it there, which
+  is 3.4. The tag is what is left, and it is the owner's to decide.
 - [x] **2.11** `example/`. `example/gauge.toml` is a testnet policy for three accounts: a
   declared five-of-six signer set (five keys at weight 1 plus the master at weight 0) at
   thresholds 3/3/3 with every flag off, an issuer with `auth_required`, `auth_revocable` and
@@ -420,8 +443,33 @@ it is why this repository's value right now is the plumbing rather than the find
   recorded in `docs/` with its ledger, date and exit code, labeled as the operator's run
   rather than this repository's test. Blocked by D-03, which keeps this repository's own
   checks on testnet; a mainnet run is allowed, it is just not a test.
-- [ ] **3.4** A second consumer. Done-when: some repository other than this one uses the
-  action, or the row in `docs/WAVE_SUBMISSION.md` says nobody does yet.
+- [x] **3.4** A second consumer. Done-when: some repository other than this one uses the
+  action, or the row in `docs/WAVE_SUBMISSION.md` says nobody does yet. Closed 2026-11-05 by the
+  first alternative, so the second half of the done-when did not become necessary: it was the
+  fallback, not a requirement. `posture-sec/stellar-account-fixtures` now carries
+  `.github/workflows/posture-watch.yml`, and its first line of substance is the one this row
+  waits on, `uses: posture-sec/stellar-posture-watch@deaf7dcc482525c4583660643cf8251146afb466`,
+  which is this repository's `main` head consumed by sha rather than the local `uses: ./` the
+  dogfood uses. The runner agreed it had to fetch that: job 127128709833 printed `Download action
+  repository 'posture-sec/stellar-posture-watch@deaf7dcc...' (SHA:deaf7dcc...)` before running the
+  step graph. It audits that repository's own `.posture/gauge.toml`, a file in a subdirectory
+  rather than `example/`, holding the one testnet account its corpus captures, so this is the
+  first caller to read a policy this repository did not write. Three dispatches of it from that
+  repository's `main` at `71dfffc`, which merged at 08:08:42Z: job 127127136762 at 08:09:18Z with
+  `dry_run` ticked printed `gauge exited 0 after writing 2346 bytes of report`, then `render_report:
+  wrote ... (1313 characters); 0 open, 0 high, 0 warn, 0 accepted`, then `sync_issue: dry run,
+  would open an issue titled 'Fixture account drift'`; job 127127900716 at 08:11:19Z, flag off,
+  printed `sync_issue: opened issue #29 as the baseline` and `gauge exited 0, tracking issue 29,
+  changed=true`; job 127128709833 at 08:13:13Z found that issue by its state marker, rendered 1312
+  characters of `no change since the previous run`, said `issue #29 needs no change, left alone`
+  and reported `changed=false`. Issue #29 reads back through the API at 1313 characters under the
+  label `fixture-drift`, `updated_at` equal to `created_at` at 08:11:50Z and 0 comments. Two facts
+  here are new to this action rather than merely new copies of the dogfood: it is the first hosted
+  render of a clean report, a body whose every findings section says `None.`, and the first
+  `gauge exited 0` observed on a runner, since every run before it on either repository exited 1
+  on the `acct-missing` the dogfood policy declares on purpose. What this does not close is G5:
+  the same maintainer wrote both callers, so the reading is still one person's, and
+  `docs/WAVE_SUBMISSION.md` says so in the rows it owed an update.
 - [ ] **3.5** Wave-shaped backlog. Done-when: the tasks a stranger could take have tiers
   and acceptance criteria in their issue bodies, and none of them is published before the
   organization's application is approved.
@@ -596,7 +644,11 @@ it is why this repository's value right now is the plumbing rather than the find
   the desk report against the hosted body printed the same 2291 characters and the same
   `changed: false` that run 2 printed on the runner, so the two reads agree on the no-change path
   to the byte. The one wording bug this pass found is 3.6.
-- [ ] **G5** Someone other than the maintainer has run it, or its absence is stated.
+- [ ] **G5** Someone other than the maintainer has run it, or its absence is stated. 3.4 closed
+  on 2026-11-05 and this row did not move with it, because the new consumer is this same author's
+  second repository: a second caller written by one maintainer doubles the code path without
+  adding a reader. What is still absent is anybody else, and `docs/WAVE_SUBMISSION.md` now says so
+  in the rows 3.4 owed it.
 
 ## 7. Progress
 
@@ -606,9 +658,9 @@ it is why this repository's value right now is the plumbing rather than the find
 | 0 | Ground work | 7 | 7 | 100% |
 | 1 | The action | 11 | 11 | 100% |
 | 2 | Public shape | 11 | 13 | 85% |
-| 3 | Real use | 4 | 8 | 50% |
+| 3 | Real use | 5 | 8 | 62% |
 | 9 (backlog) | Backlog, not scheduled | 0 | 4 | 0% |
-| **All phases** | **Readiness total** | **33** | **39** | **85%** |
+| **All phases** | **Readiness total** | **34** | **39** | **87%** |
 | Gates | G1 to G5 | 4 | 5 | 80% |
 <!-- PROGRESS:END -->
 
@@ -632,6 +684,7 @@ it is why this repository's value right now is the plumbing rather than the find
 | 2026-11-05 | The exit-3 path stops being a claim. 1.9 needs a fetch that genuinely fails, which no desk run can produce, so the repository now produces one on every pull request: `tests/fixtures/policy-unreachable-endpoint.toml` points at `https://horizon.invalid`, the top-level domain RFC 6761 reserves and no resolver answers for, and `self-check.yml` gains a second job, `self-check / exit-3 probe`, that runs the action against the file with `continue-on-error: true` and then requires four things, that the step failed, that `report.json` exists, that it holds zero bytes and that `issue-body.md` was never written. The second claim is what keeps the probe honest: a policy `validate_inputs.py` refuses dies before the audit step and leaves no report either, so the wrong failure would look exactly like the right result. Two shape tests in `tests/test_validate_inputs.py` hold the fixture up, that it passes every check before the network and that its endpoint is the reserved domain, which takes the suite from 175 cases to 177, and `ARCHITECTURE.md` section 7, `CONTRIBUTING.md` and `README.md` name the row a job now proves. A desk run of the pinned build against this fixture gives exit 3, zero bytes of stdout and a stderr naming `lookup horizon.invalid: no such host`, which is the shape the job then requires; the hosted reading is the row below, from the same pull request. | 1.9 (part) |
 | 2026-11-05 | 1.9 closes on its own pull request. `self-check / exit-3 probe` job 127116146401 ran the action against `tests/fixtures/policy-unreachable-endpoint.toml` and printed, in order: `gauge exited 3 after writing 0 bytes of report`, `sync_issue: found issue to update (#6)`, `render_report: refused: report /home/runner/work/_temp/report.json: is empty`, `##[error]Process completed with exit code 2`, and then `probe.write; outcome=skipped`. The failed composite step still exported its outputs, so the assertion step read `OUTCOME: failure` and `GAUGE_EXIT: 3`, printed `exit-3 probe: no report, no body, no issue touched, as section 7 claims`, and the job finished green in 22 seconds. Gauge's stderr went up as the `gauge-diagnostics` artifact (278 bytes, ID 13397322544) and issue #6 still reads `updated_at` 2026-11-04T11:28:15Z with 0 comments, which is the no-update half proven by a skipped step rather than by `dry-run`. Phase 1 is 11 of 11 and the total 33 of 39. | 1.9 (done) |
 | 2026-11-05 | The sentence in 2.10 that said the action had only ever run in dry run is false and is replaced with the runs. It was written when G3 was still open; `watch / audit` 126475427542 opened issue #6 from a live testnet read on 2026-11-04, 126477058944 and 126543269815 found the finding list unchanged and left it alone, and 126544009391 rewrote it at 11:28:15Z, so G3 and G4 have been closed for a day and the row's own reason for holding the tag went stale with them. What remains is stated as what it is: the tag is the owner's judgement about what a release commits a consumer to, and the done-when's second half is 3.4. No code, test or document other than this file moves, so the suite stays 177 and the table stays 33 of 39 with 4 of 5 gates. It was found by grepping the shipped documents for claims about the write path rather than by a run, which is the cheapest way to catch a row that a later piece of work left behind. | 2.10 (text) |
+| 2026-11-05 | 3.4 closes on a runner that is not this repository's. `posture-sec/stellar-account-fixtures` merged pull request #28 as `71dfffc` at 08:08:42Z, and its `.github/workflows/posture-watch.yml` is the first call of this action written outside this repository: `uses: posture-sec/stellar-posture-watch@deaf7dcc482525c4583660643cf8251146afb466`, the pinned form rather than the dogfood's `uses: ./`, against that repository's own `.posture/gauge.toml` and the one testnet account its corpus captures. Job 127127136762 at 08:09:18Z ran it with `dry_run` ticked and printed `gauge exited 0 after writing 2346 bytes of report`, then `render_report: wrote /home/runner/work/_temp/issue-body.md (1313 characters); 0 open, 0 high, 0 warn, 0 accepted`, then `sync_issue: dry run, would open an issue titled 'Fixture account drift'`. Job 127127900716 at 08:11:19Z, flag off, printed `sync_issue: opened issue #29 as the baseline` and `gauge exited 0, tracking issue 29, changed=true`. Job 127128709833 at 08:13:13Z found that issue by its state marker, rendered 1312 characters of `no change since the previous run`, said `issue #29 needs no change, left alone` and reported `changed=false`; the issue reads back through the API at 1313 characters, label `fixture-drift`, `updated_at` equal to `created_at` at 08:11:50Z and 0 comments. So two shapes this action has never produced on a runner arrived in one afternoon: a clean report, whose every findings section says `None.`, and `gauge exited 0`, where every hosted run here and there before this one exited 1 on the `acct-missing` the dogfood policy declares on purpose. The runner also proved the pin before using it, printing `Download action repository 'posture-sec/stellar-posture-watch@deaf7dcc...' (SHA:deaf7dcc...)`, which is the evidence 2.10's second done-when half waits on, so that row loses the clause claiming no other repository pins the ref. G5 does not move with 3.4 and says why in its own text: both callers are the same author, so the code path doubled and the reader count did not. Four stale sentences came out of the same grep that found the 2.10 one. `docs/WAVE_SUBMISSION.md` gave "no consumer but this repository" as a reason not to apply, listed a second consumer as work left for a stranger, said `three of those six` about a checklist whose counts had moved, and closed with `written, tested, documented, and unexecuted`, which stopped being true the morning issue #6 opened; its header also still said five pull requests and one tracking issue where the API now answers twelve merged and two kept. `README.md`'s Usage paragraph names the pinned consumer as the worked example to copy, because until now the only caller in this repository's own docs was the one with no pin. Nothing here changed to produce any of this: no script, no test, no workflow, so the suite stays 177 and the table below regenerates to Phase 3 at 5 of 8 and the readiness total at 34 of 39, with the gates unchanged at 4 of 5. | 3.4, 2.10 (text) |
 
 ## 9. Last updated line format
 

@@ -9,9 +9,10 @@ changes for the organization now that this repository exists, and what has to be
 before this repository is a candidate.
 
 Last read of the program itself: 2026-11-02, in the Gauge packet. Nothing here claims this
-repository is approved, applied to, or eligible. Its git history is two hours old (first commit
-2026-11-04T06:58Z), five pull requests have merged into `main`, and it maintains one scheduled
-tracking issue, #6.
+repository is approved, applied to, or eligible. Its git history is a day old (first commit
+2026-11-04T06:58Z), twelve pull requests have merged into `main`, and it keeps two tracking
+issues: #6 here, and #29 in `posture-sec/stellar-account-fixtures`, whose workflow is the second
+caller of this action and the closing evidence of roadmap 3.4.
 
 ## 1. What this repository adds to the argument
 
@@ -41,9 +42,12 @@ Four reasons, in order of how long each takes to clear.
    on a green job while Gauge exited 1; job 126477058944 at 08:39:51Z found that issue by
    the state marker in its body, rendered 2291 characters of no change and left it byte-identical.
    Gates G1 to G4 are closed on those runs and on the body having been read against a report
-   reproduced at the same sha. What has not changed is who did the reading and what is pinned to
-   it: there is no tag (2.10, whose blocker cleared with the write), no consumer but this
-   repository (3.4, G5), and nobody second who would notice a wrong finding.
+   reproduced at the same sha. What has not changed is who did the reading. There is no tag
+   (2.10, whose blocker cleared with the write), and nobody second who would notice a wrong
+   finding. The other half of that sentence was false and is now corrected: 3.4 closed on
+   2026-11-05, when `posture-sec/stellar-account-fixtures` began consuming this action by sha and
+   published its own tracking issue from a live testnet read. The same maintainer wrote both
+   callers, so the code path doubled and the reader count did not; that is G5, still open.
 3. **The findings are thin because Gauge's are.** Four rules, no signer family, no threshold
    rule, blocked behind Gauge's 0.7, which needs a transaction Gauge is written never to
    build. A scheduled watch that reports a vanished account and a moved network is real;
@@ -64,7 +68,7 @@ the program's three, and they are a guess about effort, not a label.
 | Trivial | Nothing left after 3.7. The bug that was in this row, a section heading `## Accounts read` sitting above a table whose own last row says `(not read)`, is renamed to `## Accounts asked about` on this branch: one string in `render_report.py`, five test split sites, `README.md`'s schematic and `ARCHITECTURE.md` section 2. | The shape is the part worth keeping. A run printed a claim its own table contradicts, a grep found every site keyed on the string, and 3.6 had fixed the sentence half the day before. That is what to look for next time. |
 | Medium | The escape surface as a test matrix: hostile `home_domain`, data values and messages assembled into one fixture per markdown construct, each with the render it must not produce (roadmap 1.2 follow-on). | Pure, self-contained, and the failure mode is visible in the diff. |
 | Medium | A documentation site for the action (roadmap 2.9), with a rendered example issue beside the report that produced it. | Deferred by the maintainer on purpose, so it is work a stranger can own without a design argument. |
-| Medium | A second consumer: point this action at one of the organization's own repositories watching a real treasury policy, or write down that nobody uses it (roadmap 3.4, G5). | The honest version is two paragraphs and one decision. |
+| Medium | A consumer that is not one of this maintainer's four repositories (roadmap G5). The row this replaces, a second consumer at all, closed on 2026-11-05: `posture-sec/stellar-account-fixtures` calls the action from its own `.github/workflows/posture-watch.yml` pinned by sha, audits its own `.posture/gauge.toml`, and has published and left-alone its issue #29 on three runs. | One workflow file, one policy file and one issue to read, against a worked example in a sibling repository. The acceptance criterion is the contributor saying whether that body tells them anything true about their own accounts, which is the only evidence here that a second pair of eyes changes. |
 | High | SARIF output so findings land in a repository's security tab (roadmap 9.1). | Needs a severity mapping nobody has agreed on and a SARIF writer in Gauge, so it is a design task first. |
 | Medium | Upstream to Gauge: the signer and threshold rule families this watch cannot report without (Gauge 3.1, and its 0.7 blocker). | The highest-value work in the organization is not in this repository, and a contributor should know that. |
 
@@ -95,8 +99,12 @@ list. They are the parts a maintainer has to own, because each is a decision dre
 - [ ] A screen recording of a scheduled run and the issue it updated, which the program
       playbook treats as the difference between a submission and an unfinished one.
 
-Three of those six need a runner, not a pull request. That is the honest summary of where
-this repository is: written, tested, documented, and unexecuted.
+Two of those three open rows are an owner action and a schedule: `v0.1.0` is a tag nobody has
+pressed, and the recording wants a `scheduled` run, which for `watch.yml` is Tuesday 2026-11-10
+at 05:23 UTC. The third, G5, is not available to the maintainer by definition, and 3.4's second
+consumer did not supply it because that consumer is also his. So the summary of where this
+repository is has moved once and no further on its own: written, tested, documented, executed on
+a runner by two callers, and read by one person.
 
 ## 5. Sources
 
