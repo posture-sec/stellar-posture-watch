@@ -75,7 +75,11 @@ This repository runs it too. `.github/workflows/watch.yml` is the file above wit
 and `uses: ./` in place of the pin, pointed at `example/gauge.toml`: a local action reference is
 resolved from the commit the schedule ran at, so there is no second sha to bump in the diff that
 changes the code it points to. That is the dogfood, and it has run: issue #6 is what that
-schedule writes, and `ROADMAP.md` 3.1 names the two dispatches and what each printed.
+schedule writes, and `ROADMAP.md` 3.1 names the two dispatches and what each printed. One
+repository that is not this one runs it as well, in the pinned form above:
+`posture-sec/stellar-account-fixtures` consumes this action at `deaf7dcc` from its own
+`.github/workflows/posture-watch.yml` and watches the account behind one of its captures, which is
+roadmap 3.4 and the worked example to copy if you want the sha rather than the local reference.
 
 ```yaml
 name: account posture
