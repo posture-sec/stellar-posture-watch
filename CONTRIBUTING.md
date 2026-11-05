@@ -154,6 +154,13 @@ One issue per open roadmap task, with the task's `Done when` line as the accepta
 `ROADMAP.md` section 5 rows that name a gate (G1 to G5) are not issues: they are claims that
 need an observed run, and nobody should close one with a code change.
 
+Every issue carries a `type:` label, the `area:` it touches and a `complexity:` tier, which are
+`trivial` (under a couple of hours), `medium` (about half a day) and `high` (one day or more). The
+ones shaped for someone outside this organization also carry `Stellar Wave`; that label is a
+statement about the shape of the work, not about a reward, and `ROADMAP.md` D-10 records why the
+backlog is public before any application is confirmed. Take the issue's acceptance criteria from
+the roadmap row it names, and if the two disagree, the file is right and the issue is stale.
+
 ## Naming and writing
 
 Scripts are `snake_case` verbs of what they do, findings-level names come from Gauge, and the
