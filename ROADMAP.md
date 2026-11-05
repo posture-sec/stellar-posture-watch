@@ -15,16 +15,24 @@ G4 are closed below, on the runs and on the reading of the body against the repo
 and 3.4 did not close it: one maintainer wrote both callers. Every claim here names the run or
 the file it was read from.
 
-Last updated: 2026-11-05T08:27Z (Phase 3 moves to 5 of 8 and the readiness total to 34 of 39 on
-3.4, closed by `posture-sec/stellar-account-fixtures`: its `posture-watch.yml` pins this action at
-`deaf7dcc`, three dispatches from its `main` at `71dfffc` printed `gauge exited 0`, opened its
-issue #29 with `0 open, 0 high, 0 warn, 0 accepted` and left that issue alone on the run after with
-`changed=false`. That is the first call of this action written outside this repository, the first
-clean body and the first exit 0 rendered on a runner. G5 stays open because both callers are the
-same author, and 2.10 keeps its box for the tag alone now that its second done-when half is
-satisfied. `docs/WAVE_SUBMISSION.md` loses four sentences that a finished piece of work left
-behind, including one that still called this repository unexecuted, and `README.md` names the
-pinned consumer as the example to copy. No code, test or workflow moves, so the suite stays 177.)
+Last updated: 2026-11-05T08:55Z (the contributor backlog is public, by D-10 rather than by an
+approval. The program page read this morning dates Stellar Wave #11 from November 18 to 25, capped
+at five repositories per contributor and five per organization, so 3.5's clause that nothing
+wave-shaped is published before the organization's application is approved was replaced rather than
+satisfied. Eleven issues now cover every open row in sections 5 and 9, numbered #15 to #25, six of
+them labeled `Stellar Wave`, and two new roadmap rows, 9.5 and 9.6, stand behind the issues that
+described work no task tracked. The readiness total stays 34 of 39 because `roadmap_progress.py`
+keeps phase 9 outside that sum, and Phase 3 stays 5 of 8 on the row before this one: 3.4 closed on
+the previous pull request, when `posture-sec/stellar-account-fixtures` pinned this action at
+`deaf7dcc`, printed `gauge exited 0` three times from its own `main`, opened its issue #29 with `0
+open, 0 high, 0 warn, 0 accepted` and left that issue alone on the run after. That is the first
+call of this action written outside this repository, the first clean body and the first exit 0
+rendered on a runner. G5 stays open because both callers are the same author, and 2.10 keeps its
+box for the tag alone now that its second done-when half is satisfied.
+`docs/WAVE_SUBMISSION.md` has lost five sentences that finished work left behind, among them one
+that still called this repository unexecuted and one that said no cycle is open, and `README.md`
+names the pinned consumer as the example to copy. No code, test or workflow moves, so the suite
+stays 177.)
 
 ## 1. What this repository is
 
@@ -68,6 +76,7 @@ repository states the working conventions this repository keeps.
 | D-07 | The change state lives in an HTML comment in the issue body, not in a label, a file or an artifact. | Decided 2026-11-03 | A label system needs a second authority to be cleaned up and an artifact is deleted, so a run whose state lived in either would lose the comparison. The body is the one thing this action already rewrites, and a reader can see it in the raw source. Cost: a human who edits the body can destroy the state, and the next run then re-baselines rather than guessing. |
 | D-08 | `gauge-ref` pinning is a supply-chain control, not a sandbox. | Decided 2026-11-03 | This action compiles and runs Go code from another repository. Pinning makes that code auditable and the bump reviewable; it does not confine it. `SECURITY.md` states the boundary, and the checkout runs with `persist-credentials: false`. |
 | D-09 | `action.yml` is guarded by a stdlib text scanner, not a YAML parse. | Decided 2026-11-03 | The two rules worth enforcing (no expression inside a `run:` block, every third-party step pinned by full sha) are properties of the text, and enforcing them must run on the runner's own python3. Adding PyYAML to CI to prove a dependency-free action parses would contradict D-02 to solve a problem `scripts/check_action.py` does not have. |
+| D-10 | The contributor backlog is published now, before any wave application. | Decided 2026-11-05 | 3.5's done-when used to say none of it goes up before the organization's application is approved, and `docs/WAVE_SUBMISSION.md` section 3 repeated it. The owner lifted both on 2026-11-05. The reason is a date rather than a change of mind: the program page shows Stellar Wave #11 running November 18 to 25, capped at five repositories per contributor and five per organization, and the maintainer console works by syncing a repository and its issues, with the program's own docs noting that a repository administrator can tag tickets with the initiative identifier instead of routing them through the console. A backlog a stranger can read is the cheaper of the two risks, because an issue that turns out unwanted is closed and an application with nothing in it is not recoverable inside one cycle. What the decision does not buy is the application itself, which authenticates as the owner's account and is his to submit. |
 
 ## 4. Current focus
 
@@ -155,6 +164,19 @@ from Gauge, where every run here and there before it exited 1 on the `acct-missi
 policy declares on purpose. It is also the first policy file the action has read that this
 repository did not write, and the first in a subdirectory. G5 does not move with any of this: the
 same maintainer wrote both callers, so what doubled is the code path, not the number of readers.
+
+3.5 moved on a date rather than on work. The program page read on 2026-11-05 shows Stellar Wave #11
+upcoming from November 18 to 25, capped at five repositories per contributor and five per
+organization, so the clause this row carried, that nothing wave-shaped is published before an
+application is approved, was replaced by D-10 and the backlog went out: eleven issues, one per open
+row in sections 5 and 9, each carrying its `type:`, `area:` and `complexity:` labels and the
+done-when copied from its roadmap row, six of them carrying `Stellar Wave`. Two of those rows, 9.5
+and 9.6, are new here rather than renumbered: they are the escape-surface matrix and the four
+Scorecard gaps that `docs/WAVE_SUBMISSION.md` section 3 and 2.8's own reading already described but
+section 5 never tracked, and an issue for work with no task behind it is the reverse of the order
+this repository works in. Neither new row touches the readiness sum, because `roadmap_progress.py`
+keeps phase 9 outside it by design: what moves is section 9's own row, 0 of 4 to 0 of 6, while the
+total stays 34 of 39 and the gates stay 4 of 5.
 
 The ordering that held this repository back was G3, then G4, and both are now closed. A green
 hosted CI run told us the code builds and the suite passes on somebody else's machine; an
@@ -383,7 +405,8 @@ it is why this repository's value right now is the plumbing rather than the find
   stated limit arriving as a number, and `Fuzzing` is 0 because `render_report.py` parses a
   report whose contents came off the chain and nothing hammers it.
 - [ ] **2.9** A documentation site. Deferred deliberately: the two siblings have one each
-  and this repository's surface is one yaml file plus a worked example. Revisit after G3.
+  and this repository's surface is one yaml file plus a worked example. Revisit after G3, which
+  closed on 2026-11-04, so the condition is met and the row is open for that reason. **Issue:** #15.
 - [ ] **2.10** A first release. Done-when: `v0.1.0` is tagged and `action.yml` is consumed
   by ref from another repository. The reason this row held is no longer true: it said the action
   had run only in dry run, so the issue it maintains had never been produced by it. `watch /
@@ -392,7 +415,7 @@ it is why this repository's value right now is the plumbing rather than the find
   closed. What still holds the tag is the owner's judgement about what a release commits a
   consumer to, and the second half of the done-when is now satisfied: `stellar-account-fixtures`
   pins this repository by sha at `deaf7dcc` and a runner has fetched and executed it there, which
-  is 3.4. The tag is what is left, and it is the owner's to decide.
+  is 3.4. The tag is what is left, and it is the owner's to decide. **Issue:** #16.
 - [x] **2.11** `example/`. `example/gauge.toml` is a testnet policy for three accounts: a
   declared five-of-six signer set (five keys at weight 1 plus the master at weight 0) at
   thresholds 3/3/3 with every flag off, an issuer with `auth_required`, `auth_revocable` and
@@ -442,7 +465,7 @@ it is why this repository's value right now is the plumbing rather than the find
 - [ ] **3.3** A mainnet run by the owner. Done-when: one scheduled mainnet audit is
   recorded in `docs/` with its ledger, date and exit code, labeled as the operator's run
   rather than this repository's test. Blocked by D-03, which keeps this repository's own
-  checks on testnet; a mainnet run is allowed, it is just not a test.
+  checks on testnet; a mainnet run is allowed, it is just not a test. **Issue:** #17.
 - [x] **3.4** A second consumer. Done-when: some repository other than this one uses the
   action, or the row in `docs/WAVE_SUBMISSION.md` says nobody does yet. Closed 2026-11-05 by the
   first alternative, so the second half of the done-when did not become necessary: it was the
@@ -470,9 +493,19 @@ it is why this repository's value right now is the plumbing rather than the find
   on the `acct-missing` the dogfood policy declares on purpose. What this does not close is G5:
   the same maintainer wrote both callers, so the reading is still one person's, and
   `docs/WAVE_SUBMISSION.md` says so in the rows it owed an update.
-- [ ] **3.5** Wave-shaped backlog. Done-when: the tasks a stranger could take have tiers
-  and acceptance criteria in their issue bodies, and none of them is published before the
-  organization's application is approved.
+- [ ] **3.5** Wave-shaped backlog. Done-when: the tasks a stranger could take have tiers and
+  acceptance criteria in their issue bodies, and the organization's application is recorded as
+  submitted. The second clause used to read "none of them is published before the organization's
+  application is approved", and D-10 replaces it: on 2026-11-05 the owner decided to publish the
+  backlog now, because the program page dates Stellar Wave #11 to November 18 to 25 and a synced
+  repository with no labeled backlog is a weaker packet than one with it. This repository's
+  convention in `CONTRIBUTING.md` is one issue per open roadmap task with that task's done-when as
+  the acceptance criteria, so the backlog is that set: **Issue:** #15, #16, #17, #18, #19, #20,
+  #21, #22, #23, #24 and #25 cover every open row in sections 5 and 9, and six of them carry the
+  label `Stellar Wave` (#15, #20, #21, #22, #24, #25), which is this repository's stand-in for the
+  program's initiative identifier until the console says otherwise. What keeps the row open is
+  therefore not writing: it is the application, which authenticates as the owner's GitHub account
+  in the maintainer console, and the identifier the program uses for a task.
 - [x] **3.6** The summary line counts an account that was not read. Found while closing G4 on
   2026-11-04: issue #6 opens with "1 finding open (1 high, 0 warn) across 3 accounts read", while
   its own table marks one of those three `(not read)` and `not found on this endpoint`. The number
@@ -582,17 +615,35 @@ it is why this repository's value right now is the plumbing rather than the find
   boolean set to false, which is not the same object. GitHub's or-operator treats them the same and
   the fallback is what the yaml says, but the run that proves the path consumers get is the Tuesday
   schedule itself, 2026-11-10 at 05:23 UTC, and `watch / audit` on that date closes this row.
+  **Issue:** #19.
 
 ### Phase 9: Backlog, not scheduled
 
 - [ ] **9.1** SARIF output so findings land in a repository's security tab. Deferred: it
-  needs a severity mapping nobody has agreed on and Gauge has no SARIF writer yet.
+  needs a severity mapping nobody has agreed on and Gauge has no SARIF writer yet. The mapping is
+  the task, and it is a document before it is an emitter: what `high` and `warn` become, where a
+  `skipped` account reads, and what the run says when an endpoint left no report at all.
+  **Issue:** #20.
 - [ ] **9.2** A `pull_request` mode that comments on the diff. Deferred: it needs the
-  `break-build` semantics settled on a schedule first.
+  `break-build` semantics settled on a schedule first, and D-05 is that settlement. A mode whose red
+  check means "your policy disagrees with the chain" is a different promise from D-05's green-for-a-
+  finding, so it needs a new decision row before new code. **Issue:** #21.
 - [ ] **9.3** Watching more than one policy file. Deferred: one file per issue is the
-  contract, and a second file needs a state marker per file.
+  contract, and a second file needs a state marker per file. **Issue:** #22.
 - [ ] **9.4** Pinning Gauge by release tag once Gauge is tagged. Waiting on Gauge's v0.1.0,
-  which does not exist yet; D-01 stays until it does.
+  which does not exist yet; D-01 stays until it does. **Issue:** #23.
+- [ ] **9.5** The escape surface as a test matrix. Added 2026-11-05 out of the wave packet's
+  Medium tier rather than out of a failure: `render_report.py` builds an issue body out of strings
+  that came off the chain, 1.2 proves the sanitizer holds one input at a time, and nothing here
+  states, per markdown construct, the render a hostile value must not produce. The case that
+  matters most is a `home_domain` that can close D-07's state comment, because that comment is
+  what the next run believes it already saw. **Issue:** #24.
+- [ ] **9.6** The Scorecard gaps this repository can close. Added 2026-11-05 from 2.8's own
+  reading, which named four checks and left them as numbers: `Pinned-Dependencies` 6 for the
+  unpinned `pip install -r` line in `ci.yml`, `Dependency-Update-Tool` for no
+  `.github/dependabot.yml`, `SAST` 0 for no analyzer, and `Fuzzing` 0 for a renderer that parses
+  chain-derived JSON. `Branch-Protection` 4 is deliberately not in this row: 2.7 states it as its
+  own limit, and an approving review nobody would give himself is not readiness. **Issue:** #25.
 
 ## 6. Gates
 
@@ -659,7 +710,7 @@ it is why this repository's value right now is the plumbing rather than the find
 | 1 | The action | 11 | 11 | 100% |
 | 2 | Public shape | 11 | 13 | 85% |
 | 3 | Real use | 5 | 8 | 62% |
-| 9 (backlog) | Backlog, not scheduled | 0 | 4 | 0% |
+| 9 (backlog) | Backlog, not scheduled | 0 | 6 | 0% |
 | **All phases** | **Readiness total** | **34** | **39** | **87%** |
 | Gates | G1 to G5 | 4 | 5 | 80% |
 <!-- PROGRESS:END -->
@@ -685,6 +736,7 @@ it is why this repository's value right now is the plumbing rather than the find
 | 2026-11-05 | 1.9 closes on its own pull request. `self-check / exit-3 probe` job 127116146401 ran the action against `tests/fixtures/policy-unreachable-endpoint.toml` and printed, in order: `gauge exited 3 after writing 0 bytes of report`, `sync_issue: found issue to update (#6)`, `render_report: refused: report /home/runner/work/_temp/report.json: is empty`, `##[error]Process completed with exit code 2`, and then `probe.write; outcome=skipped`. The failed composite step still exported its outputs, so the assertion step read `OUTCOME: failure` and `GAUGE_EXIT: 3`, printed `exit-3 probe: no report, no body, no issue touched, as section 7 claims`, and the job finished green in 22 seconds. Gauge's stderr went up as the `gauge-diagnostics` artifact (278 bytes, ID 13397322544) and issue #6 still reads `updated_at` 2026-11-04T11:28:15Z with 0 comments, which is the no-update half proven by a skipped step rather than by `dry-run`. Phase 1 is 11 of 11 and the total 33 of 39. | 1.9 (done) |
 | 2026-11-05 | The sentence in 2.10 that said the action had only ever run in dry run is false and is replaced with the runs. It was written when G3 was still open; `watch / audit` 126475427542 opened issue #6 from a live testnet read on 2026-11-04, 126477058944 and 126543269815 found the finding list unchanged and left it alone, and 126544009391 rewrote it at 11:28:15Z, so G3 and G4 have been closed for a day and the row's own reason for holding the tag went stale with them. What remains is stated as what it is: the tag is the owner's judgement about what a release commits a consumer to, and the done-when's second half is 3.4. No code, test or document other than this file moves, so the suite stays 177 and the table stays 33 of 39 with 4 of 5 gates. It was found by grepping the shipped documents for claims about the write path rather than by a run, which is the cheapest way to catch a row that a later piece of work left behind. | 2.10 (text) |
 | 2026-11-05 | 3.4 closes on a runner that is not this repository's. `posture-sec/stellar-account-fixtures` merged pull request #28 as `71dfffc` at 08:08:42Z, and its `.github/workflows/posture-watch.yml` is the first call of this action written outside this repository: `uses: posture-sec/stellar-posture-watch@deaf7dcc482525c4583660643cf8251146afb466`, the pinned form rather than the dogfood's `uses: ./`, against that repository's own `.posture/gauge.toml` and the one testnet account its corpus captures. Job 127127136762 at 08:09:18Z ran it with `dry_run` ticked and printed `gauge exited 0 after writing 2346 bytes of report`, then `render_report: wrote /home/runner/work/_temp/issue-body.md (1313 characters); 0 open, 0 high, 0 warn, 0 accepted`, then `sync_issue: dry run, would open an issue titled 'Fixture account drift'`. Job 127127900716 at 08:11:19Z, flag off, printed `sync_issue: opened issue #29 as the baseline` and `gauge exited 0, tracking issue 29, changed=true`. Job 127128709833 at 08:13:13Z found that issue by its state marker, rendered 1312 characters of `no change since the previous run`, said `issue #29 needs no change, left alone` and reported `changed=false`; the issue reads back through the API at 1313 characters, label `fixture-drift`, `updated_at` equal to `created_at` at 08:11:50Z and 0 comments. So two shapes this action has never produced on a runner arrived in one afternoon: a clean report, whose every findings section says `None.`, and `gauge exited 0`, where every hosted run here and there before this one exited 1 on the `acct-missing` the dogfood policy declares on purpose. The runner also proved the pin before using it, printing `Download action repository 'posture-sec/stellar-posture-watch@deaf7dcc...' (SHA:deaf7dcc...)`, which is the evidence 2.10's second done-when half waits on, so that row loses the clause claiming no other repository pins the ref. G5 does not move with 3.4 and says why in its own text: both callers are the same author, so the code path doubled and the reader count did not. Four stale sentences came out of the same grep that found the 2.10 one. `docs/WAVE_SUBMISSION.md` gave "no consumer but this repository" as a reason not to apply, listed a second consumer as work left for a stranger, said `three of those six` about a checklist whose counts had moved, and closed with `written, tested, documented, and unexecuted`, which stopped being true the morning issue #6 opened; its header also still said five pull requests and one tracking issue where the API now answers twelve merged and two kept. `README.md`'s Usage paragraph names the pinned consumer as the worked example to copy, because until now the only caller in this repository's own docs was the one with no pin. Nothing here changed to produce any of this: no script, no test, no workflow, so the suite stays 177 and the table below regenerates to Phase 3 at 5 of 8 and the readiness total at 34 of 39, with the gates unchanged at 4 of 5. | 3.4, 2.10 (text) |
+| 2026-11-05 | The backlog goes public on a date rather than on an approval, which is D-10. The program page read this morning shows Stellar Wave #11 upcoming from November 18 to 25 with a $75,000 budget and a cap of five repositories per contributor and five per organization, so the clause in 3.5 that nothing wave-shaped is published before the organization's application is approved was the last sentence here waiting on a window that now has a date in it. `CONTRIBUTING.md` has said since the scaffold that every open roadmap task gets one issue carrying that task's done-when as its acceptance criteria, and it had never happened: the repository had one open issue, the tracking one, and it has twelve now. Eleven are the open rows of sections 5 and 9, numbered #15 to #25, each with a `type:`, an `area:` and a `complexity:` tier beside it, and six of them carry the label `Stellar Wave` as this repository's stand-in for the program's initiative identifier until the maintainer console says otherwise. Issue #6 stays what it always was, an artifact a schedule writes rather than work to take. Two roadmap rows are new because two of the issues described real work no task tracked: 9.5, the markdown escape surface as a fixture matrix, and 9.6, the four Scorecard checks 2.8's own run printed and named, hashed dev dependencies, an update tool, an analyzer and a matrix or fuzz target for the renderer. `docs/WAVE_SUBMISSION.md` gained an Issue column and lost its first reason: "no cycle is open", dated 2026-11-02 from the Gauge packet, is now a cycle thirteen days out and a decision about which of four repositories takes a capped slot, which is the owner's act and not this file's. The gate rows stayed out of the tracker as `CONTRIBUTING.md` requires, so G5 has no issue and the reason it cannot have one is written into the row instead. Nothing in `action.yml`, the three scripts or their tests moves, so the suite is 177 here exactly as on `main`, and the regenerated table shows section 9 at 0 of 6 with the readiness total unchanged at 34 of 39, because `roadmap_progress.py` keeps the backlog outside that sum by design and this row says so rather than claiming a dip. | 3.5 (part), 9.5, 9.6 (added) |
 
 ## 9. Last updated line format
 

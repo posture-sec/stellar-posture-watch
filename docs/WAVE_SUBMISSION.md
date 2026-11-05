@@ -8,8 +8,10 @@ maintainer docs rather than recalled. This file does not repeat those facts: it 
 changes for the organization now that this repository exists, and what has to be true here
 before this repository is a candidate.
 
-Last read of the program itself: 2026-11-02, in the Gauge packet. Nothing here claims this
-repository is approved, applied to, or eligible. Its git history is a day old (first commit
+Last read of the program itself: 2026-11-05, from the program page, which is what changed reason 1
+below. The caps, the tiers and the runbook still come from the Gauge packet written against the
+2026-11-02 reading. Nothing here claims this repository is approved, applied to, or eligible. Its
+git history is a day old (first commit
 2026-11-04T06:58Z), twelve pull requests have merged into `main`, and it keeps two tracking
 issues: #6 here, and #29 in `posture-sec/stellar-account-fixtures`, whose workflow is the second
 caller of this action and the closing evidence of roadmap 3.4.
@@ -33,9 +35,13 @@ read section 3, not the roadmap.
 
 Four reasons, in order of how long each takes to clear.
 
-1. **No cycle is open.** The Gauge packet records that as of 2026-11-02 the Stellar Wave
-   page shows no active or upcoming wave. There is nothing to apply into, and the caps are
-   dashboard-only facts.
+1. **A cycle is dated now, and it is thirteen days out.** The Gauge packet records that as of
+   2026-11-02 the Stellar Wave page showed no active or upcoming wave. Read again on 2026-11-05,
+   the page shows Stellar Wave #11 upcoming, November 18 to 25, with a $75,000 budget and a cap of
+   five repositories per contributor and five per organization. So this reason is no longer that
+   there is nothing to apply into. It is that the application is one act by the owner for the whole
+   organization, into a capped slot, and that choosing this repository is his call rather than a
+   gap this repository can close on its own.
 2. **What a reviewer would check is now real, and only one person has checked it.** The write
    ran on 2026-11-04: `watch / audit` job 126475427542 built Gauge at the pinned sha, read
    `example/gauge.toml` against live testnet and opened issue #6 with one high `acct-missing`,
@@ -59,18 +65,22 @@ Four reasons, in order of how long each takes to clear.
 
 ## 3. What wave work here would look like
 
-Not published as issues, per the standing rule that wave-scoped issues go up only after an
-application is approved, and none of these is shaped for a stranger yet. The tiers named are
-the program's three, and they are a guess about effort, not a label.
+These are published as issues now, by D-10 rather than by the approval this file used to wait for:
+every open roadmap task in `ROADMAP.md` has an issue whose body carries that task's done-when as its
+acceptance criteria, and the six shapes a stranger could take carry the label `Stellar Wave`. The
+tiers named are the program's three, and they are a guess about effort, not a label.
 
-| Shape | Work | Why it suits a contributor |
-|---|---|---|
-| Trivial | Nothing left after 3.7. The bug that was in this row, a section heading `## Accounts read` sitting above a table whose own last row says `(not read)`, is renamed to `## Accounts asked about` on this branch: one string in `render_report.py`, five test split sites, `README.md`'s schematic and `ARCHITECTURE.md` section 2. | The shape is the part worth keeping. A run printed a claim its own table contradicts, a grep found every site keyed on the string, and 3.6 had fixed the sentence half the day before. That is what to look for next time. |
-| Medium | The escape surface as a test matrix: hostile `home_domain`, data values and messages assembled into one fixture per markdown construct, each with the render it must not produce (roadmap 1.2 follow-on). | Pure, self-contained, and the failure mode is visible in the diff. |
-| Medium | A documentation site for the action (roadmap 2.9), with a rendered example issue beside the report that produced it. | Deferred by the maintainer on purpose, so it is work a stranger can own without a design argument. |
-| Medium | A consumer that is not one of this maintainer's four repositories (roadmap G5). The row this replaces, a second consumer at all, closed on 2026-11-05: `posture-sec/stellar-account-fixtures` calls the action from its own `.github/workflows/posture-watch.yml` pinned by sha, audits its own `.posture/gauge.toml`, and has published and left-alone its issue #29 on three runs. | One workflow file, one policy file and one issue to read, against a worked example in a sibling repository. The acceptance criterion is the contributor saying whether that body tells them anything true about their own accounts, which is the only evidence here that a second pair of eyes changes. |
-| High | SARIF output so findings land in a repository's security tab (roadmap 9.1). | Needs a severity mapping nobody has agreed on and a SARIF writer in Gauge, so it is a design task first. |
-| Medium | Upstream to Gauge: the signer and threshold rule families this watch cannot report without (Gauge 3.1, and its 0.7 blocker). | The highest-value work in the organization is not in this repository, and a contributor should know that. |
+| Shape | Work | Issue | Why it suits a contributor |
+|---|---|---|---|
+| Trivial | Nothing left after 3.7. The bug that was in this row, a section heading `## Accounts read` sitting above a table whose own last row says `(not read)`, is renamed to `## Accounts asked about` on `main`: one string in `render_report.py`, five test split sites, `README.md`'s schematic and `ARCHITECTURE.md` section 2. | none | The shape is the part worth keeping. A run printed a claim its own table contradicts, a grep found every site keyed on the string, and 3.6 had fixed the sentence half the day before. That is what to look for next time. |
+| Medium | The escape surface as a test matrix: hostile `home_domain`, data values and messages assembled into one fixture per markdown construct, each with the render it must not produce. | #24, roadmap 9.5 | Pure, self-contained, and the failure mode is visible in the diff. |
+| Medium | A documentation site for the action, with a rendered example issue beside the report that produced it. | #15, roadmap 2.9 | Deferred by the maintainer on purpose, so it is work a stranger can own without a design argument. |
+| Medium | Watching a repository that is not one of this maintainer's four. The row this replaces, a second consumer at all, closed on 2026-11-05: `posture-sec/stellar-account-fixtures` calls the action from its own `.github/workflows/posture-watch.yml` pinned by sha, audits its own `.posture/gauge.toml`, and has published and left alone its issue #29 across three runs. | no issue, gate G5 | One workflow file, one policy file and one issue to read, against a worked example in a sibling repository. `CONTRIBUTING.md` keeps gate rows out of the issue tracker, and this one needs a reader rather than a pull request. |
+| Medium | More than one policy file in one repository, which is one state marker per file. | #22, roadmap 9.3 | The contract is written down, the tests are the hard part, and nothing about the shipped schedule has to move. |
+| Medium | The four Scorecard gaps this repository can close: hashed dev dependencies, an update tool, an analyzer, and a matrix or fuzz target for the renderer. | #25, roadmap 9.6 | Each one is a number this repository's own Scorecard run printed and explained, so the done state is readable without an argument about taste. |
+| High | SARIF output so findings land in a repository's security tab. | #20, roadmap 9.1 | Needs a severity mapping nobody has agreed on and a SARIF writer in Gauge, so it is a design task first. |
+| High | A `pull_request` mode that comments on the diff. | #21, roadmap 9.2 | The code is small and the decision is not: D-05 says a schedule stays green for findings and red for failures, and a merge check promises the opposite. |
+| Medium | Upstream to Gauge: the signer and threshold rule families this watch cannot report without (Gauge 3.1, and its 0.7 blocker). | not in this repository | The highest-value work in the organization is not here, and a contributor should know that before choosing. |
 
 The guard scripts, the marker contract, and the exit-code mapping in D-05 are not on this
 list. They are the parts a maintainer has to own, because each is a decision dressed as code.
