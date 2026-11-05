@@ -10,15 +10,16 @@ because `ci / python` has been read green on the merge commit of pull request #1
 `main`. Gates G3 and G4 are closed below, on the runs and on the reading of the body against
 the report. Every claim here names the run or the file it was read from.
 
-Last updated: 2026-11-05T07:43Z (1.9 is closed and it closed on a runner, in the pull
-request that built the probe: `self-check / exit-3 probe` job 127116146401 ran the action against
-`tests/fixtures/policy-unreachable-endpoint.toml`, printed `gauge exited 3 after writing 0 bytes
-of report`, watched `render_report` refuse the empty file at exit 2, recorded
-`probe.write; outcome=skipped`, and still went green because its own assertions read
-`OUTCOME: failure` and `GAUGE_EXIT: 3`. Issue #6 did not move: `updated_at` is still
-2026-11-04T11:28:15Z with 0 comments, so the no-update half is a skipped step rather than the
-dry-run flag. Phase 1 is now 11 of 11 and the readiness total 33 of 39, with 4 of 5 gates. The
-probe is a permanent job, so every pull request from here re-reads the same claim.)
+Last updated: 2026-11-05T07:49Z (Phase 1 closed at 11 of 11 when 1.9 ticked on its own pull
+request: `self-check / exit-3 probe` job 127116146401 printed `gauge exited 3 after writing 0
+bytes of report`, watched `render_report` refuse the empty file at exit 2, recorded
+`probe.write; outcome=skipped`, and went green because its assertions read `OUTCOME: failure` and
+`GAUGE_EXIT: 3`, while issue #6 stayed at `updated_at` 2026-11-04T11:28:15Z with 0 comments. That
+job is permanent, so every pull request from here re-reads the same claim. The readiness total is
+33 of 39 with 4 of 5 gates. What moved since is a row that a finished piece of work left behind:
+2.10 still said the action had only ever run in dry run, which G3 closed on 2026-11-04, and its
+text now names the four hosted runs instead. No code, test or other document moves here, so the
+suite stays 177.)
 
 ## 1. What this repository is
 
@@ -362,9 +363,13 @@ it is why this repository's value right now is the plumbing rather than the find
 - [ ] **2.9** A documentation site. Deferred deliberately: the two siblings have one each
   and this repository's surface is one yaml file plus a worked example. Revisit after G3.
 - [ ] **2.10** A first release. Done-when: `v0.1.0` is tagged and `action.yml` is consumed
-  by ref from another repository. Nothing is tagged yet: the action has now run once on a runner
-  (1.8), but in dry run, so the one thing a consumer would be pinning an expectation about, the
-  issue it maintains, has not been produced by it.
+  by ref from another repository. The reason this row held is no longer true: it said the action
+  had run only in dry run, so the issue it maintains had never been produced by it. `watch /
+  audit` job 126475427542 opened issue #6 from a live testnet read on 2026-11-04, and
+  126477058944 and 126543269815 left it alone while 126544009391 rewrote it, which is G3 and G4
+  closed. What still holds the tag is the owner's judgement about what a release commits a
+  consumer to, and the second half of the done-when waits on 3.4: no repository other than this
+  one pins the ref yet.
 - [x] **2.11** `example/`. `example/gauge.toml` is a testnet policy for three accounts: a
   declared five-of-six signer set (five keys at weight 1 plus the master at weight 0) at
   thresholds 3/3/3 with every flag off, an issuer with `auth_required`, `auth_revocable` and
@@ -626,6 +631,7 @@ it is why this repository's value right now is the plumbing rather than the find
 | 2026-11-04 | 3.8's two dispatches ran from `main` at `2f5e1ec`, the merge of the pull request that added the input. Unticked first, so the fallback is read before the override is used: `watch / audit` job 126543269815 at 11:26:11Z shows the input rendered as `update-on-no-change: false`, prints `render_report: wrote /home/runner/work/_temp/issue-body.md (2315 characters); no change since the previous run (1 open, 1 high, 0 warn, 0 accepted)` and then `sync_issue: issue #6 needs no change, left alone`, with `gauge exited 1, tracking issue 6, changed=false` on the last step and the issue still at `updated_at` 08:36:02Z and no comments. Ticked second: job 126544009391 at 11:27:48Z shows `update-on-no-change: true`, prints the same 2315 characters over the same unchanged finding list and then `sync_issue: updated issue #6 without a comment`. Read back from the API the body is 2316 characters, which is the render plus the newline after the marker line, its first line is "1 finding open (1 high, 0 warn) across 2 accounts read of 3 asked about, unchanged since the previous run.", its account section is titled `## Accounts asked about` over the two accounts the endpoint had and the one whose Read cell says `not found on this endpoint`, the state marker is the same 400 base64url characters saved from the body before the run byte for byte, and `updated_at` is 11:28:15Z. So 3.6's sentence and 3.7's heading are published at last, written by the code that read the chain at ledger 5553610 rather than typed into the issue. The row stays unticked for its third done-when clause: a `schedule` event has no `inputs` context at all rather than a declared boolean set to false, GitHub's or-operator treats them the same, and only Tuesday 2026-11-10 at 05:23 UTC can show the path a consumer gets, so the entry names the run it waits for instead of reasoning the operator away. No code or test moved here, so the suite is 175 and the table below is the same 32 of 39 as when 3.8 was added. One defect in the previous row came out of reading the file rather than the render: the 3.8 row had been inserted after the blank line that closes the changelog table, which makes it its own one-row table on the rendered page, so it sits with its neighbours again and the section heading keeps its separator. | 3.8 |
 | 2026-11-05 | The exit-3 path stops being a claim. 1.9 needs a fetch that genuinely fails, which no desk run can produce, so the repository now produces one on every pull request: `tests/fixtures/policy-unreachable-endpoint.toml` points at `https://horizon.invalid`, the top-level domain RFC 6761 reserves and no resolver answers for, and `self-check.yml` gains a second job, `self-check / exit-3 probe`, that runs the action against the file with `continue-on-error: true` and then requires four things, that the step failed, that `report.json` exists, that it holds zero bytes and that `issue-body.md` was never written. The second claim is what keeps the probe honest: a policy `validate_inputs.py` refuses dies before the audit step and leaves no report either, so the wrong failure would look exactly like the right result. Two shape tests in `tests/test_validate_inputs.py` hold the fixture up, that it passes every check before the network and that its endpoint is the reserved domain, which takes the suite from 175 cases to 177, and `ARCHITECTURE.md` section 7, `CONTRIBUTING.md` and `README.md` name the row a job now proves. A desk run of the pinned build against this fixture gives exit 3, zero bytes of stdout and a stderr naming `lookup horizon.invalid: no such host`, which is the shape the job then requires; the hosted reading is the row below, from the same pull request. | 1.9 (part) |
 | 2026-11-05 | 1.9 closes on its own pull request. `self-check / exit-3 probe` job 127116146401 ran the action against `tests/fixtures/policy-unreachable-endpoint.toml` and printed, in order: `gauge exited 3 after writing 0 bytes of report`, `sync_issue: found issue to update (#6)`, `render_report: refused: report /home/runner/work/_temp/report.json: is empty`, `##[error]Process completed with exit code 2`, and then `probe.write; outcome=skipped`. The failed composite step still exported its outputs, so the assertion step read `OUTCOME: failure` and `GAUGE_EXIT: 3`, printed `exit-3 probe: no report, no body, no issue touched, as section 7 claims`, and the job finished green in 22 seconds. Gauge's stderr went up as the `gauge-diagnostics` artifact (278 bytes, ID 13397322544) and issue #6 still reads `updated_at` 2026-11-04T11:28:15Z with 0 comments, which is the no-update half proven by a skipped step rather than by `dry-run`. Phase 1 is 11 of 11 and the total 33 of 39. | 1.9 (done) |
+| 2026-11-05 | The sentence in 2.10 that said the action had only ever run in dry run is false and is replaced with the runs. It was written when G3 was still open; `watch / audit` 126475427542 opened issue #6 from a live testnet read on 2026-11-04, 126477058944 and 126543269815 found the finding list unchanged and left it alone, and 126544009391 rewrote it at 11:28:15Z, so G3 and G4 have been closed for a day and the row's own reason for holding the tag went stale with them. What remains is stated as what it is: the tag is the owner's judgement about what a release commits a consumer to, and the done-when's second half is 3.4. No code, test or document other than this file moves, so the suite stays 177 and the table stays 33 of 39 with 4 of 5 gates. It was found by grepping the shipped documents for claims about the write path rather than by a run, which is the cheapest way to catch a row that a later piece of work left behind. | 2.10 (text) |
 
 ## 9. Last updated line format
 
