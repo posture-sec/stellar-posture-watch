@@ -89,6 +89,19 @@ action with `dry-run: true`. That workflow is not a required check: a testnet ou
 not make this repository unmergeable. Its run is the evidence for 1.8, so read its output
 rather than its colour.
 
+`self-check` has a second job, `self-check / exit-3 probe`, and its colour reads backwards
+until you know what it is for. It runs the action against
+`tests/fixtures/policy-unreachable-endpoint.toml`, a policy whose endpoint is in the
+`.invalid` domain no resolver answers for, with `continue-on-error: true` on the action step
+and four assertions after it: the step failed, `report.json` exists, `report.json` is empty,
+and `issue-body.md` does not exist. So the job is green when the probe fails as designed and
+red in the two cases that matter, an unreadable endpoint that somehow produces a body, and a
+run that died in `validate_inputs.py` before the audit step and therefore wrote no files at
+all. That third condition is why the probe policy has a shape test in
+`tests/test_validate_inputs.py`: without it, a typo in the fixture would read as a pass for
+the wrong reason. If you change the failure path in `action.yml`, change the assertions here
+in the same pull request rather than trusting the log.
+
 It is not the evidence for G3 and cannot be, because the flag is off: `self-check.yml` reaches
 the point where the body exists and stops. `.github/workflows/watch.yml` is the same call with
 `dry-run: "false"` and `issues: write` in place of `issues: read`, on a Tuesday schedule, and it

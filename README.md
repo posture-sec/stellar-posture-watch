@@ -119,7 +119,11 @@ mails you a red X for a WARN you already accepted trains everyone to ignore the 
 `break-build: true` when you want findings to fail the run instead, which is the right
 answer in a `pull_request` workflow and the wrong one in a cron.
 
-Exit 2 and exit 3 always fail the run whatever that input says.
+Exit 2 and exit 3 always fail the run whatever that input says. The second of those is not
+something you have to take on faith: this repository's own `self-check` workflow has a job
+that audits a policy pointing at an endpoint no resolver answers for, and it fails the job
+unless that run wrote no report and rendered no body. A broken read never reaches a reader
+as a fixed account.
 
 ## What the issue looks like
 

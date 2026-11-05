@@ -1,0 +1,29 @@
+# The exit-3 probe policy, read by the `self-check / exit-3 probe` job. Not an example.
+#
+# Every line here is shaped to pass the checks that run before anything touches the
+# network: a network keyword the validator accepts, an https endpoint with a host and no
+# query, and account ids whose checksums verify. `tests/test_validate_inputs.py` holds a
+# test that says so, because if this file failed shape validation the probe job would go
+# red at "Check the inputs" and the run would prove nothing about the read.
+#
+# The one thing that cannot pass is the fetch, because `.invalid` is the top-level domain
+# RFC 6761 reserves for tests and no resolver answers for it. That is the point.
+# `example/gauge.toml` already shows the other half: an address the endpoint does not have
+# is one high `acct-missing` finding, exit 1, and a body. A policy whose endpoint cannot
+# be read at all has to be exit 3 with no report and no body, because a broken read that
+# still renders looks to a reader like an account somebody fixed. `ARCHITECTURE.md`
+# section 7 claims that shape; this file is how a runner checks the claim.
+#
+# Do not point a schedule at it. Do not copy the endpoint into your own policy.
+
+version = 1
+network = "testnet"
+endpoints = ["https://horizon.invalid"]
+
+[[account]]
+# The custody account `example/gauge.toml` declares, real and readable on the genuine
+# testnet endpoint. Its presence is what keeps the failure about the endpoint.
+id = "GBQHXYDEJD6NEIUQ5NYDBVNTRCACJXMLO32JUQHBGO524NMVYOMIN5CP"
+name = "probe-custody"
+role = "other"
+expect_locked = false
