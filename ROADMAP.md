@@ -627,8 +627,11 @@ it is why this repository's value right now is the plumbing rather than the find
   `break-build` semantics settled on a schedule first, and D-05 is that settlement. A mode whose red
   check means "your policy disagrees with the chain" is a different promise from D-05's green-for-a-
   finding, so it needs a new decision row before new code. **Issue:** #21.
-- [ ] **9.3** Watching more than one policy file. Deferred: one file per issue is the
-  contract, and a second file needs a state marker per file. **Issue:** #22.
+- [x] **9.3** Watching more than one policy file. Done-when: `config` takes a comma- or
+  newline-separated list, each file is validated on its own, and each gets its own state
+  key in the marker, its own label suffix and its own issue, so one file's unchanged
+  posture leaves its issue alone while another's moves; an exit 3 on one file leaves the
+  other body alone. **Issue:** #22.
 - [ ] **9.4** Pinning Gauge by release tag once Gauge is tagged. Waiting on Gauge's v0.1.0,
   which does not exist yet; D-01 stays until it does. **Issue:** #23.
 - [ ] **9.5** The escape surface as a test matrix. Added 2026-11-05 out of the wave packet's
@@ -709,7 +712,7 @@ it is why this repository's value right now is the plumbing rather than the find
 | 1 | The action | 11 | 11 | 100% |
 | 2 | Public shape | 11 | 13 | 85% |
 | 3 | Real use | 5 | 8 | 62% |
-| 9 (backlog) | Backlog, not scheduled | 0 | 6 | 0% |
+| 9 (backlog) | Backlog, not scheduled | 1 | 6 | 17% |
 | **All phases** | **Readiness total** | **34** | **39** | **87%** |
 | Gates | G1 to G5 | 4 | 5 | 80% |
 <!-- PROGRESS:END -->

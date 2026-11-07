@@ -13,12 +13,15 @@ Exit codes: 0 the run is safe to start, 2 refused.
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import sys
 import tomllib
 from pathlib import Path
 
 MAX_CONFIG_BYTES = 1024 * 1024
+MAX_CONFIG_FILES = 10
+KEY_UNSAFE = re.compile(r"[^a-z0-9]+")
 MAX_TEXT_INPUT = 256
 NETWORK_KEYWORDS = ("mainnet", "testnet")
 
@@ -210,6 +213,34 @@ def check_config_path(value: str, problems: list[str]) -> Path | None:
     return candidate
 
 
+def split_config(value: str) -> list[str]:
+    """The policy files the config input names, in the order given.
+
+    One path is the common case and stays a plain string in a consumer's yaml. A list
+    is separated by commas or newlines; both are accepted so the same input works
+    inline and as a multi-line block scalar.
+    """
+    entries: list[str] = []
+    for chunk in value.replace(",", "\n").splitlines():
+        chunk = chunk.strip()
+        if chunk:
+            entries.append(chunk)
+    return entries
+
+
+def state_key(path: str) -> str:
+    """A stable, marker-safe key for one policy file.
+
+    The whole path without its suffix is used, so ``a/gauge.toml`` and ``b/gauge.toml``
+    do not collide on ``gauge``. The key names the marker inside the issue body and the
+    label suffix of that file's issue, so it may not contain anything outside
+    ``[a-z0-9-]``.
+    """
+    stem = path.rsplit(".", 1)[0] if "." in path.rsplit("/", 1)[-1] else path
+    key = KEY_UNSAFE.sub("-", stem.lower()).strip("-")
+    return key or "config"
+
+
 def check_text_input(name: str, value: str, problems: list[str]) -> None:
     if not value:
         problems.append(f"{name} must not be empty")
@@ -233,15 +264,32 @@ def validate(args: argparse.Namespace) -> list[str]:
         problems.append(f"fail-on {args.fail_on!r} must be high or warn")
     check_text_input("issue-label", args.issue_label, problems)
     check_text_input("title", args.title, problems)
-    config = check_config_path(args.config, problems)
-    if config is not None:
-        check_policy(config, problems)
+    entries = split_config(args.config)
+    if not entries:
+        problems.append("config must name at least one policy file")
+    if len(entries) > MAX_CONFIG_FILES:
+        problems.append(f"config names {len(entries)} files, over the {MAX_CONFIG_FILES} limit")
+    seen: set[str] = set()
+    keys: dict[str, str] = {}
+    for value in entries:
+        if value in seen:
+            problems.append(f"config {value!r} is listed more than once")
+            continue
+        seen.add(value)
+        key = state_key(value)
+        if key in keys:
+            problems.append(f"config {value!r} shares the state key {key!r} with {keys[key]!r}")
+        keys[key] = value
+        config = check_config_path(value, problems)
+        if config is not None:
+            check_policy(config, problems)
     return problems
 
 
 def parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--config", default="gauge.toml")
+    parser.add_argument("--files-out", dest="files_out", default="")
     parser.add_argument("--gauge-repo", dest="gauge_repo", default="posture-sec/guage")
     parser.add_argument("--gauge-ref", dest="gauge_ref", default="")
     parser.add_argument("--fail-on", dest="fail_on", default="high")
@@ -258,9 +306,16 @@ def main(argv: list[str] | None = None) -> int:
         for problem in problems:
             print(f"  - {problem}", file=sys.stderr)
         return 2
+    entries = split_config(args.config)
+    if args.files_out:
+        payload = json.dumps(
+            [{"path": value, "key": state_key(value)} for value in entries], separators=(",", ":")
+        )
+        with open(args.files_out, "a", encoding="utf-8") as handle:
+            handle.write(f"files={payload}\n")
     print(
         f"validate_inputs: gauge-ref is pinned at {args.gauge_ref[:7]}, "
-        f"config {args.config} parsed, fail-on {args.fail_on}"
+        f"{len(entries)} config file(s) parsed, fail-on {args.fail_on}"
     )
     return 0
 

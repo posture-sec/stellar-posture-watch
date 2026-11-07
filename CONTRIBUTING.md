@@ -128,7 +128,9 @@ The body is the product. Four constraints hold it together:
 - The fingerprint, not the message, is a finding's identity. Do not key change detection on
   text: Gauge rewords messages, and a reword would read as one finding resolved and another
   opened.
-- The marker at the foot of the body is the only state. Anything that rewrites the body
+- The marker at the foot of the body is the only state, and it is keyed on the policy file's
+  path. A body can only carry one file's marker, so do not decode a keyed marker in an
+  unkeyed run or the other way round; `render_report.py --state-key` is the only way in. Anything that rewrites the body
   between the read and the write destroys it.
 - Every string that came from the chain, the policy file or the report goes through `escape()`
   or `fenced()` at the point it is written. A new table row that forgets it is a way for an

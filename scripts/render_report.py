@@ -142,7 +142,19 @@ def split_accepted(
     return open_only, accepted
 
 
-def encode_state(findings: list[Finding], budget: int = MAX_STATE_ENTRIES) -> tuple[str, int]:
+def marker_open(key: str) -> str:
+    """The marker's opener, carrying the policy file's key when there is one.
+
+    A body can describe more than one policy file, so the marker has to say which file
+    its entries belong to. The key is separated with ``#``, which base64url never
+    produces, so a keyed marker cannot be mistaken for an unkeyed payload.
+    """
+    return MARKER_PREFIX if not key else f"{MARKER_PREFIX}{key}#"
+
+
+def encode_state(
+    findings: list[Finding], budget: int = MAX_STATE_ENTRIES, key: str = ""
+) -> tuple[str, int]:
     """The marker payload and the number of findings left out of it.
 
     The payload is base64url of a compact JSON array: an HTML comment cannot hold a
@@ -155,16 +167,19 @@ def encode_state(findings: list[Finding], budget: int = MAX_STATE_ENTRIES) -> tu
     while True:
         payload = json.dumps(ordered[:limit], separators=(",", ":"), sort_keys=True)
         encoded = base64.urlsafe_b64encode(payload.encode()).decode().rstrip("=")
-        marker = f"{MARKER_PREFIX}{encoded}{MARKER_SUFFIX}"
+        marker = f"{marker_open(key)}{encoded}{MARKER_SUFFIX}"
         if len(marker) <= MAX_MARKER_CHARS or limit == 0:
             return encoded, len(ordered) - limit
         limit = max(limit - max(1, len(ordered) // 8), 0)
 
 
-def decode_state(text: str) -> list[Finding] | None:
-    """The findings recorded by a previous run, or None if the body carries no state."""
+def decode_state(text: str, key: str = "") -> list[Finding] | None:
+    """The findings recorded by a previous run, or None if the body carries no state.
+
+    With a key, only that file's marker is read; without one, only an unkeyed marker is.
+    """
     match = re.search(
-        re.escape(MARKER_PREFIX) + r"([A-Za-z0-9_-]*)" + re.escape(MARKER_SUFFIX), text
+        re.escape(marker_open(key)) + r"([A-Za-z0-9_-]*)" + re.escape(MARKER_SUFFIX), text
     )
     if not match:
         return None
@@ -316,7 +331,8 @@ def render(args: argparse.Namespace) -> tuple[str, dict[str, object]]:
     previous: list[Finding] | None = None
     if args.previous_body and Path(args.previous_body).exists():
         previous = decode_state(
-            Path(args.previous_body).read_text(encoding="utf-8", errors="replace")
+            Path(args.previous_body).read_text(encoding="utf-8", errors="replace"),
+            args.state_key,
         )
 
     if previous is None:
@@ -328,7 +344,7 @@ def render(args: argparse.Namespace) -> tuple[str, dict[str, object]]:
         changed = bool(new or resolved)
         baseline = False
 
-    payload, omitted = encode_state(list(current.values()), args.max_state_entries)
+    payload, omitted = encode_state(list(current.values()), args.max_state_entries, args.state_key)
 
     counts = {
         "open": len(current),
@@ -374,7 +390,7 @@ def render(args: argparse.Namespace) -> tuple[str, dict[str, object]]:
         "list here means the rules this version of Gauge runs agreed with the policy at one "
         "ledger, nothing more.\n"
     )
-    parts.append(f"\n{MARKER_PREFIX}{payload}{MARKER_SUFFIX}\n")
+    parts.append(f"\n{marker_open(args.state_key)}{payload}{MARKER_SUFFIX}\n")
     summary: dict[str, object] = {
         "changed": changed,
         "new": len(new),
@@ -396,6 +412,7 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument("--previous-body", dest="previous_body", default="")
     parser.add_argument("--as-of", dest="as_of", required=True)
     parser.add_argument("--config", required=True)
+    parser.add_argument("--state-key", dest="state_key", default="")
     parser.add_argument("--gauge-repo", dest="gauge_repo", default="posture-sec/guage")
     parser.add_argument("--gauge-ref", dest="gauge_ref", required=True)
     parser.add_argument("--fail-on", dest="fail_on", default="high", choices=("high", "warn"))

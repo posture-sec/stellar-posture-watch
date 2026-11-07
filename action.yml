@@ -19,7 +19,12 @@ inputs:
     required: false
     default: posture-sec/guage
   config:
-    description: Path to the Gauge policy file, relative to the caller's workspace.
+    description: >-
+      Path to a Gauge policy file, relative to the caller's workspace. Several files may
+      be given, separated by commas or newlines; each one gets its own tracking issue,
+      its own label suffix and its own state marker, so one file's unchanged posture
+      leaves its issue alone while another's moves. A single path behaves exactly as
+      before.
     required: false
     default: gauge.toml
   fail-on:
@@ -34,11 +39,15 @@ inputs:
     required: false
     default: "false"
   issue-label:
-    description: Label on the tracking issue this action maintains.
+    description: >-
+      Label on the tracking issue this action maintains. With more than one policy file
+      the file's state key is appended with a dash, so each file keeps its own issue.
     required: false
     default: account-posture
   title:
-    description: Title of the tracking issue.
+    description: >-
+      Title of the tracking issue. With more than one policy file the file's path is
+      appended in brackets so the issues stay distinguishable.
     required: false
     default: Account posture watch
   update-on-no-change:
@@ -61,13 +70,17 @@ inputs:
 
 outputs:
   exit-code:
-    description: Gauge's exit code. 0 clean, 1 findings, 2 usage, 3 the account could not be read.
+    description: >-
+      The worst Gauge exit code across the policy files. 0 clean, 1 findings, 2 usage,
+      3 the account could not be read.
     value: ${{ steps.gauge.outputs.exit-code }}
   changed:
     description: true when the open finding list differs from the one in the tracking issue body.
     value: ${{ steps.write.outputs.changed }}
   issue-number:
-    description: Number of the tracking issue, empty on a dry run that found none.
+    description: Number of the first tracking issue this run touched, empty on a dry run that found none.
+  issue-numbers:
+    description: Comma-separated numbers of every tracking issue this run touched, in config order.
     value: ${{ steps.write.outputs.issue-number }}
   report-path:
     description: Path of the JSON report inside the runner, never printed to the log.
@@ -80,6 +93,7 @@ runs:
   # file is the thing that was reviewed.
   steps:
     - name: Check the inputs
+      id: check
       shell: bash
       env:
         GAUGE_REF: ${{ inputs.gauge-ref }}
@@ -95,7 +109,8 @@ runs:
           --gauge-ref "$GAUGE_REF" \
           --fail-on "$FAIL_ON" \
           --issue-label "$ISSUE_LABEL" \
-          --title "$TITLE"
+          --title "$TITLE" \
+          --files-out "$GITHUB_OUTPUT"
 
     - name: Fetch the pinned Gauge commit
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -139,78 +154,124 @@ runs:
         echo "gauge exited $ec after writing $(wc -c < "$RUNNER_TEMP/report.json") bytes of report"
         exit 0
 
-    - name: Find the tracking issue
-      id: find
-      shell: bash
-      env:
-        POSTURE_WATCH_TOKEN: ${{ inputs.github-token }}
-        ISSUE_LABEL: ${{ inputs.issue-label }}
-        TITLE: ${{ inputs.title }}
-      run: |
-        set -euo pipefail
-        python3 "$GITHUB_ACTION_PATH/scripts/sync_issue.py" find \
-          --label "$ISSUE_LABEL" \
-          --title "$TITLE" \
-          --previous-body-out "$RUNNER_TEMP/previous-body.md"
-
-    - name: Render the issue body
-      shell: bash
-      env:
-        CONFIG: ${{ inputs.config }}
-        GAUGE_REF: ${{ inputs.gauge-ref }}
-        GAUGE_REPO: ${{ inputs.gauge-repo }}
-        FAIL_ON: ${{ inputs.fail-on }}
-        GAUGE_EXIT: ${{ steps.gauge.outputs.exit-code }}
-      run: |
-        set -euo pipefail
-        python3 "$GITHUB_ACTION_PATH/scripts/render_report.py" \
-          --report "$RUNNER_TEMP/report.json" \
-          --out "$RUNNER_TEMP/issue-body.md" \
-          --summary-out "$RUNNER_TEMP/summary.json" \
-          --previous-body "$RUNNER_TEMP/previous-body.md" \
-          --as-of "$(date -u +%F)" \
-          --config "$CONFIG" \
-          --gauge-repo "$GAUGE_REPO" \
-          --gauge-ref "$GAUGE_REF" \
-          --fail-on "$FAIL_ON" \
-          --exit-code "$GAUGE_EXIT"
-
-    - name: Update the tracking issue
+    - name: Render and sync every policy file
       id: write
       shell: bash
       env:
-        POSTURE_WATCH_TOKEN: ${{ inputs.github-token }}
+        FILES: ${{ steps.check.outputs.files }}
+        GAUGE_REPO: ${{ inputs.gauge-repo }}
+        GAUGE_REF: ${{ inputs.gauge-ref }}
+        FAIL_ON: ${{ inputs.fail-on }}
         ISSUE_LABEL: ${{ inputs.issue-label }}
         TITLE: ${{ inputs.title }}
-        NUMBER: ${{ steps.find.outputs.issue-number }}
         DRY_RUN: ${{ inputs.dry-run }}
         UPDATE_ON_NO_CHANGE: ${{ inputs.update-on-no-change }}
+        POSTURE_WATCH_TOKEN: ${{ inputs.github-token }}
       run: |
-        set -euo pipefail
-        args=()
-        if [ -n "$NUMBER" ]; then args+=(--number "$NUMBER"); fi
-        if [ "$DRY_RUN" = "true" ]; then args+=(--dry-run); fi
-        if [ "$UPDATE_ON_NO_CHANGE" = "true" ]; then args+=(--update-on-no-change); fi
-        python3 "$GITHUB_ACTION_PATH/scripts/sync_issue.py" write \
-          --label "$ISSUE_LABEL" \
-          --title "$TITLE" \
-          --body "$RUNNER_TEMP/issue-body.md" \
-          --summary "$RUNNER_TEMP/summary.json" \
-          "${args[@]}"
+        set -uo pipefail
+        python3 - "$FILES" > "$RUNNER_TEMP/files.tsv" <<'PYEXPAND'
+        import json, sys
+        files = json.loads(sys.argv[1] or "[]")
+        multiple = len(files) > 1
+        for index, entry in enumerate(files):
+            print(index, entry["path"], entry["key"], "1" if multiple else "0", sep="\t")
+        PYEXPAND
 
-    - name: Upload Gauge's diagnostics when the run failed outright
+        worst=0
+        changed="false"
+        numbers=""
+        refused=""
+        while IFS=$'\t' read -r index path key multiple; do
+          report="$RUNNER_TEMP/report-$index.json"
+          body="$RUNNER_TEMP/issue-body-$index.md"
+          summary="$RUNNER_TEMP/summary-$index.json"
+          previous="$RUNNER_TEMP/previous-body-$index.md"
+          label="$ISSUE_LABEL"
+          title="$TITLE"
+          if [ "$multiple" = "1" ]; then
+            label="$ISSUE_LABEL-$key"
+            title="$TITLE [$path]"
+          fi
+
+          ec=0
+          "$RUNNER_TEMP/stellar-gauge" audit \
+            --config "$path" \
+            --format json \
+            --fail-on "$FAIL_ON" \
+            > "$report" 2> "$RUNNER_TEMP/gauge-stderr-$index.log" || ec=$?
+          echo "$path: gauge exited $ec after writing $(wc -c < "$report") bytes of report"
+          if [ "$ec" -gt "$worst" ]; then worst="$ec"; fi
+
+          if [ "$ec" -eq 3 ]; then
+            # The endpoint for this file could not be read. Say so on its own issue and
+            # leave the body that was read alone rather than rewriting it from nothing.
+            echo "::warning::$path could not be read; leaving its issue body untouched"
+            refused="$refused $path"
+            continue
+          fi
+          if [ "$ec" -ne 0 ] && [ "$ec" -ne 1 ]; then
+            echo "gauge refused $path with exit $ec"
+            worst=2
+            continue
+          fi
+
+          number=""
+          args_find=()
+          python3 "$GITHUB_ACTION_PATH/scripts/sync_issue.py" find \
+            --label "$label" \
+            --title "$title" \
+            --previous-body-out "$previous" > "$RUNNER_TEMP/find-$index.json" || exit 2
+          number=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("issue-number") or "")' "$RUNNER_TEMP/find-$index.json" 2>/dev/null || true)
+
+          python3 "$GITHUB_ACTION_PATH/scripts/render_report.py" \
+            --report "$report" \
+            --out "$body" \
+            --summary-out "$summary" \
+            --previous-body "$previous" \
+            --as-of "$(date -u +%F)" \
+            --config "$path" \
+            --state-key "$key" \
+            --gauge-repo "$GAUGE_REPO" \
+            --gauge-ref "$GAUGE_REF" \
+            --fail-on "$FAIL_ON" \
+            --exit-code "$ec" || exit 2
+
+          if [ -n "$number" ]; then args_find+=(--number "$number"); fi
+          if [ "$DRY_RUN" = "true" ]; then args_find+=(--dry-run); fi
+          if [ "$UPDATE_ON_NO_CHANGE" = "true" ]; then args_find+=(--update-on-no-change); fi
+          written=$(python3 "$GITHUB_ACTION_PATH/scripts/sync_issue.py" write \
+            --label "$label" \
+            --title "$title" \
+            --body "$body" \
+            --summary "$summary" \
+            "${args_find[@]}") || exit 2
+          if printf '%s' "$written" | grep -q 'changed=true'; then changed="true"; fi
+          got=$(printf '%s' "$written" | sed -n 's/^issue-number=//p' | tail -1)
+          if [ -n "$got" ]; then numbers="${numbers:+$numbers,}$got"; fi
+        done < "$RUNNER_TEMP/files.tsv"
+
+        {
+          echo "changed=$changed"
+          echo "issue-numbers=$numbers"
+          echo "issue-number=${numbers%%,*}"
+          echo "exit-code=$worst"
+          echo "refused=${refused# }"
+        } >> "$GITHUB_OUTPUT"
+        exit 0
+
+    - name: Upload Gauge's diagnostics when a file failed outright
       if: failure()
       uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         name: gauge-diagnostics
-        path: ${{ runner.temp }}/gauge-stderr.log
+        path: ${{ runner.temp }}/gauge-stderr-*.log
         if-no-files-found: ignore
         retention-days: 7
 
     - name: Propagate a hard failure, and findings only when asked
       shell: bash
       env:
-        GAUGE_EXIT: ${{ steps.gauge.outputs.exit-code }}
+        GAUGE_EXIT: ${{ steps.write.outputs.exit-code }}
         BREAK_BUILD: ${{ inputs.break-build }}
       run: |
         set -uo pipefail
@@ -223,6 +284,6 @@ runs:
              echo "gauge reported findings; the tracking issue carries them"
              exit 0 ;;
           2) echo "gauge refused the configuration (exit 2)"; exit 2 ;;
-          3) echo "gauge could not read the account (exit 3)"; exit 3 ;;
+          3) echo "gauge could not read an account (exit 3)"; exit 3 ;;
           *) echo "gauge exited with $GAUGE_EXIT, which this action does not understand"; exit 2 ;;
         esac
