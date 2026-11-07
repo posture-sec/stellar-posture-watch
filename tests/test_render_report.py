@@ -604,3 +604,52 @@ class TestFixtureProvenance(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestPerFileStateMarker(Renderer):
+    """The marker names the policy file, so two files cannot read each other's state."""
+
+    def test_the_key_is_written_into_the_marker(self) -> None:
+        code, body, _, err = self.render(
+            "report-findings.json", extra={"state-key": "treasury-gauge"}
+        )
+        self.assertEqual(code, 0, err)
+        self.assertIn("posture-watch:state v1 treasury-gauge#", body)
+
+    def test_an_unkeyed_run_writes_the_marker_it_always_did(self) -> None:
+        code, body, _, err = self.render("report-findings.json")
+        self.assertEqual(code, 0, err)
+        self.assertIn("posture-watch:state v1 ", body)
+        self.assertNotIn("#", body.split("posture-watch:state v1 ", 1)[1].split(" -->", 1)[0])
+
+    def test_the_same_key_round_trips_and_reports_no_change(self) -> None:
+        _, first, _, _ = self.render("report-findings.json", extra={"state-key": "treasury-gauge"})
+        previous = self.tmp / "previous.md"
+        previous.write_text(first, encoding="utf-8")
+        code, _, summary, err = self.render(
+            "report-findings.json", previous=previous, extra={"state-key": "treasury-gauge"}
+        )
+        self.assertEqual(code, 0, err)
+        self.assertFalse(summary["changed"])
+
+    def test_another_files_body_reads_as_no_previous_state(self) -> None:
+        _, treasury, _, _ = self.render(
+            "report-findings.json", extra={"state-key": "treasury-gauge"}
+        )
+        previous = self.tmp / "treasury.md"
+        previous.write_text(treasury, encoding="utf-8")
+        code, _, summary, err = self.render(
+            "report-clean.json", previous=previous, extra={"state-key": "distribution-gauge"}
+        )
+        self.assertEqual(code, 0, err)
+        self.assertTrue(summary["changed"])
+        self.assertEqual(summary["resolved"], 0)
+
+    def test_a_keyed_marker_is_not_read_by_an_unkeyed_run(self) -> None:
+        _, keyed, _, _ = self.render("report-findings.json", extra={"state-key": "treasury-gauge"})
+        previous = self.tmp / "keyed.md"
+        previous.write_text(keyed, encoding="utf-8")
+        code, _, summary, err = self.render("report-findings.json", previous=previous)
+        self.assertEqual(code, 0, err)
+        self.assertTrue(summary["changed"])
+        self.assertEqual(summary["resolved"], 0)

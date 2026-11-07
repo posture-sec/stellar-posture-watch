@@ -113,6 +113,25 @@ one-line diff in your workflow file, reviewed like any other dependency bump.
 `example/workflow.yml` is the same file with the schedule commented and the inputs spelled
 out, and `example/gauge.toml` is the policy it reads.
 
+### Watching more than one policy file
+
+`config` takes a list, separated by commas or newlines, and each file is watched on its own:
+its own tracking issue, its own label suffix off `issue-label`, and its own state marker, so
+a run that changes nothing in one file leaves that file's issue alone while another file's
+moves. `ROADMAP.md` 9.3 is the row; the marker is keyed on the path, so two files cannot read
+each other's state, and an unreachable endpoint on one file refuses only that file.
+
+```yaml
+        with:
+          gauge-ref: da656733fff839d5cf20f795460f4365a7254257
+          config: |
+            .posture/treasury.toml
+            .posture/distribution.toml
+```
+
+The path also goes into the issue title, in brackets, so two files never share one. A single
+`config` value behaves exactly as it always did, including the default and the plain label.
+
 ## The signal, and why a finding is not a red X
 
 Gauge exits 0 with nothing open, 1 with findings at or above `fail-on`, 2 when it refuses

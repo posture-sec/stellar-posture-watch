@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import base64
 import io
+import json
 import os
 import re
 import shutil
@@ -107,6 +108,8 @@ class Harness(unittest.TestCase):
             "--title",
             str(args["title"]),
         ]
+        if "files_out" in overrides:
+            argv += ["--files-out", str(overrides["files_out"])]
         out = io.StringIO()
         err = io.StringIO()
         with redirect_stdout(out), redirect_stderr(err):
@@ -397,3 +400,78 @@ class TestProbePolicy(Harness):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestConfigList(Harness):
+    """More than one policy file in one run.
+
+    The input keeps its name and its meaning for the single-file case; a list is a
+    comma- or newline-separated extension of it, and each entry has to earn its place
+    before anything is built.
+    """
+
+    def two_policies(self) -> tuple[str, str]:
+        Path("treasury").mkdir()
+        Path("distribution").mkdir()
+        first = self.policy(MINIMAL, "treasury/gauge.toml")
+        second = self.policy(MINIMAL, "distribution/gauge.toml")
+        return first, second
+
+    def test_two_files_are_accepted_and_keyed_apart(self) -> None:
+        first, second = self.two_policies()
+        out = Path("files.out")
+        code, stdout, stderr = self.run_cli(config=f"{first},{second}", files_out=str(out))
+        self.assertEqual(code, 0, stderr)
+        self.assertIn("2 config file(s)", stdout)
+        payload = json.loads(out.read_text().split("files=", 1)[1])
+        self.assertEqual([entry["path"] for entry in payload], [first, second])
+        self.assertEqual(len({entry["key"] for entry in payload}), 2)
+
+    def test_a_newline_separated_list_is_split_the_same_way(self) -> None:
+        first, second = self.two_policies()
+        code, _, stderr = self.run_cli(config=f"{first}\n{second}\n")
+        self.assertEqual(code, 0, stderr)
+
+    def test_the_same_file_twice_is_refused(self) -> None:
+        first, _ = self.two_policies()
+        code, _, stderr = self.run_cli(config=f"{first},{first}")
+        self.assertEqual(code, 2)
+        self.assertIn("listed more than once", stderr)
+
+    def test_an_empty_list_is_refused(self) -> None:
+        code, _, stderr = self.run_cli(config=" , ")
+        self.assertEqual(code, 2)
+        self.assertIn("at least one policy file", stderr)
+
+    def test_more_files_than_the_limit_is_refused(self) -> None:
+        names = []
+        for index in range(validate_inputs.MAX_CONFIG_FILES + 1):
+            names.append(self.policy(MINIMAL, f"p{index}.toml"))
+        code, _, stderr = self.run_cli(config=",".join(names))
+        self.assertEqual(code, 2)
+        self.assertIn("over the", stderr)
+
+    def test_two_paths_that_reduce_to_one_key_are_refused(self) -> None:
+        Path("a").mkdir()
+        first = self.policy(MINIMAL, "a/gauge.toml")
+        second = self.policy(MINIMAL, "a-gauge.toml")
+        code, _, stderr = self.run_cli(config=f"{first},{second}")
+        self.assertEqual(code, 2)
+        self.assertIn("shares the state key", stderr)
+
+    def test_a_bad_entry_still_reports_the_good_ones(self) -> None:
+        first, _ = self.two_policies()
+        code, _, stderr = self.run_cli(config=f"{first},missing.toml")
+        self.assertEqual(code, 2)
+        self.assertIn("does not exist in the workspace", stderr)
+
+
+class TestStateKey(unittest.TestCase):
+    def test_the_suffix_is_dropped_and_the_directories_are_kept(self) -> None:
+        self.assertEqual(validate_inputs.state_key("treasury/gauge.toml"), "treasury-gauge")
+
+    def test_characters_outside_the_marker_alphabet_are_folded(self) -> None:
+        self.assertEqual(validate_inputs.state_key("My Files/a_policy.toml"), "my-files-a-policy")
+
+    def test_a_path_with_no_stem_still_yields_a_key(self) -> None:
+        self.assertEqual(validate_inputs.state_key("..."), "config")
