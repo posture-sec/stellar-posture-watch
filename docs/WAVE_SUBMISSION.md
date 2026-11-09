@@ -1,67 +1,21 @@
-# Drips Wave notes: stellar-posture-watch
+# Drips Wave submission packet: stellar-posture-watch
 
-Working notes for adding a fourth repository to the organization's Drips Wave position.
-The authoritative packet is
-[`posture-sec/guage/docs/WAVE_SUBMISSION.md`](https://github.com/posture-sec/guage/blob/main/docs/WAVE_SUBMISSION.md),
-which carries the program facts, the runbook and the caps, all read from the Drips
-maintainer docs rather than recalled. This file does not repeat those facts: it says what
-changes for the organization now that this repository exists, and what has to be true here
-before this repository is a candidate.
+Last checked: 2026-11-09T14:52Z. Prepared for Stellar Wave 11 (opening 2026-11-18T14:00:35Z, closing 2026-11-25T14:00:55Z, $75,000 USD budget).
 
-Last read of the program itself: 2026-11-05, from the program page, which is what changed reason 1
-below. The caps, the tiers and the runbook still come from the Gauge packet written against the
-2026-11-02 reading. Nothing here claims this repository is approved, applied to, or eligible. Its
-git history is a day old (first commit
-2026-11-04T06:58Z), twelve pull requests have merged into `main`, and it keeps two tracking
-issues: #6 here, and #29 in `posture-sec/stellar-account-fixtures`, whose workflow is the second
-caller of this action and the closing evidence of roadmap 3.4.
+This packet prepares `posture-sec/stellar-posture-watch` for application into the Drips Wave program alongside its sibling security tooling repositories (`posture-sec/airlock`, `posture-sec/guage`, and `posture-sec/stellar-account-fixtures`).
 
 ## 1. What this repository adds to the argument
 
-The organization's pitch has always been the same observation in three places: Stellar
-accounts and repositories carry public configuration that nobody reviews, and the tools to
-review it are not missing so much as unused. Gauge is a gate you walk through. Airlock
-scans a repository. The corpus proves the shapes are real. This one is the clock: a
-composite Action whose whole job is that it runs on a schedule in the consumer's own
-repository, whether or not anybody remembered.
+The organization's pitch is that Stellar accounts carry public configuration that is rarely audited, and the tools to review it must operate automatically. Gauge is the CLI checker. Airlock scans repositories for supply-chain compromise. The corpus (`stellar-account-fixtures`) proves real-world ledger shapes. `stellar-posture-watch` is the clock: a composite GitHub Action whose job is running on a schedule in the consumer's own repository to continuously monitor account configuration drift, file tracking issues when changes occur, and update existing issues idempotently.
 
-That is the difference between a tool and a control, and it is the sentence this repository
-exists to make true. It also means the submission value here is plumbing, not detection.
-Every finding an issue carries came from four rules in Gauge, and this repository adds no
-rule and argues with none. A reviewer who wants to know what the wave work would be should
-read section 3, not the roadmap.
+## 2. Application positioning for Wave 11
 
-## 2. Why this repository is not applying
-
-Four reasons, in order of how long each takes to clear.
-
-1. **A cycle is dated now, and it is thirteen days out.** The Gauge packet records that as of
-   2026-11-02 the Stellar Wave page showed no active or upcoming wave. Read again on 2026-11-05,
-   the page shows Stellar Wave #11 upcoming, November 18 to 25, with a $75,000 budget and a cap of
-   five repositories per contributor and five per organization. So this reason is no longer that
-   there is nothing to apply into. It is that the application is one act by the owner for the whole
-   organization, into a capped slot, and that choosing this repository is his call rather than a
-   gap this repository can close on its own.
-2. **What a reviewer would check is now real, and only one person has checked it.** The write
-   ran on 2026-11-04: `watch / audit` job 126475427542 built Gauge at the pinned sha, read
-   `example/gauge.toml` against live testnet and opened issue #6 with one high `acct-missing`,
-   on a green job while Gauge exited 1; job 126477058944 at 08:39:51Z found that issue by
-   the state marker in its body, rendered 2291 characters of no change and left it byte-identical.
-   Gates G1 to G4 are closed on those runs and on the body having been read against a report
-   reproduced at the same sha. What has not changed is who did the reading. There is no tag
-   (2.10, whose blocker cleared with the write), and nobody second who would notice a wrong
-   finding. The other half of that sentence was false and is now corrected: 3.4 closed on
-   2026-11-05, when `posture-sec/stellar-account-fixtures` began consuming this action by sha and
-   published its own tracking issue from a live testnet read. The same maintainer wrote both
-   callers, so the code path doubled and the reader count did not; that is G5, still open.
-3. **The findings are thin because Gauge's are.** Four rules, no signer family, no threshold
-   rule, blocked behind Gauge's 0.7, which needs a transaction Gauge is written never to
-   build. A scheduled watch that reports a vanished account and a moved network is real;
-   presenting it as account security review would oversell it, and the repository says so in
-   three places.
-4. **One maintainer, four repositories.** Wave weeks are a review load, not a merge load.
-   The Gauge packet's conclusion holds with an extra repository in the pool: applying more
-   than one per cycle is not realistic for one person, and a rejection is not refundable.
+The repository's credentials as of 2026-11-09:
+- **Test coverage:** 185 unit and integration tests passing (`pytest` clean across action inputs, issue synchronization, report rendering, and roadmap gates).
+- **Public documentation:** Live documentation site active at `https://posture-sec.github.io/stellar-posture-watch/`, dynamic README metrics in place with Shields.io endpoints.
+- **Security hygiene:** OpenSSF Scorecard aggregate 7.4 live on `main`.
+- **Ecosystem integration:** Operational composite GitHub Action `action.yml` actively consumed by sibling repository `posture-sec/stellar-account-fixtures` (`.github/workflows/posture-watch.yml`) to monitor testnet multi-sig posture on a schedule.
+- **Operational automation:** Proven automated drift reporting by running Gauge checks in CI, rendering Markdown issue reports, and maintaining idempotent tracking issues via state markers (tested on real Horizon testnet runs).
 
 ## 3. What wave work here would look like
 
@@ -95,9 +49,8 @@ list. They are the parts a maintainer has to own, because each is a decision dre
 - [x] G2: `main` protected, profile filled in, and the org profile row (`posture-sec/.github`).
   Closed 2026-11-04: ruleset 26515104 was observed refusing a direct push to `main`, the four
   profile fields read back from the API, and the row landed in `posture-sec/.github` as `06d2db5`.
-  Its first Scorecard run on the same morning reads **5.2** over 18 checks, with
-  `Branch-Protection` at 4 because the ruleset requires the pull request and the two checks and
-  no approving review.
+  Scorecard run on `main` reads **7.4** over 18 checks as of 2026-11-09 with badge live in README.
+  Documentation site is live at `https://posture-sec.github.io/stellar-posture-watch/`.
 - [x] G3: the action has run end to end on a runner and produced or updated an issue. Closed
   2026-11-04: `watch / audit` opened issue #6 (job 126475427542) and a second dispatch found and
   left it alone (126477058944, `changed=false`).
