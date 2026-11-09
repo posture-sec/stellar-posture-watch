@@ -34,7 +34,7 @@ def generate_metrics_table(test_count: int) -> str:
         f"{METRICS_START}\n"
         "| Indicator | Value | Source |\n"
         "|---|---|---|\n"
-        f"| Unit & Action Tests | **{test_count} passing** | `python3 -m unittest discover tests` |\n"
+        f"| Unit & Action Tests | **{test_count} passing** | `python -m unittest` |\n"
         "| Supported Findings | **4 active rules** (`acct-*`, `flag-*`) | `action.yml` |\n"
         "| Runtime Footprint | **0 external dependencies** | Python standard library |\n"
         "| State Tracking | **Idempotent issue marker** | `<!-- posture-watch:v1:state -->` |\n"
@@ -58,7 +58,9 @@ def sync(*, check: bool = False) -> bool:
     badges = {
         DATA_DIR / "badge-tests.json": build_badge_json("tests", f"{test_count} passed", "38bdf8"),
         DATA_DIR / "badge-rules.json": build_badge_json("rules", "4 verified", "8b5cf6"),
-        DATA_DIR / "badge-status.json": build_badge_json("posture watch", "functional alpha", "10b981"),
+        DATA_DIR / "badge-status.json": build_badge_json(
+            "posture watch", "functional alpha", "10b981"
+        ),
     }
 
     stale = False
@@ -91,7 +93,11 @@ def sync(*, check: bool = False) -> bool:
                     README_PATH.write_text(updated, encoding="utf-8")
 
     if check and stale:
-        print("sync_readme: README metrics or badge data are stale. Run: python3 scripts/sync_readme.py", file=sys.stderr)
+        print(
+            "sync_readme: README metrics or badge data are stale. "
+            "Run: python3 scripts/sync_readme.py",
+            file=sys.stderr,
+        )
         return False
 
     return True
@@ -99,7 +105,9 @@ def sync(*, check: bool = False) -> bool:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--check", action="store_true", help="Exit 1 if stale without modifying files")
+    parser.add_argument(
+        "--check", action="store_true", help="Exit 1 if stale without modifying files"
+    )
     args = parser.parse_args()
 
     ok = sync(check=args.check)
