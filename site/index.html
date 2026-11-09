@@ -39,6 +39,7 @@
         <a class="nav-link" href="#builder">Workflow Builder</a>
         <a class="nav-link" href="#specs">Action Specs</a>
         <a class="nav-link" href="#security">Security Invariants</a>
+        <a class="nav-link" href="#faq">FAQ</a>
       </nav>
 
       <div class="header-actions">
@@ -64,7 +65,7 @@
           </div>
           <h1>
             The Clock That Never <br>
-            <span class="gradient-text">Forgets The Ledger</span>
+            <span class="accent-text">Forgets The Ledger</span>
           </h1>
           <p class="hero-lede">
             Gauge reads an account and compares it to a policy. It is a gate: useful, and worthless if nobody walks through it. <b>stellar-posture-watch</b> is the clock. Point a schedule at it, and findings arrive in your GitHub issue tracker automatically.
@@ -373,6 +374,89 @@
         </div>
       </div>
     </section>
+
+    <!-- FAQ Section -->
+    <section class="section container" id="faq">
+      <div class="section-header">
+        <span class="section-tag">Frequently Asked Questions</span>
+        <h2 class="section-title">Everything You Need to Know</h2>
+        <p class="section-desc">Clear answers about how stellar-posture-watch safeguards on-chain accounts without external databases or secrets.</p>
+      </div>
+
+      <div class="faq-container">
+        <details class="faq-item" open>
+          <summary class="faq-question">
+            <span>What is stellar-posture-watch and how does it relate to Gauge?</span>
+            <span class="faq-icon" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            </span>
+          </summary>
+          <div class="faq-answer">
+            <p>Gauge is a security linter for Stellar Horizon and Soroban accounts: it inspects live account state against a declarative TOML policy and flags rule violations. <code>stellar-posture-watch</code> is the automation engine that runs Gauge on a recurring GitHub Actions schedule, tracks posture over time, and automatically records findings and posture changes in your GitHub repository's issue tracker.</p>
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-question">
+            <span>How does state tracking work without an external database?</span>
+            <span class="faq-icon" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            </span>
+          </summary>
+          <div class="faq-answer">
+            <p>The action uses an idempotent GitHub issue with a unique HTML state marker (<code>&lt;!-- posture-watch:v1:state --&gt;</code>) as its durable ledger state. On every scheduled execution, it discovers the existing tracking issue via the configured label, compares the newly evaluated ledger report with the stored report, updates the issue body, and appends a concise timestamped comment only when findings change.</p>
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-question">
+            <span>Does stellar-posture-watch require secret keys or private seeds?</span>
+            <span class="faq-icon" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            </span>
+          </summary>
+          <div class="faq-answer">
+            <p><b>Never.</b> Posture monitoring is strictly read-only. It inspects public Stellar accounts (addresses starting with <code>G...</code>) via public Horizon RPC nodes. The only credential required is your repository's standard <code>GITHUB_TOKEN</code> with <code>issues: write</code> permission to maintain the tracking issue.</p>
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-question">
+            <span>What happens when an account posture drifts or changes?</span>
+            <span class="faq-icon" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            </span>
+          </summary>
+          <div class="faq-answer">
+            <p>If a signer key is added, removed, or has its weight modified, or if account thresholds change unexpectedly on-chain, Gauge flags the violation. <code>stellar-posture-watch</code> updates the main tracking issue and publishes an incident comment highlighting the exact delta. If <code>break-build: true</code> is configured, the CI workflow also fails with exit code 1 to alert downstream webhooks.</p>
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-question">
+            <span>Will this create notification spam in my GitHub repository?</span>
+            <span class="faq-icon" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            </span>
+          </summary>
+          <div class="faq-answer">
+            <p>No. The sync engine hashes the report contents and performs a strict delta comparison against the previous state. When an audit run finds zero changes compared to the prior report, the run exits cleanly without editing the issue body, updating timestamps, or generating comments.</p>
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-question">
+            <span>How do I test my policy without updating live GitHub issues?</span>
+            <span class="faq-icon" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            </span>
+          </summary>
+          <div class="faq-answer">
+            <p>Set <code>dry-run: true</code> in your workflow configuration, or pass <code>--dry-run</code> when triggering manual runs with <code>workflow_dispatch</code>. The action will execute the full audit cycle, render the issue body locally, log findings to the workflow summary, and exit safely without modifying GitHub issues.</p>
+          </div>
+        </details>
+      </div>
+    </section>
   </main>
 
   <!-- Web3 Footer -->
@@ -383,6 +467,7 @@
         <p style="margin:0; font-size:12px;">Hermetic account monitoring, verifiable security policies, and zero-drift custody.</p>
       </div>
       <div class="footer-links">
+        <a href="#faq">FAQ</a>
         <a href="https://github.com/posture-sec/guage">Guage</a>
         <a href="https://github.com/posture-sec/airlock">Airlock</a>
         <a href="https://github.com/posture-sec/stellar-account-fixtures">Fixtures</a>

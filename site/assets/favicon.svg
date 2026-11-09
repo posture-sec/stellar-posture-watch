@@ -1,8 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
   <rect width="64" height="64" rx="16" fill="#070913"/>
   <rect x="0.5" y="0.5" width="63" height="63" rx="15.5" stroke="#8b5cf6" stroke-opacity="0.35"/>
-  <!-- Ambient Glow -->
-  <circle cx="32" cy="32" r="20" fill="url(#coreGlow)" opacity="0.4"/>
+  <!-- Ambient Core Glow -->
+  <circle cx="32" cy="32" r="20" fill="#8b5cf6" fill-opacity="0.15"/>
   <!-- Outer Radar Sentinel Ring -->
   <circle cx="32" cy="32" r="22" stroke="#8b5cf6" stroke-width="2" stroke-dasharray="4 4" stroke-opacity="0.6"/>
   <!-- Mid Cadence Ring with Orbit Points -->
@@ -14,11 +14,4 @@
   <circle cx="47" cy="32" r="2.5" fill="#00f0ff"/>
   <circle cx="21" cy="21" r="2" fill="#8b5cf6"/>
   <circle cx="39" cy="45" r="2" fill="#f59e0b"/>
-  <defs>
-    <radialGradient id="coreGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(32 32) rotate(90) scale(20)">
-      <stop stop-color="#8b5cf6"/>
-      <stop offset="0.6" stop-color="#06b6d4" stop-opacity="0.5"/>
-      <stop offset="1" stop-color="#070913" stop-opacity="0"/>
-    </radialGradient>
-  </defs>
 </svg>
