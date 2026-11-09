@@ -4,12 +4,17 @@
   <a href="https://github.com/posture-sec/stellar-posture-watch/actions/workflows/ci.yml"><img src="https://github.com/posture-sec/stellar-posture-watch/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
   <a href="https://github.com/posture-sec/stellar-posture-watch/actions/workflows/roadmap-check.yml"><img src="https://github.com/posture-sec/stellar-posture-watch/actions/workflows/roadmap-check.yml/badge.svg" alt="Roadmap check" /></a>
   <a href="https://scorecard.dev/viewer/?uri=github.com/posture-sec/stellar-posture-watch"><img src="https://api.scorecard.dev/projects/github.com/posture-sec/stellar-posture-watch/badge" alt="OpenSSF Scorecard" /></a>
+  <a href="https://posture-sec.github.io/stellar-posture-watch/"><img src="https://img.shields.io/badge/docs-live-8b5cf6" alt="Documentation Site" /></a>
+  <img src="https://img.shields.io/badge/python-3.11%2B-blue" alt="Python 3.11+" />
+  <img src="https://img.shields.io/badge/license-Apache--2.0-blue" alt="Apache-2.0" />
   <a href="SECURITY.md"><img src="https://img.shields.io/badge/status-unaudited-orange" alt="Unaudited" /></a>
   <a href="ROADMAP.md"><img src="https://img.shields.io/badge/status-functional%20alpha-orange" alt="Functional alpha" /></a>
 </p>
 
 A composite GitHub Action that runs `stellar-gauge` on a schedule and keeps one tracking
 issue current.
+
+[Documentation site & Workflow Builder](https://posture-sec.github.io/stellar-posture-watch/) · [Action Specification](action.yml) · [Usage](#usage) · [What it catches](#what-it-catches-today-stated-plainly) · [Contributing](CONTRIBUTING.md)
 
 Gauge reads an account and compares it to a policy. It is a gate you walk through: useful,
 and worthless if nobody walks through it. This repository is the clock. Point a weekly
@@ -26,12 +31,12 @@ scripts/
   render_report.py      one Gauge report in, one issue body out
   sync_issue.py         the GitHub issue API, one issue, no redirects
   check_action.py       the action.yml invariants CI enforces instead of asserting in prose
-tests/                  167 cases, loopback only, run against captured reports
+tests/                  185 cases, loopback only, run against captured reports
 ```
 
 ## Status
 
-Functional alpha, and hosted. The three scripts and `action.yml` exist and pass 167 tests
+Functional alpha, and hosted. The three scripts and `action.yml` exist and pass 185 tests
 against real testnet reports captured from Gauge, and a GitHub runner has now run them: on
 2026-11-04 `ci / python`, `roadmap-check / gate` and `self-check / action` were all green on
 pull request #1, and that last job executed this action itself against live testnet. The pull
@@ -39,7 +44,11 @@ request then merged, and its push to `main` passed `ci / python` there, which cl
 And the write has happened. On 2026-11-04 `.github/workflows/watch.yml` ran with `dry-run` off,
 built Gauge at the same pinned sha, and **opened issue #6 in this repository** with one high
 finding; a second run at 08:39:51Z found that issue by the state marker in its body and
-left it untouched. `ROADMAP.md` section 6 records which gates those two runs close and what is
+left it untouched.
+
+An interactive Web3 Sentinel documentation site and visual Workflow Builder is live at
+**[https://posture-sec.github.io/stellar-posture-watch/](https://posture-sec.github.io/stellar-posture-watch/)**.
+It includes an interactive schedule/config generator, live clean vs drift issue simulator, complete action input/output specs, security invariants, and a comprehensive FAQ. `ROADMAP.md` section 6 records which gates those two runs close and what is
 still open. Nothing here is a tag, and there is no released version to depend on.
 
 ## What it catches today, stated plainly
