@@ -290,7 +290,7 @@ class TestFind(Stubbed):
             },
             {"number": STATE_ISSUE, "title": "Account posture watch", "body": MARKER_BODY},
         ]
-        stub = self.use([(200, json.dumps(issues).encode()), (200, b"[]")])
+        self.use([(200, json.dumps(issues).encode()), (200, b"[]")])
         out = self.tmp / "previous.md"
         found = sync_issue.find_issue(
             "acme", "widgets", "account-posture", "Account posture watch", "tok", out

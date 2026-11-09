@@ -124,9 +124,16 @@ def request(method: str, url: str, token: str, payload: dict | None = None) -> t
             return TRANSPORT(method, url, headers, body)
         except urllib.error.HTTPError as exc:
             detail = exc.read()[:200].decode("utf-8", "replace")
-            if (exc.code == 429 and retryable(exc)) or (
-                exc.code == 403 and exc.headers and "Retry-After" in exc.headers and retryable(exc)
-            ) or exc.code >= 500:
+            if (
+                (exc.code == 429 and retryable(exc))
+                or (
+                    exc.code == 403
+                    and exc.headers
+                    and "Retry-After" in exc.headers
+                    and retryable(exc)
+                )
+                or exc.code >= 500
+            ):
                 last = exc
             else:
                 raise ApiError(f"{method} {url} -> {exc.code}: {redact(detail)}") from None
