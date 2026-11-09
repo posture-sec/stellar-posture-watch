@@ -4,6 +4,8 @@
   <a href="https://github.com/posture-sec/stellar-posture-watch/actions/workflows/ci.yml"><img src="https://github.com/posture-sec/stellar-posture-watch/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
   <a href="https://github.com/posture-sec/stellar-posture-watch/actions/workflows/roadmap-check.yml"><img src="https://github.com/posture-sec/stellar-posture-watch/actions/workflows/roadmap-check.yml/badge.svg" alt="Roadmap check" /></a>
   <a href="https://scorecard.dev/viewer/?uri=github.com/posture-sec/stellar-posture-watch"><img src="https://api.scorecard.dev/projects/github.com/posture-sec/stellar-posture-watch/badge" alt="OpenSSF Scorecard" /></a>
+  <a href="https://github.com/posture-sec/stellar-posture-watch/actions"><img src="https://img.shields.io/endpoint?url=https://posture-sec.github.io/stellar-posture-watch/data/badge-tests.json" alt="Tests" /></a>
+  <a href="#what-it-catches-today-stated-plainly"><img src="https://img.shields.io/endpoint?url=https://posture-sec.github.io/stellar-posture-watch/data/badge-rules.json" alt="Rules" /></a>
   <a href="https://posture-sec.github.io/stellar-posture-watch/"><img src="https://img.shields.io/badge/docs-live-8b5cf6" alt="Documentation Site" /></a>
   <img src="https://img.shields.io/badge/python-3.11%2B-blue" alt="Python 3.11+" />
   <img src="https://img.shields.io/badge/license-Apache--2.0-blue" alt="Apache-2.0" />
@@ -35,6 +37,15 @@ tests/                  185 cases, loopback only, run against captured reports
 ```
 
 ## Status
+
+<!-- METRICS:START -->
+| Indicator | Value | Source |
+|---|---|---|
+| Unit & Action Tests | **185 passing** | `python3 -m unittest discover tests` |
+| Supported Findings | **4 active rules** (`acct-*`, `flag-*`) | `action.yml` |
+| Runtime Footprint | **0 external dependencies** | Python standard library |
+| State Tracking | **Idempotent issue marker** | `<!-- posture-watch:v1:state -->` |
+<!-- METRICS:END -->
 
 Functional alpha, and hosted. The three scripts and `action.yml` exist and pass 185 tests
 against real testnet reports captured from Gauge, and a GitHub runner has now run them: on
