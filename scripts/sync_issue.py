@@ -86,7 +86,9 @@ def api_base() -> str:
     base = base.rstrip("/")
     if not base.startswith("https://"):
         raise ApiError(f"GITHUB_API_URL {base!r} is not https")
-    if "://" not in base or "/" in base.split("://", 1)[1]:
+    if "://" not in base or not re.match(
+        r"^[a-zA-Z0-9.-]+(?::\d+)?(/api/v3)?$", base.split("://", 1)[1]
+    ):
         raise ApiError(f"GITHUB_API_URL {base!r} is not a bare scheme and host")
     return base
 
@@ -122,7 +124,9 @@ def request(method: str, url: str, token: str, payload: dict | None = None) -> t
             return TRANSPORT(method, url, headers, body)
         except urllib.error.HTTPError as exc:
             detail = exc.read()[:200].decode("utf-8", "replace")
-            if (exc.code in (401, 403, 429) and retryable(exc)) or exc.code >= 500:
+            if (exc.code == 429 and retryable(exc)) or (
+                exc.code == 403 and exc.headers and "Retry-After" in exc.headers and retryable(exc)
+            ) or exc.code >= 500:
                 last = exc
             else:
                 raise ApiError(f"{method} {url} -> {exc.code}: {redact(detail)}") from None
@@ -136,7 +140,12 @@ def request(method: str, url: str, token: str, payload: dict | None = None) -> t
 
 
 def redact(text: str) -> str:
-    return re.sub(r"(Bearer |token=)[A-Za-z0-9._-]+", r"\1[redacted]", text)[:200]
+    return re.sub(
+        r"(Bearer |token=|[a-z0-9_]+=)[A-Za-z0-9._-]+|"
+        r"(gh[pousr]_[A-Za-z0-9_]{36,}|github_pat_[A-Za-z0-9_]{82,}|[A-Za-z0-9._-]{40,})",
+        r"\1[redacted]",
+        text,
+    )[:200]
 
 
 def get_json(method_target: str, token: str, url: str, payload: dict | None = None) -> object:
@@ -156,7 +165,7 @@ def emit(name: str, value: str) -> None:
         with open(target, "a", encoding="utf-8") as handle:
             handle.write(f"{name}={value}\n")
     else:
-        print(f"::set-output name={name}::{value}")
+        print(f"posture-watch: {name}={value}")
 
 
 def find_issue(
@@ -176,7 +185,7 @@ def find_issue(
         if not batch:
             break
         for entry in batch:
-            if not isinstance(entry, dict):
+            if not isinstance(entry, dict) or "pull_request" in entry:
                 continue
             number = entry.get("number")
             body = entry.get("body")
