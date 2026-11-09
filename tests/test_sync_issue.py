@@ -173,6 +173,16 @@ class TestApiBaseUrl(Stubbed):
         with self.assertRaises(sync_issue.ApiError):
             sync_issue.api_base()
 
+    def test_ghes_api_v3_path_is_allowed(self) -> None:
+        os.environ["GITHUB_API_URL"] = "https://ghe.internal/api/v3"
+        self.addCleanup(os.environ.pop, "GITHUB_API_URL", None)
+        self.assertEqual(sync_issue.api_base(), "https://ghe.internal/api/v3")
+
+    def test_ghes_api_v3_with_trailing_slash_is_stripped(self) -> None:
+        os.environ["GITHUB_API_URL"] = "https://ghe.internal/api/v3/"
+        self.addCleanup(os.environ.pop, "GITHUB_API_URL", None)
+        self.assertEqual(sync_issue.api_base(), "https://ghe.internal/api/v3")
+
 
 class TestRetryPolicy(Stubbed):
     def test_a_servererror_is_retried_and_then_succeeds(self) -> None:
@@ -194,13 +204,24 @@ class TestRetryPolicy(Stubbed):
         self.assertIn("403", str(caught.exception))
         self.assertEqual(len(stub.calls), 1, "a wait longer than the budget is not a retry")
 
-    def test_a_missing_permission_is_reported_after_three_attempts(self) -> None:
+    def test_a_missing_permission_is_reported_without_retry(self) -> None:
         stub = self.use(
-            [httperror("u", 403, b'{"message": "Resource not accessible by token"}')] * 3
+            [httperror("u", 403, b'{"message": "Resource not accessible by token"}'), (200, b"[]")]
         )
         with self.assertRaises(sync_issue.ApiError):
             sync_issue.request("GET", "https://api.example.test/x", "tok")
-        self.assertEqual(len(stub.calls), 3)
+        self.assertEqual(len(stub.calls), 1)
+
+    def test_a_401_unauthorized_fails_immediately_without_retry(self) -> None:
+        stub = self.use([httperror("u", 401, b'{"message": "Bad credentials"}'), (200, b"[]")])
+        with self.assertRaises(sync_issue.ApiError):
+            sync_issue.request("GET", "https://api.example.test/x", "tok")
+        self.assertEqual(len(stub.calls), 1)
+
+    def test_a_403_with_retry_after_is_retried(self) -> None:
+        stub = self.use([httperror("u", 403, retry_after="1"), (200, b"[]")])
+        sync_issue.request("GET", "https://api.example.test/x", "tok")
+        self.assertEqual(len(stub.calls), 2)
 
     def test_a_404_is_not_retried(self) -> None:
         stub = self.use([httperror("u", 404, b'{"message": "Not Found"}'), (200, b"[]")])
@@ -229,6 +250,17 @@ class TestRetryPolicy(Stubbed):
         self.assertNotIn("supersecrettoken", str(caught.exception))
         self.assertIn("[redacted]", sync_issue.redact("Authorization: Bearer supersecrettoken"))
 
+    def test_redact_masks_modern_pats_and_bare_tokens(self) -> None:
+        ghp = "ghp_" + "A" * 36
+        ghs = "ghs_" + "B" * 36
+        pat = "github_pat_" + "C" * 82
+        sha = "D" * 40
+        self.assertEqual(sync_issue.redact(f"failed {ghp}"), "failed [redacted]")
+        self.assertEqual(sync_issue.redact(f"failed {ghs}"), "failed [redacted]")
+        self.assertEqual(sync_issue.redact(f"failed {pat}"), "failed [redacted]")
+        self.assertEqual(sync_issue.redact(f"failed {sha}"), "failed [redacted]")
+        self.assertEqual(sync_issue.redact("var_token=mysecret"), "var_token=[redacted]")
+
 
 class TestFind(Stubbed):
     def test_the_issue_carrying_the_marker_is_the_one_returned(self) -> None:
@@ -246,6 +278,42 @@ class TestFind(Stubbed):
         self.assertEqual(out.read_text(), MARKER_BODY)
         self.assertIn("labels=account-posture", stub.calls[0]["url"])
         self.assertIn("state=open", stub.calls[0]["url"])
+
+    def test_pull_requests_in_issues_response_are_ignored(self) -> None:
+        self.env()
+        issues = [
+            {
+                "number": 99,
+                "title": "Account posture watch",
+                "body": MARKER_BODY,
+                "pull_request": {"url": "https://api.github.com/repos/acme/widgets/pulls/99"},
+            },
+            {"number": STATE_ISSUE, "title": "Account posture watch", "body": MARKER_BODY},
+        ]
+        self.use([(200, json.dumps(issues).encode()), (200, b"[]")])
+        out = self.tmp / "previous.md"
+        found = sync_issue.find_issue(
+            "acme", "widgets", "account-posture", "Account posture watch", "tok", out
+        )
+        self.assertEqual(found, STATE_ISSUE)
+        self.assertEqual(out.read_text(), MARKER_BODY)
+
+    def test_pull_request_with_matching_title_is_not_adopted(self) -> None:
+        self.env()
+        issues = [
+            {
+                "number": 99,
+                "title": "Account posture watch",
+                "body": "a human wrote this in a PR",
+                "pull_request": {"url": "https://api.github.com/repos/acme/widgets/pulls/99"},
+            }
+        ]
+        self.use([(200, json.dumps(issues).encode()), (200, b"[]")])
+        out = self.tmp / "previous.md"
+        found = sync_issue.find_issue(
+            "acme", "widgets", "account-posture", "Account posture watch", "tok", out
+        )
+        self.assertIsNone(found)
 
     def test_an_open_issue_with_the_right_title_is_adopted(self) -> None:
         self.env()
@@ -330,6 +398,16 @@ class TestFind(Stubbed):
         recorded = (self.tmp / "outputs.txt").read_text()
         self.assertIn("found=true", recorded)
         self.assertIn(f"issue-number={STATE_ISSUE}", recorded)
+
+    def test_emit_without_github_output_prints_safe_log(self) -> None:
+        os.environ.pop("GITHUB_OUTPUT", None)
+        self.addCleanup(os.environ.pop, "GITHUB_OUTPUT", None)
+        out = io.StringIO()
+        from contextlib import redirect_stdout
+
+        with redirect_stdout(out):
+            sync_issue.emit("my-out", "my-val")
+        self.assertEqual(out.getvalue(), "posture-watch: my-out=my-val\n")
 
 
 class TestWriteDecisions(Stubbed):
@@ -430,11 +508,11 @@ class TestWriteDecisions(Stubbed):
 
     def test_an_api_failure_exits_3_not_0(self) -> None:
         self.env()
-        stub = self.use([httperror("u", 401, b'{"message": "Bad credentials"}') for _ in range(3)])
+        stub = self.use([httperror("u", 401, b'{"message": "Bad credentials"}')])
         code, log = self.write(stub, STATE_ISSUE)
         self.assertEqual(code, 3)
         self.assertIn("401", log)
-        self.assertEqual(len(stub.calls), 3)
+        self.assertEqual(len(stub.calls), 1)
 
     def test_the_summary_file_has_to_carry_the_decision_fields(self) -> None:
         self.env()

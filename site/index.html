@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Stellar Posture Watch — Autonomous Web3 Account Sentinel</title>
+  <meta name="description" content="A composite GitHub Action that executes stellar-gauge on a schedule and maintains one stateful tracking issue on autopilot. Zero token leaks, hermetic compilation, and idempotent issue synchronization.">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Stellar Posture Watch — Autonomous Account Sentinel">
+  <meta property="og:description" content="The clock that guards the Stellar ledger. Scheduled posture audits, secret-redacted issue syncing, and zero maintenance overhead.">
+  <meta property="og:url" content="https://posture-sec.github.io/stellar-posture-watch/">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <meta name="theme-color" content="#060813">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/site.css">
+  <script src="assets/site.js" defer></script>
+</head>
+<body>
+
+  <!-- Floating Glass Navbar -->
+  <header class="header">
+    <div class="header-inner">
+      <a class="brand" href="index.html">
+        <svg class="brand-icon" viewBox="0 0 64 64" fill="none">
+          <circle cx="32" cy="32" r="28" stroke="#8b5cf6" stroke-width="3" stroke-opacity="0.4"/>
+          <circle cx="32" cy="32" r="18" stroke="#06b6d4" stroke-width="3"/>
+          <circle cx="32" cy="32" r="7" fill="#a855f7"/>
+          <circle cx="32" cy="32" r="3" fill="#00f0ff"/>
+        </svg>
+        <span>POSTURE // WATCH</span>
+        <span class="brand-badge">Action v0.1</span>
+      </a>
+
+      <nav class="nav" aria-label="Main Navigation">
+        <a class="nav-link is-active" href="#overview">Overview</a>
+        <a class="nav-link" href="#pipeline">Pipeline</a>
+        <a class="nav-link" href="#builder">Workflow Builder</a>
+        <a class="nav-link" href="#specs">Action Specs</a>
+        <a class="nav-link" href="#security">Security Invariants</a>
+        <a class="nav-link" href="#faq">FAQ</a>
+      </nav>
+
+      <div class="header-actions">
+        <button class="btn-icon theme-toggle" type="button" aria-label="Toggle theme">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+        </button>
+        <a class="btn-action" href="https://github.com/posture-sec/stellar-posture-watch">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.7.5.5 5.7.5 12c0 5.1 3.3 9.4 7.9 10.9.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.2-1.7-1.2-1.7-1-.7.1-.7.1-.7 1.1.1 1.7 1.2 1.7 1.2 1 1.7 2.6 1.2 3.2.9.1-.7.4-1.2.7-1.5-2.6-.3-5.3-1.3-5.3-5.8 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.2 1.2a11 11 0 0 1 5.8 0C17.1 4.2 18.1 4.5 18.1 4.5c.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.5-2.7 5.5-5.3 5.8.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6 4.6-1.5 7.9-5.8 7.9-10.9C23.5 5.7 18.3.5 12 .5z"/></svg>
+          <span>GitHub</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <main id="overview">
+    <section class="hero container">
+      <div class="hero-grid">
+        <div class="hero-copy">
+          <div class="eyebrow">
+            <span class="pulse-dot"></span>
+            <span>Autonomous Web3 Posture Sentinel</span>
+          </div>
+          <h1>
+            The Clock That Never <br>
+            <span class="accent-text">Forgets The Ledger</span>
+          </h1>
+          <p class="hero-lede">
+            Gauge reads an account and compares it to a policy. It is a gate: useful, and worthless if nobody walks through it. <b>stellar-posture-watch</b> is the clock. Point a schedule at it, and findings arrive in your GitHub issue tracker automatically.
+          </p>
+
+          <div class="hero-cta">
+            <a class="btn-primary" href="#builder">
+              <span>Generate Workflow</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </a>
+            <a class="btn-glass" href="#specs">
+              <span>View Action Spec</span>
+            </a>
+          </div>
+
+          <div class="hero-badges">
+            <div class="hero-badge-item">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Zero Token Leaks</span>
+            </div>
+            <div class="hero-badge-item">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Pinned Hermetic Build</span>
+            </div>
+            <div class="hero-badge-item">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Idempotent Sync</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Sentinel Issue Simulation Widget -->
+        <div class="sentinel-widget">
+          <div class="widget-bar">
+            <div class="widget-dots">
+              <span class="widget-dot red"></span>
+              <span class="widget-dot yellow"></span>
+              <span class="widget-dot green"></span>
+            </div>
+            <div class="widget-telemetry">
+              <span>POSTURE SENTINEL SIMULATOR</span>
+            </div>
+            <div class="widget-controls">
+              <button class="widget-tab is-active" type="button" data-state="clean">Clean State</button>
+              <button class="widget-tab" type="button" data-state="drift">Drift Alert</button>
+            </div>
+          </div>
+
+          <div class="widget-content">
+            <div class="issue-box" id="simulated-issue">
+              <div class="issue-header">
+                <div class="issue-title">
+                  <span>Account Posture Watch</span>
+                  <span class="issue-tag">account-posture</span>
+                </div>
+                <span class="issue-status-badge clean">● Clean Ledger</span>
+              </div>
+              <p style="margin:0 0 10px; color:#94a3b8; font-size:11.5px;">
+                Audited against <b>horizon.stellar.org</b> at ledger <b>65,282,653</b> (2026-11-09 12:00 UTC).
+              </p>
+              <table class="issue-table">
+                <thead>
+                  <tr>
+                    <th>Account</th>
+                    <th>Thresholds</th>
+                    <th>Signers</th>
+                    <th>Findings</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>GAAZI...5568</td>
+                    <td>2 / 2 / 2</td>
+                    <td>4 keys (weight 6)</td>
+                    <td style="color:#10b981;">0 findings</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div class="issue-footer">
+                <span>State marker: <code>&lt;!-- posture-watch:v1:state --&gt;</code></span>
+                <span>Next check: Monday 06:00 UTC</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Bento Features Grid -->
+    <section class="section container">
+      <div class="section-header">
+        <span class="section-tag">Sentinel Core Architecture</span>
+        <h2 class="section-title">Engineered For Zero Operational Overhead</h2>
+        <p class="section-desc">Traditional security checks rely on humans remembering to run tools. Posture Watch runs in your CI pipeline, detects state drift, and reports to your issue tracker.</p>
+      </div>
+
+      <div class="bento-grid">
+        <div class="bento-card">
+          <div class="bento-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <h3>Automated Cadence</h3>
+          <p>Configure a cron schedule in your repository. Posture Watch executes on GitHub-hosted runners on your chosen interval without external SaaS webhooks or hosted databases.</p>
+        </div>
+
+        <div class="bento-card">
+          <div class="bento-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <h3>Secret-Sanitized Errors</h3>
+          <p>Custom token scrubber automatically intercepts all error streams and strips GitHub PATs, OAuth tokens, and 40-character hex keys before any message can reach GitHub Action logs.</p>
+        </div>
+
+        <div class="bento-card">
+          <div class="bento-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          <h3>Hermetic Compilation</h3>
+          <p>Requires an exact 40-character commit SHA for the Gauge binary. Eliminates supply chain poisoning by preventing upstream tag moves or branch drift from altering the verification engine.</p>
+        </div>
+
+        <div class="bento-card span-2">
+          <div class="bento-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          </div>
+          <h3>Stateful Idempotent Synchronization</h3>
+          <p>Maintains exactly one tracking issue per policy. Matches existing issues via embedded HTML state markers rather than fragile title strings, ignores pull requests automatically, and leaves the issue unedited when findings haven't moved.</p>
+        </div>
+
+        <div class="bento-card">
+          <div class="bento-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+          </div>
+          <h3>Fail-Fast Auth Guards</h3>
+          <p>Aborts instantly on HTTP 401 or non-rate-limited 403 errors rather than burning through retries, protecting your GitHub organization tokens against abuse rate-limit lockouts.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Architecture Pipeline -->
+    <section class="section container" id="pipeline">
+      <div class="section-header">
+        <span class="section-tag">Execution Lifecycle</span>
+        <h2 class="section-title">The Four-Stage Sentinel Pipeline</h2>
+        <p class="section-desc">Every run executes a predictable, hermetic sequence designed to guarantee zero false positives and trace all claims to verifiable ledger bytes.</p>
+      </div>
+
+      <div class="pipeline">
+        <div class="pipeline-step">
+          <span class="step-num">01 // TRIGGER</span>
+          <h4>Cadence Event</h4>
+          <p>Fires on scheduled cron or <code>workflow_dispatch</code>. Validates all inputs before making any network or API calls.</p>
+        </div>
+        <div class="pipeline-step">
+          <span class="step-num">02 // COMPILE</span>
+          <h4>Build Gauge</h4>
+          <p>Fetches the exact pinned Gauge commit SHA, compiles the Go binary hermetically, and caches for instant re-runs.</p>
+        </div>
+        <div class="pipeline-step">
+          <span class="step-num">03 // AUDIT</span>
+          <h4>Horizon Read</h4>
+          <p>Reads account signers, weights, master key status, and thresholds. Compares against local <code>gauge.toml</code> policy.</p>
+        </div>
+        <div class="pipeline-step">
+          <span class="step-num">04 // SYNC</span>
+          <h4>Issue Update</h4>
+          <p>Locates existing issue via state marker. If findings drifted, updates markdown body with zero token leaks. If clean, leaves intact.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Interactive Workflow Builder -->
+    <section class="section container" id="builder">
+      <div class="section-header">
+        <span class="section-tag">Developer Quickstart</span>
+        <h2 class="section-title">Interactive Workflow Generator</h2>
+        <p class="section-desc">Customize your schedule and repository policy to generate a production-ready GitHub Actions workflow file.</p>
+      </div>
+
+      <div class="builder-box">
+        <div class="builder-controls">
+          <div class="form-group">
+            <label for="builder-schedule">Audit Cadence</label>
+            <select class="form-select" id="builder-schedule">
+              <option value="weekly" selected>Weekly (Every Monday 06:00 UTC)</option>
+              <option value="daily">Daily (Every Midnight UTC)</option>
+              <option value="hourly">Hourly (Continuous Posture)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="builder-ref">Pinned Gauge Commit SHA</label>
+            <input class="form-input" id="builder-ref" type="text" value="e6f47b2c019a3d4e5f6a7b8c9d0e1f2a3b4c5d6e">
+          </div>
+
+          <div class="form-group">
+            <label for="builder-config">Policy File Path</label>
+            <input class="form-input" id="builder-config" type="text" value=".posture/gauge.toml">
+          </div>
+
+          <div class="form-group">
+            <label for="builder-break">Break Build on Findings?</label>
+            <select class="form-select" id="builder-break">
+              <option value="false" selected>false (Issue notification only)</option>
+              <option value="true">true (Fail CI pipeline)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="builder-preview">
+          <div class="preview-bar">
+            <span>.github/workflows/posture-watch.yml</span>
+            <button class="copy-btn" type="button" data-copy-target="workflow-output">Copy YAML</button>
+          </div>
+          <pre class="preview-code" id="workflow-output"></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- Inputs & Outputs Spec Table -->
+    <section class="section container" id="specs">
+      <div class="section-header">
+        <span class="section-tag">Specification Matrix</span>
+        <h2 class="section-title">Action Inputs & Outputs</h2>
+        <p class="section-desc">Complete parameter contract for <code>posture-sec/stellar-posture-watch</code>.</p>
+      </div>
+
+      <div class="spec-card">
+        <table class="spec-table">
+          <thead>
+            <tr>
+              <th>Input</th>
+              <th>Requirement</th>
+              <th>Default</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="spec-name"><code>gauge-ref</code></td>
+              <td><span class="spec-badge req">Required</span></td>
+              <td><em>none</em></td>
+              <td>Full 40-character commit SHA of the Gauge checkout to compile.</td>
+            </tr>
+            <tr>
+              <td class="spec-name"><code>config</code></td>
+              <td><span class="spec-badge opt">Optional</span></td>
+              <td><code>gauge.toml</code></td>
+              <td>Path to the Gauge policy file relative to caller workspace.</td>
+            </tr>
+            <tr>
+              <td class="spec-name"><code>fail-on</code></td>
+              <td><span class="spec-badge opt">Optional</span></td>
+              <td><code>high</code></td>
+              <td>Severity threshold Gauge needs to reach before exiting 1 (<code>high</code> or <code>warn</code>).</td>
+            </tr>
+            <tr>
+              <td class="spec-name"><code>break-build</code></td>
+              <td><span class="spec-badge opt">Optional</span></td>
+              <td><code>false</code></td>
+              <td>Fail workflow when Gauge reports findings at or above <code>fail-on</code>.</td>
+            </tr>
+            <tr>
+              <td class="spec-name"><code>issue-label</code></td>
+              <td><span class="spec-badge opt">Optional</span></td>
+              <td><code>account-posture</code></td>
+              <td>Label assigned to the maintained tracking issue.</td>
+            </tr>
+            <tr>
+              <td class="spec-name"><code>dry-run</code></td>
+              <td><span class="spec-badge opt">Optional</span></td>
+              <td><code>false</code></td>
+              <td>Test policy evaluation without writing or modifying tracking issues.</td>
+            </tr>
+            <tr>
+              <td class="spec-name"><code>github-token</code></td>
+              <td><span class="spec-badge opt">Optional</span></td>
+              <td><code>${{ github.token }}</code></td>
+              <td>Token with <code>issues: write</code> permission to manage tracking issue.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Security Invariants Section -->
+    <section class="section container" id="security">
+      <div class="section-header">
+        <span class="section-tag">Verification & Trust</span>
+        <h2 class="section-title">Cryptographic Security Invariants</h2>
+        <p class="section-desc">Guarantees enforced by automated unit and integration suites on every change.</p>
+      </div>
+
+      <div class="security-grid">
+        <div class="security-card">
+          <h4>🔒 Token Redaction Guarantee</h4>
+          <p>Every error path passes through regex scrubbing. Fine-grained PATs (<code>github_pat_</code>), classic PATs (<code>ghp_</code>), and 40-character hex sequences are replaced with <code>[redacted]</code>.</p>
+        </div>
+        <div class="security-card">
+          <h4>⚡ Downstream Execution Guard</h4>
+          <p>Issue modification steps are strictly guarded with <code>if: exit-code == '0' || exit-code == '1'</code>. An engine crash (exit 2/3) uploads diagnostics and immediately halts without touching issues.</p>
+        </div>
+        <div class="security-card">
+          <h4>🛡️ PR Isolation</h4>
+          <p>The issue resolution search excludes items containing <code>pull_request</code> metadata, ensuring pull requests are never mistakenly closed or modified by scheduled sentinel runs.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="section container" id="faq">
+      <div class="section-header">
+        <span class="section-tag">Frequently Asked Questions</span>
+        <h2 class="section-title">Everything You Need to Know</h2>
+        <p class="section-desc">Clear answers about how stellar-posture-watch safeguards on-chain accounts without external databases or secrets.</p>
+      </div>
+
+      <div class="faq-container">
+        <details class="faq-item" open>
+          <summary class="faq-question">
+            <span>What is stellar-posture-watch and how does it relate to Gauge?</span>
+            <span class="faq-icon" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            </span>
+          </summary>
+          <div class="faq-answer">
+            <p>Gauge is a security linter for Stellar Horizon and Soroban accounts: it inspects live account state against a declarative TOML policy and flags rule violations. <code>stellar-posture-watch</code> is the automation engine that runs Gauge on a recurring GitHub Actions schedule, tracks posture over time, and automatically records findings and posture changes in your GitHub repository's issue tracker.</p>
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-question">
+            <span>How does state tracking work without an external database?</span>
+            <span class="faq-icon" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            </span>
+          </summary>
+          <div class="faq-answer">
+            <p>The action uses an idempotent GitHub issue with a unique HTML state marker (<code>&lt;!-- posture-watch:v1:state --&gt;</code>) as its durable ledger state. On every scheduled execution, it discovers the existing tracking issue via the configured label, compares the newly evaluated ledger report with the stored report, updates the issue body, and appends a concise timestamped comment only when findings change.</p>
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-question">
+            <span>Does stellar-posture-watch require secret keys or private seeds?</span>
+            <span class="faq-icon" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            </span>
+          </summary>
+          <div class="faq-answer">
+            <p><b>Never.</b> Posture monitoring is strictly read-only. It inspects public Stellar accounts (addresses starting with <code>G...</code>) via public Horizon RPC nodes. The only credential required is your repository's standard <code>GITHUB_TOKEN</code> with <code>issues: write</code> permission to maintain the tracking issue.</p>
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-question">
+            <span>What happens when an account posture drifts or changes?</span>
+            <span class="faq-icon" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            </span>
+          </summary>
+          <div class="faq-answer">
+            <p>If a signer key is added, removed, or has its weight modified, or if account thresholds change unexpectedly on-chain, Gauge flags the violation. <code>stellar-posture-watch</code> updates the main tracking issue and publishes an incident comment highlighting the exact delta. If <code>break-build: true</code> is configured, the CI workflow also fails with exit code 1 to alert downstream webhooks.</p>
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-question">
+            <span>Will this create notification spam in my GitHub repository?</span>
+            <span class="faq-icon" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            </span>
+          </summary>
+          <div class="faq-answer">
+            <p>No. The sync engine hashes the report contents and performs a strict delta comparison against the previous state. When an audit run finds zero changes compared to the prior report, the run exits cleanly without editing the issue body, updating timestamps, or generating comments.</p>
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-question">
+            <span>How do I test my policy without updating live GitHub issues?</span>
+            <span class="faq-icon" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            </span>
+          </summary>
+          <div class="faq-answer">
+            <p>Set <code>dry-run: true</code> in your workflow configuration, or pass <code>--dry-run</code> when triggering manual runs with <code>workflow_dispatch</code>. The action will execute the full audit cycle, render the issue body locally, log findings to the workflow summary, and exit safely without modifying GitHub issues.</p>
+          </div>
+        </details>
+      </div>
+    </section>
+  </main>
+
+  <!-- Web3 Footer -->
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div>
+        <p style="margin:0 0 6px; font-weight:600; color:var(--text-main);">Stellar Posture Watch // Part of Posture-Sec Ecosystem</p>
+        <p style="margin:0; font-size:12px;">Hermetic account monitoring, verifiable security policies, and zero-drift custody.</p>
+      </div>
+      <div class="footer-links">
+        <a href="#faq">FAQ</a>
+        <a href="https://github.com/posture-sec/guage">Guage</a>
+        <a href="https://github.com/posture-sec/airlock">Airlock</a>
+        <a href="https://github.com/posture-sec/stellar-account-fixtures">Fixtures</a>
+        <a href="https://github.com/posture-sec/stellar-posture-watch">Repository</a>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
