@@ -15,14 +15,14 @@ stellar-gauge check --network testnet --endpoint https://horizon-testnet.stellar
 stellar-gauge audit --config policy.toml --format json [--fail-on warn]
 ```
 
-| File | Origin | What it exercises |
-| --- | --- | --- |
-| `report-clean.json` | real run, ledger 5535684, exit 0 | the no-findings path: an empty list, `check` mode with one account |
-| `report-findings.json` | real run, ledger 5535642, exit 1 | two accounts, one with `missing: true` and one `acct-missing` HIGH finding at fingerprint `b03faa6106f2405560196e0cad9e0bb74cab9c08d798877c0d795019bddd43d6` |
-| `report-warn.json` | real run, ledger 5535646, exit 1 | a `warn` finding (`flag-undeclared-clawback`) at a `--fail-on warn` threshold |
-| `report-network-mismatch.json` | real run, ledger 5535646, exit 1 | `skipped` as a string plus the `acct-network-mismatch` HIGH finding, the shape a policy that names one network and points at another produces |
-| `report-accepted.json` | derived from `report-findings.json` | the `accepted: true` path, which no real run produced yet because no policy with an `[[accept]]` entry has been run |
-| `report-hostile-strings.json` | derived from `report-clean.json` | markup and mentions inside chain-derived fields, which no real account has been observed to carry |
+| File | Origin | sha256 | What it exercises |
+| --- | --- | --- | --- |
+| `report-clean.json` | real run, ledger 5535684, exit 0 | `27d19e986abffc25c8a668fc7ec5a4d560178adafbeb37373a047639815296ac` | the no-findings path: an empty list, `check` mode with one account |
+| `report-findings.json` | real run, ledger 5535642, exit 1 | `1ab53217c13bbebbe477c13a921b7b078c4cc294492ad5de4a0178a23c466c31` | two accounts, one with `missing: true` and one `acct-missing` HIGH finding at fingerprint `b03faa6106f2405560196e0cad9e0bb74cab9c08d798877c0d795019bddd43d6` |
+| `report-warn.json` | real run, ledger 5535646, exit 1 | `0a0789f958230c8cbed6197ca07dbf08d4753064395a4db3f73f0551a6f61085` | a `warn` finding (`flag-undeclared-clawback`) at a `--fail-on warn` threshold |
+| `report-network-mismatch.json` | real run, ledger 5535646, exit 1 | `689083b434c9d21aa7c8990ac33bcdf88dd76910e19970678927bc6bf9d7eed6` | `skipped` as a string plus the `acct-network-mismatch` HIGH finding, the shape a policy that names one network and points at another produces |
+| `report-accepted.json` | derived from `report-findings.json` | `f52a938dfab6e454c3113761c8fd32d8c0b7528832813794961fbcf972570b5d` | the `accepted: true` path, which no real run produced yet because no policy with an `[[accept]]` entry has been run |
+| `report-hostile-strings.json` | derived from `report-clean.json` | `de4b5ea19334baddf4f882acd3fdaefaec0c12740ce819895bdffc1cf910c260` | markup and mentions inside chain-derived fields, which no real account has been observed to carry |
 
 The two derived files are **hand-built**. Each is a copy of a captured report with these
 changes and nothing else:
