@@ -15,7 +15,7 @@ G4 are closed below, on the runs and on the reading of the body against the repo
 and 3.4 did not close it: one maintainer wrote both callers. Every claim here names the run or
 the file it was read from.
 
-Last updated: 2026-11-09T14:55Z (finalize Drips Wave 11 submission packet)
+Last updated: 2026-11-14T15:21Z (close 9.7, sha256 manifest for report fixtures)
 rather than three, because a contributor who picked up two of them learned no format at all. The
 organization's `ISSUE_CONTRACT.md` in `posture-sec/.github` defines PI-1: a marker line naming the
 repository, the roadmap row, the kind and the wave tier, then nine numbered sections in the order a
@@ -643,6 +643,15 @@ it is why this repository's value right now is the plumbing rather than the find
   `.github/dependabot.yml`, `SAST` 0 for no analyzer, and `Fuzzing` 0 for a renderer that parses
   chain-derived JSON. `Branch-Protection` 4 is deliberately not in this row: 2.7 states it as its
   own limit, and an approving review nobody would give himself is not readiness. **Issue:** #25.
+- [x] **9.7** Bind the report fixtures to their provenance table by sha256. Done-when: every
+  `tests/fixtures/*.json` report has a row in `tests/fixtures/README.md` with file name, origin,
+  `sha256` and what it exercises, hand-built rows state `derived`, and `tests/test_fixture_manifest.py`
+  parses the table, recomputes `hashlib.sha256` over raw bytes, supports `--print-rows`, and fails on
+  an absent column, a missing row, an unlisted JSON file or a one-byte edit while naming both digests
+  and the regeneration command. Closed locally 2026-11-14: `tests/fixtures/README.md` carries the
+  four-column table for all six reports (`policy-unreachable-endpoint.toml` excluded as non-JSON),
+  `tests/test_fixture_manifest.py` adds 9 unit tests (taking the suite from 185 to 194 cases), and
+  `ruff==0.17.3` and `mypy==2.4.0` pass across all 11 source files. **Issue:** #153.
 
 ## 6. Gates
 
@@ -709,7 +718,7 @@ it is why this repository's value right now is the plumbing rather than the find
 | 1 | The action | 11 | 11 | 100% |
 | 2 | Public shape | 12 | 13 | 92% |
 | 3 | Real use | 5 | 8 | 62% |
-| 9 (backlog) | Backlog, not scheduled | 0 | 6 | 0% |
+| 9 (backlog) | Backlog, not scheduled | 1 | 7 | 14% |
 | **All phases** | **Readiness total** | **35** | **39** | **90%** |
 | Gates | G1 to G5 | 4 | 5 | 80% |
 <!-- PROGRESS:END -->
@@ -740,6 +749,7 @@ it is why this repository's value right now is the plumbing rather than the find
 | 2026-11-05 | Every open issue in this repository moves onto one page shape, because three repositories had three formats and a contributor who picked up two of them learned none. `posture-sec/.github` carries `ISSUE_CONTRACT.md` now: a marker line naming the repository, the roadmap row, the kind and the wave tier, then nine numbered sections in the order a person starting cold needs them, with the two rules this organization already holds written into the shape. The row is the source of truth, so a body quotes it and names the row a disagreement gets fixed in. And a claim names its run or says it is local, so every body splits proof into the half a desk can produce and the half only a runner carries. Eleven issues here were rewritten to it, #15 to #25, and the two bodies a schedule writes stayed out: #6's shape belongs to `render_report.py` and to the D-07 marker inside it, and editing it by hand would be overwritten by the next run anyway. `CONTRIBUTING.md` states the contract in its `## Issues` section, `.github/ISSUE_TEMPLATE/task.yml` prefills the nine headings, and the issue picker now links the contract itself. No script, test or workflow moves. | 3.5 (part), docs only |
 
 | 2026-11-09 | Task 2.9 closes: `site/` arrives with a Web3 Sentinel documentation and showcase site, featuring an interactive workflow generator, live issue preview simulator, and protocol architecture pipeline. `.github/workflows/pages.yml` deploys the site to GitHub Pages. Downstream action step execution guards and token redactions included in the same changeset. | 2.9 |
+| 2026-11-14 | Task 9.7 closes: `tests/fixtures/README.md` gains a `sha256` column binding all six JSON report fixtures to their provenance rows while leaving the six fixture files and `tests/test_render_report.py` untouched, and `tests/test_fixture_manifest.py` adds 9 stdlib tests plus `--print-rows` to verify column shape, row coverage, `derived` markers on hand-built reports, and raw-byte digests, printing both digests and the regeneration command on a mismatch. Suite moves from 185 to 194 cases; `ruff` and `mypy` check 11 source files cleanly. | 9.7 |
 
 ## 9. Last updated line format
 
