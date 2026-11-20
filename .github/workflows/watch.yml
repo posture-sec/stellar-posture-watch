@@ -63,6 +63,9 @@ jobs:
   watch:
     name: watch / audit
     runs-on: ubuntu-latest
+    # Observed duration is under two minutes across scheduled runs and dispatches.
+    # A 15-minute bound protects the weekly slot against a hung build or connection.
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

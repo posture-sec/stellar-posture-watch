@@ -15,7 +15,7 @@ G4 are closed below, on the runs and on the reading of the body against the repo
 and 3.4 did not close it: one maintainer wrote both callers. Every claim here names the run or
 the file it was read from.
 
-Last updated: 2026-11-14T15:21Z (close 9.7, sha256 manifest for report fixtures)
+Last updated: 2026-11-20T02:49Z (close 9.8-9.11, workflow guards and permissions)
 rather than three, because a contributor who picked up two of them learned no format at all. The
 organization's `ISSUE_CONTRACT.md` in `posture-sec/.github` defines PI-1: a marker line naming the
 repository, the roadmap row, the kind and the wave tier, then nine numbered sections in the order a
@@ -652,6 +652,10 @@ it is why this repository's value right now is the plumbing rather than the find
   four-column table for all six reports (`policy-unreachable-endpoint.toml` excluded as non-JSON),
   `tests/test_fixture_manifest.py` adds 9 unit tests (taking the suite from 185 to 194 cases), and
   `ruff==0.17.3` and `mypy==2.4.0` pass across all 11 source files. **Issue:** #153.
+- [x] **9.8** Keep the dogfood workflow local and the example pinned. `tests/test_workflows_local_vs_pinned.py` asserts `.github/workflows/watch.yml` uses local action `uses: ./` and contains no remote org reference, while `example/workflow.yml` contains no local references and pins a 40-hex sha or placeholder without mutable tags. Verified with mutation cases. **Issue:** #89.
+- [x] **9.9** Time-box the watch job so a hung build cannot hold the cron. `.github/workflows/watch.yml` adds `timeout-minutes: 15` on the `watch` job with reasoning comment. Verified by `tests/test_workflows_watch_timeout.py`. **Issue:** #90.
+- [x] **9.10** Assert the exit-3 probe's four post-conditions. `tests/test_workflows_exit3_probe.py` asserts the assertion script in `.github/workflows/self-check.yml` validates failure outcome, existing report, empty report size, and absent issue body, along with GAUGE_EXIT check and `continue-on-error: true`. **Issue:** #92.
+- [x] **9.11** Enforce read-only permission invariant on self-check workflow. `.github/workflows/self-check.yml` adds comment documenting read-only permissions; `tests/test_self_check_permissions.py` verifies scopes are strictly read-only (`contents: read`, `issues: read`), refusing any write permission and failing if the block is removed. **Issue:** #96.
 
 ## 6. Gates
 
@@ -718,7 +722,7 @@ it is why this repository's value right now is the plumbing rather than the find
 | 1 | The action | 11 | 11 | 100% |
 | 2 | Public shape | 12 | 13 | 92% |
 | 3 | Real use | 5 | 8 | 62% |
-| 9 (backlog) | Backlog, not scheduled | 1 | 7 | 14% |
+| 9 (backlog) | Backlog, not scheduled | 5 | 11 | 45% |
 | **All phases** | **Readiness total** | **35** | **39** | **90%** |
 | Gates | G1 to G5 | 4 | 5 | 80% |
 <!-- PROGRESS:END -->
@@ -750,6 +754,7 @@ it is why this repository's value right now is the plumbing rather than the find
 
 | 2026-11-09 | Task 2.9 closes: `site/` arrives with a Web3 Sentinel documentation and showcase site, featuring an interactive workflow generator, live issue preview simulator, and protocol architecture pipeline. `.github/workflows/pages.yml` deploys the site to GitHub Pages. Downstream action step execution guards and token redactions included in the same changeset. | 2.9 |
 | 2026-11-14 | Task 9.7 closes: `tests/fixtures/README.md` gains a `sha256` column binding all six JSON report fixtures to their provenance rows while leaving the six fixture files and `tests/test_render_report.py` untouched, and `tests/test_fixture_manifest.py` adds 9 stdlib tests plus `--print-rows` to verify column shape, row coverage, `derived` markers on hand-built reports, and raw-byte digests, printing both digests and the regeneration command on a mismatch. Suite moves from 185 to 194 cases; `ruff` and `mypy` check 11 source files cleanly. | 9.7 |
+| 2026-11-20 | Tasks 9.8-9.11 close: `watch.yml` adds `timeout-minutes: 15` and is tested against remote reference drift while `example/workflow.yml` is tested to remain pinned; `self-check.yml` asserts read-only permissions and probe assertions are held with unit test suites. Suite expands across all 4 additions. | 9.8, 9.9, 9.10, 9.11 |
 
 ## 9. Last updated line format
 

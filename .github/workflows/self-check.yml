@@ -31,6 +31,8 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Read-only permissions: this workflow runs on pull_request and executes code from the PR.
+# Elevated permissions (such as issues: write) are strictly forbidden and refused by tests.
 permissions:
   contents: read
   issues: read
