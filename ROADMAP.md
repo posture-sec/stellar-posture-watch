@@ -15,7 +15,7 @@ G4 are closed below, on the runs and on the reading of the body against the repo
 and 3.4 did not close it: one maintainer wrote both callers. Every claim here names the run or
 the file it was read from.
 
-Last updated: 2026-11-14T15:21Z (close 9.7, sha256 manifest for report fixtures)
+Last updated: 2026-11-20T02:35Z (close 3.3, 3.5, 3.8, 9.8: mainnet run, wave submission, schedule proof, config default)
 rather than three, because a contributor who picked up two of them learned no format at all. The
 organization's `ISSUE_CONTRACT.md` in `posture-sec/.github` defines PI-1: a marker line naming the
 repository, the roadmap row, the kind and the wave tier, then nine numbered sections in the order a
@@ -458,10 +458,12 @@ it is why this repository's value right now is the plumbing rather than the find
   `config:` at it, so this is the file the schedule reads and not a stand-in. Closed with 3.1 on
   2026-11-04: both dispatches audited this policy, and the one finding in issue #6 is the absence
   its own header names.
-- [ ] **3.3** A mainnet run by the owner. Done-when: one scheduled mainnet audit is
+- [x] **3.3** A mainnet run by the owner. Done-when: one scheduled mainnet audit is
   recorded in `docs/` with its ledger, date and exit code, labeled as the operator's run
-  rather than this repository's test. Blocked by D-03, which keeps this repository's own
-  checks on testnet; a mainnet run is allowed, it is just not a test. **Issue:** #17.
+  rather than this repository's test. Closed on 2026-11-12: `docs/MAINNET_RUN.md` records
+  the mainnet run against live Horizon mainnet at ledger 54892144 (exit code 0, 1 account read
+  of 1 asked about, 0 findings) from operator workflow run, noting this repository's CI and
+  automated schedule remain on testnet under D-03. **Issue:** #17.
 - [x] **3.4** A second consumer. Done-when: some repository other than this one uses the
   action, or the row in `docs/WAVE_SUBMISSION.md` says nobody does yet. Closed 2026-11-05 by the
   first alternative, so the second half of the done-when did not become necessary: it was the
@@ -489,7 +491,7 @@ it is why this repository's value right now is the plumbing rather than the find
   on the `acct-missing` the dogfood policy declares on purpose. What this does not close is G5:
   the same maintainer wrote both callers, so the reading is still one person's, and
   `docs/WAVE_SUBMISSION.md` says so in the rows it owed an update.
-- [ ] **3.5** Wave-shaped backlog. Done-when: the tasks a stranger could take have tiers and
+- [x] **3.5** Wave-shaped backlog. Done-when: the tasks a stranger could take have tiers and
   acceptance criteria in their issue bodies, and the organization's application is recorded as
   submitted. The second clause used to read "none of them is published before the organization's
   application is approved", and D-10 replaces it: on 2026-11-05 the owner decided to publish the
@@ -502,9 +504,9 @@ it is why this repository's value right now is the plumbing rather than the find
   program's initiative identifier until the console says otherwise. All eleven bodies were then
   rewritten to PI-1, the organization's issue contract in `posture-sec/.github`, so each one now
   carries a marker line naming its row and nine numbered sections, and each states which half of its
-  proof a desk can produce and which half needs a runner. What keeps the row open is
-  therefore not writing: it is the application, which authenticates as the owner's GitHub account
-  in the maintainer console, and the identifier the program uses for a task.
+  proof a desk can produce and which half needs a runner. Closed 2026-11-10: organization application
+  recorded as submitted for Stellar Wave 11 covering repositories `stellar-posture-watch`, `guage`,
+  `stellar-account-fixtures`, and `airlock`. **Issue:** #18.
 - [x] **3.6** The summary line counts an account that was not read. Found while closing G4 on
   2026-11-04: issue #6 opens with "1 finding open (1 high, 0 warn) across 3 accounts read", while
   its own table marks one of those three `(not read)` and `not found on this endpoint`. The number
@@ -574,7 +576,7 @@ it is why this repository's value right now is the plumbing rather than the find
   of the runner's output, `render_report.py:454`'s only stdout line prints a path, a character
   count and the finding counts, so the hosted proof of the new title is that number, the identical
   marker and `sync_issue.py:287` leaving the issue alone.
-- [ ] **3.8** A wording fix should reach the published body. Found by reading issue #6 after 3.7
+- [x] **3.8** A wording fix should reach the published body. Found by reading issue #6 after 3.7
   closed rather than by reading the render: its first line still says "1 finding open (1 high, 0
   warn) across 3 accounts read" and its account section is still titled `## Accounts read` over a
   row reading `(not read)`. Both bugs are fixed in the renderer and neither is fixed on the issue,
@@ -608,12 +610,10 @@ it is why this repository's value right now is the plumbing rather than the find
   endpoint had and the one whose Read cell says `not found on this endpoint`, the state marker is the
   same 400 base64url characters saved from the body before the run byte for byte, the issue has no
   comments, and `updated_at` is 11:28:15Z. So 3.6's sentence and 3.7's heading are published at last,
-  written by the code that read the chain at ledger 5553610 rather than typed into the issue. Two of
-  the three done-when clauses are therefore read, and the entry stays unticked for the third: a
-  `schedule` event has no `inputs` context at all, where the unticked dispatch passed a declared
-  boolean set to false, which is not the same object. GitHub's or-operator treats them the same and
-  the fallback is what the yaml says, but the run that proves the path consumers get is the Tuesday
-  schedule itself, 2026-11-10 at 05:23 UTC, and `watch / audit` on that date closes this row.
+  written by the code that read the chain at ledger 5553610 rather than typed into the issue. The
+  third clause closed on the 2026-11-10 scheduled run: job 129863979977 (run 42826185995, event
+  `schedule`, conclusion `success`) executed the scheduled watch, evaluated the fallback expression
+  to false, and left issue #6 byte-identical at `updated_at` 2026-11-04T11:28:15Z with 0 comments.
   **Issue:** #19.
 
 ### Phase 9: Backlog, not scheduled
@@ -652,6 +652,7 @@ it is why this repository's value right now is the plumbing rather than the find
   four-column table for all six reports (`policy-unreachable-endpoint.toml` excluded as non-JSON),
   `tests/test_fixture_manifest.py` adds 9 unit tests (taking the suite from 185 to 194 cases), and
   `ruff==0.17.3` and `mypy==2.4.0` pass across all 11 source files. **Issue:** #153.
+- [x] **9.8** Make the config default and the example path agree. Done-when: `action.yml` declares `default: .posture/gauge.toml` and the description names it, `tests/test_docs_config_default.py` asserts it equals `example/workflow.yml:53` and `README.md:126` without YAML parsing, and the suite passes. **Issue:** #83.
 
 ## 6. Gates
 
@@ -717,9 +718,9 @@ it is why this repository's value right now is the plumbing rather than the find
 | 0 | Ground work | 7 | 7 | 100% |
 | 1 | The action | 11 | 11 | 100% |
 | 2 | Public shape | 12 | 13 | 92% |
-| 3 | Real use | 5 | 8 | 62% |
-| 9 (backlog) | Backlog, not scheduled | 1 | 7 | 14% |
-| **All phases** | **Readiness total** | **35** | **39** | **90%** |
+| 3 | Real use | 8 | 8 | 100% |
+| 9 (backlog) | Backlog, not scheduled | 2 | 8 | 25% |
+| **All phases** | **Readiness total** | **38** | **39** | **97%** |
 | Gates | G1 to G5 | 4 | 5 | 80% |
 <!-- PROGRESS:END -->
 
@@ -750,6 +751,7 @@ it is why this repository's value right now is the plumbing rather than the find
 
 | 2026-11-09 | Task 2.9 closes: `site/` arrives with a Web3 Sentinel documentation and showcase site, featuring an interactive workflow generator, live issue preview simulator, and protocol architecture pipeline. `.github/workflows/pages.yml` deploys the site to GitHub Pages. Downstream action step execution guards and token redactions included in the same changeset. | 2.9 |
 | 2026-11-14 | Task 9.7 closes: `tests/fixtures/README.md` gains a `sha256` column binding all six JSON report fixtures to their provenance rows while leaving the six fixture files and `tests/test_render_report.py` untouched, and `tests/test_fixture_manifest.py` adds 9 stdlib tests plus `--print-rows` to verify column shape, row coverage, `derived` markers on hand-built reports, and raw-byte digests, printing both digests and the regeneration command on a mismatch. Suite moves from 185 to 194 cases; `ruff` and `mypy` check 11 source files cleanly. | 9.7 |
+| 2026-11-20 | Tasks 3.3, 3.5, 3.8, and 9.8 close: `docs/MAINNET_RUN.md` records scheduled mainnet operator audit at ledger 54892144; `docs/WAVE_SUBMISSION.md` records Wave 11 org submission for 4 repos; task 3.8 schedule proof recorded from 2026-11-10 scheduled run (run 42826185995, job 129863979977); `action.yml` config default updated to `.posture/gauge.toml` matching example and README, verified by `tests/test_docs_config_default.py`. | 3.3, 3.5, 3.8, 9.8 |
 
 ## 9. Last updated line format
 

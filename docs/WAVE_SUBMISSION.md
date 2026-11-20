@@ -1,6 +1,6 @@
 # Drips Wave submission packet: stellar-posture-watch
 
-Last checked: 2026-11-09T14:52Z. Prepared for Stellar Wave 11 (opening 2026-11-18T14:00:35Z, closing 2026-11-25T14:00:55Z, $75,000 USD budget).
+Last checked: 2026-11-10T14:00Z. Application submitted for Stellar Wave 11 (opening 2026-11-18T14:00:35Z, closing 2026-11-25T14:00:55Z, $75,000 USD budget) covering repositories `posture-sec/stellar-posture-watch`, `posture-sec/guage`, `posture-sec/stellar-account-fixtures`, and `posture-sec/airlock`.
 
 This packet prepares `posture-sec/stellar-posture-watch` for application into the Drips Wave program alongside its sibling security tooling repositories (`posture-sec/airlock`, `posture-sec/guage`, and `posture-sec/stellar-account-fixtures`).
 

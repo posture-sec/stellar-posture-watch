@@ -19,9 +19,9 @@ inputs:
     required: false
     default: posture-sec/guage
   config:
-    description: Path to the Gauge policy file, relative to the caller's workspace.
+    description: Path to the Gauge policy file, relative to the caller's workspace. Defaults to .posture/gauge.toml.
     required: false
-    default: gauge.toml
+    default: .posture/gauge.toml
   fail-on:
     description: Severity Gauge needs to reach before it exits 1, high or warn.
     required: false
