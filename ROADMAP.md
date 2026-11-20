@@ -15,7 +15,7 @@ G4 are closed below, on the runs and on the reading of the body against the repo
 and 3.4 did not close it: one maintainer wrote both callers. Every claim here names the run or
 the file it was read from.
 
-Last updated: 2026-11-14T15:21Z (close 9.7, sha256 manifest for report fixtures)
+Last updated: 2026-11-20T02:20Z (close 9.8-9.11, docs pack for escape contract, state marker, refusal classes, fixture provenance)
 rather than three, because a contributor who picked up two of them learned no format at all. The
 organization's `ISSUE_CONTRACT.md` in `posture-sec/.github` defines PI-1: a marker line naming the
 repository, the roadmap row, the kind and the wave tier, then nine numbered sections in the order a
@@ -652,6 +652,10 @@ it is why this repository's value right now is the plumbing rather than the find
   four-column table for all six reports (`policy-unreachable-endpoint.toml` excluded as non-JSON),
   `tests/test_fixture_manifest.py` adds 9 unit tests (taking the suite from 185 to 194 cases), and
   `ruff==0.17.3` and `mypy==2.4.0` pass across all 11 source files. **Issue:** #153.
+- [x] **9.8** Record the escape order and the mention rewrite in `ARCHITECTURE.md` section 2 and `docs/escape-contract.md`. Done-when: `ARCHITECTURE.md` section 2 states the escape order and explains why reversing it breaks the zero-width space entity in mentions, records the rule of `escape()` for free text and `fenced()` only for values Gauge constrains, and `docs/escape-contract.md` catalogues all report-derived strings rendered in the body, their treatments, lines in `scripts/render_report.py`, and citations to `test_a_home_domain_of_markup_is_escaped` and `test_mentions_in_chain_fields_cannot_notify_anyone`. **Issue:** #35.
+- [x] **9.9** Document the state marker budget, its omission notice and its blind spot. Done-when: `docs/state-marker.md` records both limits (`MAX_STATE_ENTRIES` 200, `MAX_MARKER_CHARS` 20,000), base64url encoding, fingerprint sorting, the one-eighth shrink step, quotes the omission notice verbatim, corrects `ARCHITECTURE.md` section 4 to state that the notice follows the status paragraph rather than opening the body, documents the blind spot where omitted findings cannot appear under Resolved upon fixing, and notes that the operator sees the notice while `sync_issue.py` summary ignores `omitted`. **Issue:** #36.
+- [x] **9.10** Enumerate every exit-2 refusal class and exact stderr shape. Done-when: `docs/refusal-classes.md` categorizes every exit-2 path into argument refusals (no prefix), output write failure (no prefix), and report `Refused` exceptions (`render_report: refused: <msg>`), cites source lines in `scripts/render_report.py`, provides real quoted stderr strings from runs, maps each row to its test in `tests/test_render_report.py` (or marks none yet), and `ARCHITECTURE.md` section 7 links to the catalog. **Issue:** #37.
+- [x] **9.11** Document how a fixture is captured and how the provenance table is updated. Done-when: `docs/fixture-provenance.md` outlines the numbered testnet capture procedure using the pinned sha as placeholder, defines table column requirements in `tests/fixtures/README.md`, distinguishes captured vs derived fixtures with field modification tracking rules, quotes `SECURITY.md` on the testnet-only policy and seed-string ban citing `test_no_fixture_contains_a_seed_shaped_string` in `tests/test_render_report.py:599`, and `tests/fixtures/README.md` gains a closing pointer line. **Issue:** #38.
 
 ## 6. Gates
 
@@ -718,7 +722,7 @@ it is why this repository's value right now is the plumbing rather than the find
 | 1 | The action | 11 | 11 | 100% |
 | 2 | Public shape | 12 | 13 | 92% |
 | 3 | Real use | 5 | 8 | 62% |
-| 9 (backlog) | Backlog, not scheduled | 1 | 7 | 14% |
+| 9 (backlog) | Backlog, not scheduled | 5 | 11 | 45% |
 | **All phases** | **Readiness total** | **35** | **39** | **90%** |
 | Gates | G1 to G5 | 4 | 5 | 80% |
 <!-- PROGRESS:END -->
@@ -750,6 +754,7 @@ it is why this repository's value right now is the plumbing rather than the find
 
 | 2026-11-09 | Task 2.9 closes: `site/` arrives with a Web3 Sentinel documentation and showcase site, featuring an interactive workflow generator, live issue preview simulator, and protocol architecture pipeline. `.github/workflows/pages.yml` deploys the site to GitHub Pages. Downstream action step execution guards and token redactions included in the same changeset. | 2.9 |
 | 2026-11-14 | Task 9.7 closes: `tests/fixtures/README.md` gains a `sha256` column binding all six JSON report fixtures to their provenance rows while leaving the six fixture files and `tests/test_render_report.py` untouched, and `tests/test_fixture_manifest.py` adds 9 stdlib tests plus `--print-rows` to verify column shape, row coverage, `derived` markers on hand-built reports, and raw-byte digests, printing both digests and the regeneration command on a mismatch. Suite moves from 185 to 194 cases; `ruff` and `mypy` check 11 source files cleanly. | 9.7 |
+| 2026-11-20 | Tasks 9.8, 9.9, 9.10, and 9.11 close: `docs/escape-contract.md` records the escape order, zero-width mention rewrite, and field treatment table with tests; `docs/state-marker.md` documents marker limits, shrink step, notice verbatim, placement, and omission blind spot; `docs/refusal-classes.md` catalogues all exit-2 paths and real stderr outputs across argument, write, and report refusals; `docs/fixture-provenance.md` details testnet capture steps, row schemas, derived fixture rules, and seed rejection invariants; `ARCHITECTURE.md` sections 2, 4, and 7 and `tests/fixtures/README.md` updated with pointers. Suite stays at 194 passing tests. | 9.8, 9.9, 9.10, 9.11 |
 
 ## 9. Last updated line format
 
