@@ -331,9 +331,22 @@ def validate(args: argparse.Namespace) -> list[str]:
     check_boolean("break-build", args.break_build, problems)
     check_boolean("dry-run", args.dry_run, problems)
     check_boolean("update-on-no-change", args.update_on_no_change, problems)
-    config = check_config_path(args.config, problems)
-    if config is not None:
-        check_policy(config, problems)
+
+    # Multi-config: the input may be a newline-separated list of paths.
+    raw_configs = args.config.splitlines()
+    configs = [line.strip() for line in raw_configs if line.strip()]
+    if not configs:
+        problems.append("config must list at least one policy file (the input was empty or blank)")
+        return problems
+    seen_configs: dict[str, int] = {}
+    for i, cfg in enumerate(configs):
+        first = seen_configs.setdefault(cfg, i)
+        if first != i:
+            problems.append(f"config {cfg!r} is listed twice, at index {first} and index {i}")
+    for cfg in configs:
+        path = check_config_path(cfg, problems)
+        if path is not None:
+            check_policy(path, problems)
     return problems
 
 
@@ -359,9 +372,11 @@ def main(argv: list[str] | None = None) -> int:
         for problem in problems:
             print(f"  - {problem}", file=sys.stderr)
         return 2
+    configs = [line.strip() for line in args.config.splitlines() if line.strip()]
+    cfg_summary = ", ".join(configs)
     print(
         f"validate_inputs: gauge-ref is pinned at {args.gauge_ref[:7]}, "
-        f"config {args.config} parsed, fail-on {args.fail_on}"
+        f"config {cfg_summary} parsed, fail-on {args.fail_on}"
     )
     return 0
 

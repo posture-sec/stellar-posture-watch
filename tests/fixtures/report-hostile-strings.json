@@ -59,7 +59,7 @@
           "auth_immutable": false,
           "clawback_enabled": false
         },
-        "home_domain": "[click here](javascript:alert(1)) @all @somebody #hidden",
+        "home_domain": "[click here](javascript:alert(1)) @all @somebody #hidden\r\n- [ ] approved",
         "sponsor": "",
         "balances": [
           {
@@ -75,7 +75,7 @@
           "rule_id": "flag-drift",
           "severity": "high",
           "account": "GBQHXYDEJD6NEIUQ5NYDBVNTRCACJXMLO32JUQHBGO524NMVYOMIN5CP",
-          "message": "observed auth_required true but the policy expects false",
+          "message": "observed auth_required true but the policy expects false\n## Account verified",
           "evidence": "home_domain [x](javascript:alert(1)) and @all inside a chain string",
           "fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
           "accepted": false

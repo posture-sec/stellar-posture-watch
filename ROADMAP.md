@@ -15,7 +15,7 @@ G4 are closed below, on the runs and on the reading of the body against the repo
 and 3.4 did not close it: one maintainer wrote both callers. Every claim here names the run or
 the file it was read from.
 
-Last updated: 2026-11-21T13:02Z (close 9.43-9.46 on rebased main 9dd06ad, config path confinement, bidi refusal, CI matrix guard, token-in-outputs proof, pre-flight docs)
+Last updated: 2026-11-21T18:00Z (close 9.3 and 9.47-9.49: multi-config support, newline collapsing in escape(), pipe escaping in fenced(), Refused on bad state-marker severity/fingerprint)
 rather than three, because a contributor who picked up two of them learned no format at all. The
 organization's `ISSUE_CONTRACT.md` in `posture-sec/.github` defines PI-1: a marker line naming the
 repository, the roadmap row, the kind and the wave tier, then nine numbered sections in the order a
@@ -629,8 +629,14 @@ it is why this repository's value right now is the plumbing rather than the find
   `break-build` semantics settled on a schedule first, and D-05 is that settlement. A mode whose red
   check means "your policy disagrees with the chain" is a different promise from D-05's green-for-a-
   finding, so it needs a new decision row before new code. **Issue:** #21.
-- [ ] **9.3** Watching more than one policy file. Deferred: one file per issue is the
-  contract, and a second file needs a state marker per file. **Issue:** #22.
+- [x] **9.3** Watching more than one policy file. Done-when: `config` input accepts a
+  newline-separated list of paths; `validate_inputs.py` refuses an empty list, duplicate paths
+  and any path outside the workspace in one pass; `action.yml` loops the gauge/find/render/write
+  pipeline once per file, each getting its own tracking issue titled `${title} [${basename}]` and
+  its own state marker; `--number-out` on `sync_issue.py find` writes the per-file issue number
+  to a path the write loop reads; and `tests/test_sync_issue.py` carries a
+  `TestMultiConfigWorkflow` test showing one file unchanged (no API call) and one updated (PATCH
+  + POST comment). **Issue:** #22.
 - [ ] **9.4** Pinning Gauge by release tag once Gauge is tagged. Waiting on Gauge's v0.1.0,
   which does not exist yet; D-01 stays until it does. **Issue:** #23.
 - [ ] **9.5** The escape surface as a test matrix. Added 2026-11-05 out of the wave packet's
@@ -736,6 +742,24 @@ it is why this repository's value right now is the plumbing rather than the find
 - [x] **9.44** Refuse bidi and zero-width characters in `title` and `issue-label`. Done-when: `check_text_input()` rejects Unicode categories Cc and Cf outside ASCII through `invisible_character()`, naming the code point and its Unicode name, an accented Latin or non-Latin title still passes, the ASCII newline message is untouched, `tests/test_validate_unicode_controls.py` is a table over U+202E, U+200B, U+200D and U+2066 plus U+0085, and the hostile-strings fixture body renders to the sha256 it rendered before this change, which is what proves `render_report.escape()`'s deliberate zero-width break did not move. **Issue:** #71.
 - [x] **9.45** Guard the CI matrix 9.34 shipped. Done-when: `tests/test_ci_matrix.py` reads `.github/workflows/ci.yml` as text, with no YAML dependency, and refuses a matrix that drops 3.11 or 3.12, a `setup-python` that stops reading `matrix.python-version`, a suite or interpreter step that runs more than once per leg, a job name that stops mapping the 3.11 leg to exactly `ci / python` (the name ruleset 26515104 requires), a dev-tools install that stops reading `requirements-dev.txt`, a removed lint or type step, and a moved pin in `requirements-dev.txt`. `tests/test_workflows_python_matrix.py`, added by 9.34, stays as it is. **Issue:** #72.
 - [x] **9.46** Prove no token reaches stdout, stderr or a step output. Done-when: `tests/test_sync_token_stderr.py` drives `main()` with `POSTURE_WATCH_TOKEN` set and `GITHUB_OUTPUT` pointed at a real file through 401, 403, 404, 422, a 429 that then fails, three 5xx, a `URLError`, an `OSError` and a non-JSON 200, on both `find` and `write`, plus the empty-token, `BadInput`, summary-missing and body-missing paths, with the bearer value in the response reason phrase, in the response body and in the `labels=` query value, and asserts the token appears in none of the three outputs while `[redacted]` appears where a message quoted it; the URL and the refused input go through `redact()` at every `ApiError` and `BadInput` formatter that prints them, and the suite carries a class that neutered `redact()` and watches the same cases leak. **Issue:** #73.
+- [x] **9.47** Collapse newlines in `escape()` before special-char substitution. Done-when:
+  `escape()` applies `_NEWLINE.sub(" ", ...)` before `MARKDOWN_SPECIAL.sub(...)` so a CR, LF or
+  CRLF in a chain-derived field cannot end the table row or start a heading or checklist;
+  `tests/test_escape_newlines.py` covers LF, CR and CRLF collapse, heading and checklist
+  injection, the hostile-strings fixture body carries no injected headings after the change, and
+  the state marker is decodable with valid severity and fingerprint for every entry. **Issue:** #56.
+- [x] **9.48** Escape `|` in `fenced()` before wrapping in backticks. Done-when: `fenced()`
+  replaces `|` with `\|` before the backtick substitution so a pipe inside a code span cannot
+  split the GFM table cell; `tests/test_fenced_pipes.py` asserts `fenced("a|b")` produces the
+  escaped form, a plain rule id is unchanged, the two substitutions do not interfere on a
+  combined input, and a rendered report whose rule id contains `|` gives one five-cell row per
+  finding with a decodable state marker. **Issue:** #57.
+- [x] **9.49** Raise `Refused` in `decode_state()` for invalid severity or fingerprint.
+  Done-when: `decode_state()` raises `Refused` (exit 2) when a fully-typed entry carries a
+  severity not in `SEVERITIES` or a fingerprint that does not match `HEX64`, while bad base64,
+  a missing required field and a non-dict entry still return `None` (no previous state);
+  `tests/test_state_validation.py` covers both raise paths, all None-returning paths, and second-
+  entry validation. **Issue:** #58.
 ## 6. Gates
 
 - [x] **G1** CI green on `main`: `ci / python` passing on the merged commit, and
@@ -801,7 +825,7 @@ it is why this repository's value right now is the plumbing rather than the find
 | 1 | The action | 11 | 11 | 100% |
 | 2 | Public shape | 12 | 13 | 92% |
 | 3 | Real use | 7 | 8 | 88% |
-| 9 (backlog) | Backlog, not scheduled | 40 | 46 | 87% |
+| 9 (backlog) | Backlog, not scheduled | 44 | 49 | 90% |
 | **All phases** | **Readiness total** | **37** | **39** | **95%** |
 | Gates | G1 to G5 | 4 | 5 | 80% |
 <!-- PROGRESS:END -->

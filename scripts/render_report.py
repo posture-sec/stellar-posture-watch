@@ -45,6 +45,8 @@ SEVERITY_RANK = {"high": 0, "warn": 1}
 HEX64 = re.compile(r"^[0-9a-f]{64}$")
 MARKDOWN_SPECIAL = re.compile(r"([\\*_\[\]<>#|~`&])")
 MENTION = re.compile(r"(?<![\w/])@(\w{1,39})")
+# Matches any newline sequence so a hostile value cannot end the table row.
+_NEWLINE = re.compile(r"\r\n|\r|\n")
 NO_CHANGE_SUMMARY = "no change since the previous run"
 
 
@@ -65,16 +67,23 @@ class Refused(Exception):
 def escape(value: object) -> str:
     """Make a report-derived string safe to drop into issue markdown.
 
-    Backslash escapes the characters that can open markup, and any mention is broken
-    with a zero-width space so a hostile home domain cannot notify a user or ``@all``.
+    CR and LF are collapsed to a single space first so a hostile value cannot end the
+    table row or start a new markdown block. Backslash escapes the characters that can
+    open markup, and any mention is broken with a zero-width space so a hostile home
+    domain cannot notify a user or ``@all``.
     """
-    text = MARKDOWN_SPECIAL.sub(r"\\\1", str(value))
+    text = _NEWLINE.sub(" ", str(value))
+    text = MARKDOWN_SPECIAL.sub(r"\\\1", text)
     return MENTION.sub(lambda m: "@&#8203;" + m.group(1), text)
 
 
 def fenced(value: object) -> str:
-    """A value in backticks, with any run of backticks inside it neutralised."""
-    text = str(value).replace("`", "&#96;")
+    """A value in backticks, with pipes and backticks neutralised.
+
+    A pipe inside a code span still ends the GFM table cell, so it is escaped before the
+    backtick substitution so the two replacements do not interfere with each other.
+    """
+    text = str(value).replace("|", r"\|").replace("`", "&#96;")
     return f"`{text}`"
 
 
@@ -198,6 +207,13 @@ def decode_state(text: str) -> list[Finding] | None:
             for key in ("account", "fingerprint", "rule", "severity")
         ):
             return None
+        # A complete entry with an invalid severity or fingerprint is refused: returning
+        # None would silently re-baseline, while these fields are ones a hand-edited marker
+        # can forge. The field name is named; the value is not logged (D-06).
+        if entry["severity"] not in SEVERITIES:
+            raise Refused("state marker: severity field is not valid")
+        if not HEX64.match(entry["fingerprint"]):
+            raise Refused("state marker: fingerprint field is not valid")
         findings.append(
             {
                 "account": entry["account"],

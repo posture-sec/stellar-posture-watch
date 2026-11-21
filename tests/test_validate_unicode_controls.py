@@ -241,7 +241,7 @@ class TestRendererKeepsItsOwnZeroWidthSpace(unittest.TestCase):
         digest = hashlib.sha256(self.render_fixture()).hexdigest()
         self.assertEqual(
             digest,
-            "0e3c716348aeae44ea7c316fc9a4f1de2482dddd2c99fe8914042357e20b1432",
+            "d1c540c5581feb5527435198d49208fcabd28b8bb9947294153565f6dad01b04",
         )
 
 

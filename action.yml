@@ -19,7 +19,10 @@ inputs:
     required: false
     default: posture-sec/guage
   config:
-    description: Path to the Gauge policy file, relative to the caller's workspace. Defaults to .posture/gauge.toml.
+    description: >-
+      Newline-separated list of Gauge policy file paths, each relative to the caller's workspace.
+      A single path is accepted. Each path gets its own tracking issue whose title carries the
+      file's basename. Defaults to .posture/gauge.toml.
     required: false
     default: .posture/gauge.toml
   fail-on:
@@ -154,15 +157,29 @@ runs:
         FAIL_ON: ${{ inputs.fail-on }}
       run: |
         set -uo pipefail
-        ec=0
-        "$RUNNER_TEMP/stellar-gauge" audit \
-          --config "$CONFIG" \
-          --format json \
-          --fail-on "$FAIL_ON" \
-          > "$RUNNER_TEMP/report.json" 2> "$RUNNER_TEMP/gauge-stderr.log" || ec=$?
-        echo "exit-code=$ec" >> "$GITHUB_OUTPUT"
-        echo "report-path=$RUNNER_TEMP/report.json" >> "$GITHUB_OUTPUT"
-        echo "gauge exited $ec after writing $(wc -c < "$RUNNER_TEMP/report.json") bytes of report"
+        max_ec=0
+        cfg_index=0
+        rm -f "$RUNNER_TEMP/config-runs.txt"
+        while IFS= read -r cfg; do
+          cfg="${cfg#"${cfg%%[![:space:]]*}"}"
+          cfg="${cfg%"${cfg##*[![:space:]]}"}"
+          [ -z "$cfg" ] && continue
+          ec=0
+          "$RUNNER_TEMP/stellar-gauge" audit \
+            --config "$cfg" \
+            --format json \
+            --fail-on "$FAIL_ON" \
+            > "$RUNNER_TEMP/report-${cfg_index}.json" \
+            2>> "$RUNNER_TEMP/gauge-stderr.log" || ec=$?
+          if [ "$ec" -gt "$max_ec" ]; then max_ec=$ec; fi
+          printf '%s\t%s\t%s\n' "$cfg" "$ec" "$cfg_index" \
+            >> "$RUNNER_TEMP/config-runs.txt"
+          echo "  $cfg exited $ec ($(wc -c < "$RUNNER_TEMP/report-${cfg_index}.json") bytes)"
+          cfg_index=$((cfg_index + 1))
+        done <<< "$CONFIG"
+        echo "exit-code=$max_ec" >> "$GITHUB_OUTPUT"
+        echo "report-path=$RUNNER_TEMP/config-runs.txt" >> "$GITHUB_OUTPUT"
+        echo "gauge max exit-code: $max_ec"
         exit 0
 
     - name: Find the tracking issue
@@ -175,10 +192,17 @@ runs:
         TITLE: ${{ inputs.title }}
       run: |
         set -euo pipefail
-        python3 "$GITHUB_ACTION_PATH/scripts/sync_issue.py" find \
-          --label "$ISSUE_LABEL" \
-          --title "$TITLE" \
-          --previous-body-out "$RUNNER_TEMP/previous-body.md"
+        while IFS= read -r run_line; do
+          [ -z "$run_line" ] && continue
+          cfg=$(printf '%s\n' "$run_line" | cut -f1)
+          idx=$(printf '%s\n' "$run_line" | cut -f3)
+          cfg_key=$(basename "$cfg" .toml)
+          python3 "$GITHUB_ACTION_PATH/scripts/sync_issue.py" find \
+            --label "$ISSUE_LABEL" \
+            --title "${TITLE} [${cfg_key}]" \
+            --previous-body-out "$RUNNER_TEMP/previous-body-${idx}.md" \
+            --number-out "$RUNNER_TEMP/issue-number-${idx}.txt"
+        done < "$RUNNER_TEMP/config-runs.txt"
 
     - name: Render the issue body
       if: steps.gauge.outputs.exit-code == '0' || steps.gauge.outputs.exit-code == '1'
@@ -188,20 +212,25 @@ runs:
         GAUGE_REF: ${{ inputs.gauge-ref }}
         GAUGE_REPO: ${{ inputs.gauge-repo }}
         FAIL_ON: ${{ inputs.fail-on }}
-        GAUGE_EXIT: ${{ steps.gauge.outputs.exit-code }}
       run: |
         set -euo pipefail
-        python3 "$GITHUB_ACTION_PATH/scripts/render_report.py" \
-          --report "$RUNNER_TEMP/report.json" \
-          --out "$RUNNER_TEMP/issue-body.md" \
-          --summary-out "$RUNNER_TEMP/summary.json" \
-          --previous-body "$RUNNER_TEMP/previous-body.md" \
-          --as-of "$(date -u +%F)" \
-          --config "$CONFIG" \
-          --gauge-repo "$GAUGE_REPO" \
-          --gauge-ref "$GAUGE_REF" \
-          --fail-on "$FAIL_ON" \
-          --exit-code "$GAUGE_EXIT"
+        while IFS= read -r run_line; do
+          [ -z "$run_line" ] && continue
+          cfg=$(printf '%s\n' "$run_line" | cut -f1)
+          cfg_ec=$(printf '%s\n' "$run_line" | cut -f2)
+          idx=$(printf '%s\n' "$run_line" | cut -f3)
+          python3 "$GITHUB_ACTION_PATH/scripts/render_report.py" \
+            --report "$RUNNER_TEMP/report-${idx}.json" \
+            --out "$RUNNER_TEMP/issue-body-${idx}.md" \
+            --summary-out "$RUNNER_TEMP/summary-${idx}.json" \
+            --previous-body "$RUNNER_TEMP/previous-body-${idx}.md" \
+            --as-of "$(date -u +%F)" \
+            --config "$cfg" \
+            --gauge-repo "$GAUGE_REPO" \
+            --gauge-ref "$GAUGE_REF" \
+            --fail-on "$FAIL_ON" \
+            --exit-code "$cfg_ec"
+        done < "$RUNNER_TEMP/config-runs.txt"
 
     - name: Update the tracking issue
       id: write
@@ -211,21 +240,30 @@ runs:
         POSTURE_WATCH_TOKEN: ${{ inputs.github-token }}
         ISSUE_LABEL: ${{ inputs.issue-label }}
         TITLE: ${{ inputs.title }}
-        NUMBER: ${{ steps.find.outputs.issue-number }}
         DRY_RUN: ${{ inputs.dry-run }}
         UPDATE_ON_NO_CHANGE: ${{ inputs.update-on-no-change }}
       run: |
         set -euo pipefail
-        args=()
-        if [ -n "$NUMBER" ]; then args+=(--number "$NUMBER"); fi
-        if [ "$DRY_RUN" = "true" ]; then args+=(--dry-run); fi
-        if [ "$UPDATE_ON_NO_CHANGE" = "true" ]; then args+=(--update-on-no-change); fi
-        python3 "$GITHUB_ACTION_PATH/scripts/sync_issue.py" write \
-          --label "$ISSUE_LABEL" \
-          --title "$TITLE" \
-          --body "$RUNNER_TEMP/issue-body.md" \
-          --summary "$RUNNER_TEMP/summary.json" \
-          "${args[@]}"
+        while IFS= read -r run_line; do
+          [ -z "$run_line" ] && continue
+          cfg=$(printf '%s\n' "$run_line" | cut -f1)
+          idx=$(printf '%s\n' "$run_line" | cut -f3)
+          cfg_key=$(basename "$cfg" .toml)
+          number=""
+          if [ -f "$RUNNER_TEMP/issue-number-${idx}.txt" ]; then
+            number=$(cat "$RUNNER_TEMP/issue-number-${idx}.txt")
+          fi
+          args=()
+          if [ -n "$number" ]; then args+=(--number "$number"); fi
+          if [ "$DRY_RUN" = "true" ]; then args+=(--dry-run); fi
+          if [ "$UPDATE_ON_NO_CHANGE" = "true" ]; then args+=(--update-on-no-change); fi
+          python3 "$GITHUB_ACTION_PATH/scripts/sync_issue.py" write \
+            --label "$ISSUE_LABEL" \
+            --title "${TITLE} [${cfg_key}]" \
+            --body "$RUNNER_TEMP/issue-body-${idx}.md" \
+            --summary "$RUNNER_TEMP/summary-${idx}.json" \
+            "${args[@]}"
+        done < "$RUNNER_TEMP/config-runs.txt"
 
     - name: Upload Gauge's diagnostics when the run failed outright
       if: failure() || steps.gauge.outputs.exit-code == '2' || steps.gauge.outputs.exit-code == '3'
