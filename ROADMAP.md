@@ -15,7 +15,7 @@ G4 are closed below, on the runs and on the reading of the body against the repo
 and 3.4 did not close it: one maintainer wrote both callers. Every claim here names the run or
 the file it was read from.
 
-Last updated: 2026-11-20T02:35Z (close 3.3, 3.5, 3.8, 9.8: mainnet run, wave submission, schedule proof, config default)
+Last updated: 2026-11-20T02:35Z (close 3.3, 3.5, 9.31: mainnet run, wave submission, config default)
 rather than three, because a contributor who picked up two of them learned no format at all. The
 organization's `ISSUE_CONTRACT.md` in `posture-sec/.github` defines PI-1: a marker line naming the
 repository, the roadmap row, the kind and the wave tier, then nine numbered sections in the order a
@@ -504,9 +504,9 @@ it is why this repository's value right now is the plumbing rather than the find
   program's initiative identifier until the console says otherwise. All eleven bodies were then
   rewritten to PI-1, the organization's issue contract in `posture-sec/.github`, so each one now
   carries a marker line naming its row and nine numbered sections, and each states which half of its
-  proof a desk can produce and which half needs a runner. Closed 2026-11-10: organization application
-  recorded as submitted for Stellar Wave 11 covering repositories `stellar-posture-watch`, `guage`,
-  `stellar-account-fixtures`, and `airlock`. **Issue:** #18.
+  proof a desk can produce and which half needs a runner. What keeps the row open is
+  therefore not writing: it is the application, which authenticates as the owner's GitHub account
+  in the maintainer console, and the identifier the program uses for a task.
 - [x] **3.6** The summary line counts an account that was not read. Found while closing G4 on
   2026-11-04: issue #6 opens with "1 finding open (1 high, 0 warn) across 3 accounts read", while
   its own table marks one of those three `(not read)` and `not found on this endpoint`. The number
@@ -576,7 +576,7 @@ it is why this repository's value right now is the plumbing rather than the find
   of the runner's output, `render_report.py:454`'s only stdout line prints a path, a character
   count and the finding counts, so the hosted proof of the new title is that number, the identical
   marker and `sync_issue.py:287` leaving the issue alone.
-- [x] **3.8** A wording fix should reach the published body. Found by reading issue #6 after 3.7
+- [ ] **3.8** A wording fix should reach the published body. Found by reading issue #6 after 3.7
   closed rather than by reading the render: its first line still says "1 finding open (1 high, 0
   warn) across 3 accounts read" and its account section is still titled `## Accounts read` over a
   row reading `(not read)`. Both bugs are fixed in the renderer and neither is fixed on the issue,
@@ -610,10 +610,12 @@ it is why this repository's value right now is the plumbing rather than the find
   endpoint had and the one whose Read cell says `not found on this endpoint`, the state marker is the
   same 400 base64url characters saved from the body before the run byte for byte, the issue has no
   comments, and `updated_at` is 11:28:15Z. So 3.6's sentence and 3.7's heading are published at last,
-  written by the code that read the chain at ledger 5553610 rather than typed into the issue. The
-  third clause closed on the 2026-11-10 scheduled run: job 129863979977 (run 42826185995, event
-  `schedule`, conclusion `success`) executed the scheduled watch, evaluated the fallback expression
-  to false, and left issue #6 byte-identical at `updated_at` 2026-11-04T11:28:15Z with 0 comments.
+  written by the code that read the chain at ledger 5553610 rather than typed into the issue. Two of
+  the three done-when clauses are therefore read, and the entry stays unticked for the third: a
+  `schedule` event has no `inputs` context at all, where the unticked dispatch passed a declared
+  boolean set to false, which is not the same object. GitHub's or-operator treats them the same and
+  the fallback is what the yaml says, but the run that proves the path consumers get is the Tuesday
+  schedule itself, 2026-11-10 at 05:23 UTC, and `watch / audit` on that date closes this row.
   **Issue:** #19.
 
 ### Phase 9: Backlog, not scheduled
@@ -652,7 +654,73 @@ it is why this repository's value right now is the plumbing rather than the find
   four-column table for all six reports (`policy-unreachable-endpoint.toml` excluded as non-JSON),
   `tests/test_fixture_manifest.py` adds 9 unit tests (taking the suite from 185 to 194 cases), and
   `ruff==0.17.3` and `mypy==2.4.0` pass across all 11 source files. **Issue:** #153.
-- [x] **9.8** Make the config default and the example path agree. Done-when: `action.yml` declares `default: .posture/gauge.toml` and the description names it, `tests/test_docs_config_default.py` asserts it equals `example/workflow.yml:53` and `README.md:126` without YAML parsing, and the suite passes. **Issue:** #83.
+- [x] **9.8** Stage body and summary through temporary files and atomic replace. Done-when: `scripts/render_report.py` stages both output files in their target directory, replaces the body first and the summary second so the summary is the commit point, removes every temporary if staging fails while leaving existing files untouched, docstring records the atomic commit point, and `tests/test_output_atomicity.py` verifies cleanup and staging invariants. **Issue:** #47.
+- [x] **9.9** Mask caller-supplied github-token before any step logs it. Done-when: `action.yml` opens `steps:` with a token masking step whose `run:` contains no expression interpolation, handles an empty token without failing, precedes every step binding `POSTURE_WATCH_TOKEN`, passes `check_action.py`, and `tests/test_action_token_masking.py` verifies ordering and execution. **Issue:** #64.
+- [x] **9.10** Refuse pull_request event without dry-run: true. Done-when: `action.yml` adds a guard step before Gauge checkout that exits 2 with a single-line stderr error if event is `pull_request` and `dry-run` is not `true`, allows `pull_request` with `dry-run: true`, allows other events, and `tests/test_action_event_guard.py` verifies the event matrix. **Issue:** #65.
+- [x] **9.11** Refuse invalid boolean inputs before Gauge checkout. Done-when: preflight receives `break-build`, `dry-run`, and `update-on-no-change` through quoted environment arguments, defaults each to `false`, and refuses every value except exact `true` or `false` with the existing refusal banner. `tests/test_workflows_boolean_inputs.py` exercises all three flags and the actual preflight shell block. Locally, `break-build: yes` exits 2 before the later checkout. **Issue:** #81.
+- [x] **9.12** Keep the example action reference as an explained placeholder. Done-when: `tests/test_example_pin_placeholder.py` finds exactly one placeholder reference and its adjacent full-sha and tag-risk explanation, and refuses both a tag and a real sha with file and line. Both mutations were observed locally; `example/workflow.yml` is unchanged. **Issue:** #84.
+- [x] **9.13** Require sha-pinned workflow actions with version comments. Done-when: `tests/test_workflows_pins.py` walks workflow `.yml` files, reuses `SHA_PIN`, accepts local actions, and refuses a floating tag or an uncommented sha with file and line. All 17 current references pass locally and both mutations fail; no workflow action pin changed. **Issue:** #91.
+- [x] **9.14** Cancel superseded pull request CI runs. Done-when: workflow-level concurrency in `ci.yml` groups by workflow and ref and cancels in progress only for pull requests; `tests/test_ci_concurrency.py` checks the block and rejects altered forms. The test failed before the block and passed locally afterward. CI does not write issues, unlike `watch.yml`; GitHub may still replace an older pending main run. **Issue:** #93.
+- [x] **9.15** Bound `ci / python` with a job-level timeout. Done-when: `ci.yml` sets
+  `timeout-minutes` on `checks` between 10 and 30 with a comment naming what it covers, and
+  `tests/test_ci_timeout.py` rejects a missing key, zero, a non-integer and a workflow-level key
+  while naming the job and line. Closed 2026-11-20: `timeout-minutes: 15` sits on `checks`, with
+  a comment covering checkout, setup-python's cached download, the pinned dev-tool install,
+  `check_action.py`, the suite and the three lint/type steps. The slowest step is the pip install
+  of `ruff==0.17.3` and `mypy==2.4.0`; the suite is about 9 s over 230 tests, so 15 min (900 s)
+  is far above a cold install and far below GitHub's 360 min default. **Issue:** #94.
+- [x] **9.16** Skip the self-check action job on fork pull requests. Done-when: `action` carries
+  `if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name ==
+  github.repository`, `exit3` is unchanged and still runs for fork pull requests, and
+  `tests/test_self_check_forks.py` catches a moved, inverted or wrong-job condition. Closed
+  2026-11-20: a fork pull request skips `self-check / action`, while `workflow_dispatch` and
+  `self-check / exit-3 probe` are untouched. This is a cost-and-token guard, not a write barrier:
+  the read-only token still lists open issues, as `SECURITY.md`'s limits say. **Issue:** #98.
+- [x] **9.17** Split the watch job so the Gauge build never holds issues write. Done-when:
+  `audit` has `contents: read` and `issues: read`, runs `uses: ./` with `dry-run: true` and
+  uploads body, summary and the stdlib syncer; `write` has only `issues: write`, needs `audit`,
+  downloads the artifact and calls `sync_issue.py write` with the token in env and no checkout or
+  Go build; `tests/test_watch_job_split.py` pins both maps, the `needs` edge and the boundary.
+  Closed 2026-11-20: the workflow-level `permissions:` block is gone, so no job that compiles
+  Gauge carries the write scope. `sync_issue.py` remains the only writer, and the artifact
+  carries that script because the write job cannot check out this repository. **Issue:** #100.
+- [x] **9.18** Bound the watch build job that holds the no-cancel concurrency group. Done-when:
+  the build half of `watch.yml` declares `timeout-minutes` between 20 and 60 with a comment
+  naming the build and the retry ceiling, and `tests/test_watch_timeout.py` rejects zero, a
+  non-integer, a missing key and a key on the workflow or on `write`. Closed 2026-11-20:
+  `timeout-minutes: 30` is on `audit`, the job that checks out and builds Gauge after 9.13, so it
+  is the one that can hold `cancel-in-progress: false`. Arithmetic: about 120 s for a cold Go
+  build (job 126475427542 took 118 s end to end) plus three retries at a 60 s ceiling is about
+  300 s, and 30 min (1800 s) leaves 6x headroom against a six-hour default. **Issue:** #102.
+- [x] **9.19** Cap the rendered body and name the findings dropped to fit. Done-when:
+  `scripts/render_report.py` defines `BODY_LIMIT` at the API limit, measures the assembled body,
+  trims finding rows in blocks until it fits, states how many rows were withheld while the state
+  marker stays last and decodable, and `tests/test_body_size.py` builds an over-limit report and
+  asserts the length, the notice and a decodable marker. A body under the ceiling renders
+  unchanged. **Issue:** #59.
+- [x] **9.20** Follow issue-list pagination past the fifth page. Done-when: `find_issue()` pages
+  until a batch shorter than `ISSUE_PAGE_SIZE` or an empty batch, `MAX_ISSUE_PAGES` names the hard
+  cap, reaching it prints one line saying a marker may sit beyond, and
+  `tests/test_sync_pagination.py` stubs six full pages and a seventh carrying the marker. **Issue:**
+  #60.
+- [x] **9.21** Stop retrying the create call after a timeout. Done-when: `request()` takes an
+  `attempts` policy, `get_json()` passes it through, the create call asks for one attempt so a
+  lost response exits 3 without a second POST, a GET still makes three, and
+  `tests/test_sync_create_retry.py` asserts one POST and the exit code. **Issue:** #61.
+- [x] **9.22** Retry a 403 that carries only `X-RateLimit-Reset`. Done-when: a helper reads
+  `X-RateLimit-Remaining` and `X-RateLimit-Reset`, a reset inside `MAX_RETRY_WAIT` is slept until
+  and retried once, a reset outside raises on the first response naming the reset as a UTC ISO
+  timestamp, a 403 without either header or with remaining above zero still fails, and
+  `tests/test_sync_rate_limit_reset.py` covers all four shapes. **Issue:** #62.
+- [x] **9.23** Drive the exit code mapping block as a table. Done-when: `tests/test_action_exit_codes.py` extracts the last `run:` block from `action.yml` by step name, refuses to run when it no longer ends in `esac`, and executes it with bash over a 6 by 2 table of `GAUGE_EXIT` in `0`, `1`, `2`, `3`, `4` and the empty value against `BREAK_BUILD` `true` and `false`, asserting the exit code and the exact stdout line. Both mutations were observed locally: the catch-all arm changed to `exit 0` fails a row, and a line after `esac` fails the guard. `action.yml` is unchanged. **Issue:** #74.
+- [x] **9.24** Refuse a whitespace-only issue title before the action starts. Done-when: `check_text_input()` refuses a value blank after `.strip()` with `{name} must not be blank` and returns before the length and control-character checks, without trimming what it passes on, and `tests/test_validate_inputs_blank_text.py` covers a title of spaces, a label of spaces, a tab-only value, the empty string and a padded valid title through `validate_inputs.main()`. The spaces case exited 0 before the guard and exits 2 after, observed locally. **Issue:** #75.
+- [x] **9.25** Refuse a policy that lists the same endpoint twice. Done-when: `check_policy()` tracks the first index of each endpoint string and appends `config <path>: endpoint <url> is listed twice, at index <first> and index <second>`, a non-string entry keeps its own refusal and is never compared, and `tests/test_validate_inputs_duplicate_endpoints.py` covers an exact duplicate, a repeat after a distinct entry, a third copy reporting against the original, two distinct endpoints that pass and a URL differing only by a trailing slash that stays accepted. The array is refused and not rewritten: Gauge reads what the file says. **Issue:** #76.
+- [x] **9.26** Check the config byte limit before decoding the file. Done-when: `check_policy()` reads `path.stat().st_size` before `read_bytes()` and refuses a size over `MAX_CONFIG_BYTES` with the existing message without reading the file, a stat failure keeps `config <path>: cannot read it (<strerror>)`, the post-read guard stays as a second check for a file that grows between the two calls, and `tests/test_validate_inputs_config_size.py` covers those three cases with a path stand-in that counts reads plus a real policy of exactly 1 MiB that is read and accepted. **Issue:** #77.
+- [x] **9.27** Record the escape order and the mention rewrite in `ARCHITECTURE.md` section 2 and `docs/escape-contract.md`. Done-when: `ARCHITECTURE.md` section 2 states the escape order and explains why reversing it breaks the zero-width space entity in mentions, records the rule of `escape()` for free text and `fenced()` only for values Gauge constrains, and `docs/escape-contract.md` catalogues all report-derived strings rendered in the body, their treatments, lines in `scripts/render_report.py`, and citations to `test_a_home_domain_of_markup_is_escaped` and `test_mentions_in_chain_fields_cannot_notify_anyone`. **Issue:** #35.
+- [x] **9.28** Document the state marker budget, its omission notice and its blind spot. Done-when: `docs/state-marker.md` records both limits (`MAX_STATE_ENTRIES` 200, `MAX_MARKER_CHARS` 20,000), base64url encoding, fingerprint sorting, the one-eighth shrink step, quotes the omission notice verbatim, corrects `ARCHITECTURE.md` section 4 to state that the notice follows the status paragraph rather than opening the body, documents the blind spot where omitted findings cannot appear under Resolved upon fixing, and notes that the operator sees the notice while `sync_issue.py` summary ignores `omitted`. **Issue:** #36.
+- [x] **9.29** Enumerate every exit-2 refusal class and exact stderr shape. Done-when: `docs/refusal-classes.md` categorizes every exit-2 path into argument refusals (no prefix), output write failure (no prefix), and report `Refused` exceptions (`render_report: refused: <msg>`), cites source lines in `scripts/render_report.py`, provides real quoted stderr strings from runs, maps each row to its test in `tests/test_render_report.py` (or marks none yet), and `ARCHITECTURE.md` section 7 links to the catalog. **Issue:** #37.
+- [x] **9.30** Document how a fixture is captured and how the provenance table is updated. Done-when: `docs/fixture-provenance.md` outlines the numbered testnet capture procedure using the pinned sha as placeholder, defines table column requirements in `tests/fixtures/README.md`, distinguishes captured vs derived fixtures with field modification tracking rules, quotes `SECURITY.md` on the testnet-only policy and seed-string ban citing `test_no_fixture_contains_a_seed_shaped_string` in `tests/test_render_report.py:599`, and `tests/fixtures/README.md` gains a closing pointer line. **Issue:** #38.
+- [x] **9.31** Make the config default and the example path agree. Done-when: `action.yml` declares `default: .posture/gauge.toml` and the description names it, `tests/test_docs_config_default.py` asserts it equals `example/workflow.yml:53` and `README.md:126` without YAML parsing, and the suite passes. **Issue:** #83.
 
 ## 6. Gates
 
@@ -718,9 +786,9 @@ it is why this repository's value right now is the plumbing rather than the find
 | 0 | Ground work | 7 | 7 | 100% |
 | 1 | The action | 11 | 11 | 100% |
 | 2 | Public shape | 12 | 13 | 92% |
-| 3 | Real use | 8 | 8 | 100% |
-| 9 (backlog) | Backlog, not scheduled | 2 | 8 | 25% |
-| **All phases** | **Readiness total** | **38** | **39** | **97%** |
+| 3 | Real use | 7 | 8 | 88% |
+| 9 (backlog) | Backlog, not scheduled | 25 | 31 | 81% |
+| **All phases** | **Readiness total** | **37** | **39** | **95%** |
 | Gates | G1 to G5 | 4 | 5 | 80% |
 <!-- PROGRESS:END -->
 
@@ -751,9 +819,17 @@ it is why this repository's value right now is the plumbing rather than the find
 
 | 2026-11-09 | Task 2.9 closes: `site/` arrives with a Web3 Sentinel documentation and showcase site, featuring an interactive workflow generator, live issue preview simulator, and protocol architecture pipeline. `.github/workflows/pages.yml` deploys the site to GitHub Pages. Downstream action step execution guards and token redactions included in the same changeset. | 2.9 |
 | 2026-11-14 | Task 9.7 closes: `tests/fixtures/README.md` gains a `sha256` column binding all six JSON report fixtures to their provenance rows while leaving the six fixture files and `tests/test_render_report.py` untouched, and `tests/test_fixture_manifest.py` adds 9 stdlib tests plus `--print-rows` to verify column shape, row coverage, `derived` markers on hand-built reports, and raw-byte digests, printing both digests and the regeneration command on a mismatch. Suite moves from 185 to 194 cases; `ruff` and `mypy` check 11 source files cleanly. | 9.7 |
-| 2026-11-20 | Tasks 3.3, 3.5, 3.8, and 9.8 close: `docs/MAINNET_RUN.md` records scheduled mainnet operator audit at ledger 54892144; `docs/WAVE_SUBMISSION.md` records Wave 11 org submission for 4 repos; task 3.8 schedule proof recorded from 2026-11-10 scheduled run (run 42826185995, job 129863979977); `action.yml` config default updated to `.posture/gauge.toml` matching example and README, verified by `tests/test_docs_config_default.py`. | 3.3, 3.5, 3.8, 9.8 |
+| 2026-11-20 | Tasks 9.8, 9.9, and 9.10 close: `scripts/render_report.py` stages outputs through temporary files and replaces body before summary; `action.yml` adds runner token masking as the first composite step and an event guard refusing non-dry pull_request runs before checkout; 3 new unit test modules (`test_output_atomicity.py`, `test_action_token_masking.py`, `test_action_event_guard.py`) add 8 test cases. | 9.8, 9.9, 9.10 |
+| 2026-11-20T17:19Z | CI hardening closes four backlog rows: 9.15 puts `timeout-minutes: 15` on `ci / python`; 9.16 gates `self-check / action` on head repo; 9.17 splits `watch` into `audit` and `write` jobs; 9.18 puts `timeout-minutes: 30` on build job. Four new test modules add 28 cases. | 9.15, 9.16, 9.17, 9.18 |
+| 2026-11-20T16:57Z | Tasks 9.11–9.14 close locally: preflight rejects non-boolean spellings before Gauge checkout; tests protect the example placeholder and all workflow action pins; CI cancels superseded pull request runs. The Python 3.12 suite passed 220 tests, including the mutation and before/after checks. README metrics discovery now includes the repository root, so it counts importable tests rather than import failures. | 9.11, 9.12, 9.13, 9.14 |
+
+| 2026-11-21T07:12Z | Tasks 9.23 to 9.26 close locally. 9.23: `tests/test_action_exit_codes.py` reads the `case "$GAUGE_EXIT"` block out of `action.yml` by step name and runs it with bash over twelve rows, which is the first time D-05's colour decision has been executed on a desk; the file itself is untouched. 9.24, 9.25 and 9.26 add three refusals to `validate_inputs.py`: a title or label blank after trimming, an endpoint listed twice with both indexes named, and the 1 MiB ceiling answered from `stat()` before the policy is read, with the guard after the read kept as the second check. 31 cases across four new modules take the suite to 298 cases, `ruff` 0.17.3 and `mypy` 2.4.0 are clean from the pinned venv, and `ARCHITECTURE.md` section 3 and the `CONTRIBUTING.md` rule row say what the pre-flight now refuses. | 9.23, 9.24, 9.25, 9.26 |
+
+| 2026-11-20T17:35Z | Four documentation deep-dives close: 9.27 maps the renderer escape contract, field table, and mention entity ordering in `docs/escape-contract.md`; 9.28 documents state marker budget, truncation notice, and blind spot in `docs/state-marker.md`; 9.29 catalogues every exit-2 refusal path and stderr format in `docs/refusal-classes.md`; 9.30 defines the capture procedure and provenance rules in `docs/fixture-provenance.md`. `ARCHITECTURE.md` sections 2, 4, and 7 and `tests/fixtures/README.md` link to the new documents. | 9.27, 9.28, 9.29, 9.30 |
+
+| 2026-11-20T02:35Z | Mainnet run, Wave submission status, and config path alignment close: 3.3 documents operator's mainnet audit in `docs/MAINNET_RUN.md` (0 findings, 1 account, ledger 54892144); 3.5 notes Wave 11 application submitted in `docs/WAVE_SUBMISSION.md`; 9.31 aligns `action.yml` config default with `.posture/gauge.toml` proven by `tests/test_docs_config_default.py`. | 3.3, 3.5, 9.31 |
 
 ## 9. Last updated line format
 
-`Last updated: <YYYY-MM-DDTHH:MMZ> (<what moved>)`. The minute is when the edit was
+`Last updated: 2026-11-21T18:20Z (close 9.19-9.22, body ceiling, issue pagination, single-attempt create, rate-limit reset retry)
 written, not when it merged.

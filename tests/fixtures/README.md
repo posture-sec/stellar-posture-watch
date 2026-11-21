@@ -57,3 +57,5 @@ These are reports, not ledger reads, so a testnet reset cannot make a test fail:
 are the record. The `tool_version` in all six is `0.1.0-dev`, which is what an unbuilt
 release string looks like. When Gauge is tagged and this Action starts pinning a release,
 the fixtures regenerate and this table's ledger numbers move with them.
+
+See `docs/fixture-provenance.md` for the capture procedure, row definitions, and provenance rules.

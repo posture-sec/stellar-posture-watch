@@ -33,7 +33,7 @@ scripts/
   render_report.py      one Gauge report in, one issue body out
   sync_issue.py         the GitHub issue API, one issue, no redirects
   check_action.py       the action.yml invariants CI enforces instead of asserting in prose
-tests/                  185 cases, loopback only, run against captured reports
+tests/                  220 cases, loopback only, including captured reports
 ```
 
 ## Status
@@ -41,14 +41,14 @@ tests/                  185 cases, loopback only, run against captured reports
 <!-- METRICS:START -->
 | Indicator | Value | Source |
 |---|---|---|
-| Unit & Action Tests | **195 passing** | `python -m unittest` |
+| Unit & Action Tests | **299 passing** | `python -m unittest` |
 | Supported Findings | **4 active rules** (`acct-*`, `flag-*`) | `action.yml` |
 | Runtime Footprint | **0 external dependencies** | Python standard library |
 | State Tracking | **Idempotent issue marker** | `<!-- posture-watch:v1:state -->` |
 <!-- METRICS:END -->
 
-Functional alpha, and hosted. The three scripts and `action.yml` exist and pass 185 tests
-against real testnet reports captured from Gauge, and a GitHub runner has now run them: on
+Functional alpha, and hosted. The three scripts and `action.yml` exist and pass 220 local tests,
+including tests against real testnet reports captured from Gauge. A GitHub runner has also run them: on
 2026-11-04 `ci / python`, `roadmap-check / gate` and `self-check / action` were all green on
 pull request #1, and that last job executed this action itself against live testnet. The pull
 request then merged, and its push to `main` passed `ci / python` there, which closes gate G1.

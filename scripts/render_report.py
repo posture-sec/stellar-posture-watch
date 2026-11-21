@@ -9,6 +9,10 @@ let a chain-written value mention a user, a team or ``@all``.
 Nothing here is printed to stdout except a one-line summary. The report body never
 reaches the log.
 
+Outputs are staged as temporaries in the destination directory and committed with
+os.replace, with the body replaced first and the summary second so the summary is
+the commit point.
+
 Exit codes: 0 wrote the body, 2 refused the input.
 """
 
@@ -16,10 +20,13 @@ from __future__ import annotations
 
 import argparse
 import base64
+import contextlib
 import datetime as dt
 import json
+import os
 import re
 import sys
+import tempfile
 from pathlib import Path
 from typing import TypedDict
 
@@ -27,6 +34,12 @@ MARKER_PREFIX = "<!-- posture-watch:state v1 "
 MARKER_SUFFIX = " -->"
 MAX_STATE_ENTRIES = 200
 MAX_MARKER_CHARS = 20_000
+#: The issue body ceiling, matching the API limit `sync_issue.py` trims against.
+BODY_LIMIT = 65_536
+DROP_NOTICE = (
+    "\n_{dropped} finding row(s) were left out of this body to stay under the "
+    "{limit}-character issue limit; the state marker still carries the full open set._\n"
+)
 SEVERITIES = ("high", "warn")
 SEVERITY_RANK = {"high": 0, "warn": 1}
 HEX64 = re.compile(r"^[0-9a-f]{64}$")
@@ -202,6 +215,41 @@ def sort_findings(findings: list[Finding]) -> list[Finding]:
         findings,
         key=lambda f: (SEVERITY_RANK[f["severity"]], f["rule"], f["account"], f["fingerprint"]),
     )
+
+
+def fit_body(body: str) -> tuple[str, int]:
+    """Trim finding rows until the assembled body fits the issue ceiling.
+
+    Rows are dropped in blocks from the end of the document, which is the Current
+    findings table, and the notice names how many went. The counts line, the mode and
+    exit line, the account table and the state marker are never touched: the marker is
+    the last line and stays decodable, and it still carries the open set.
+    """
+    if len(body) <= BODY_LIMIT:
+        return body, 0
+
+    def row_indexes(lines: list[str]) -> list[int]:
+        return [
+            i
+            for i, line in enumerate(lines)
+            if line.startswith("| high |") or line.startswith("| warn |")
+        ]
+
+    lines = body.splitlines(keepends=True)
+    rows = row_indexes(lines)
+    dropped = 0
+    while rows and len("".join(lines)) > BODY_LIMIT:
+        block = max(1, len(rows) // 8)
+        remove = set(rows[-block:])
+        lines = [line for i, line in enumerate(lines) if i not in remove]
+        dropped += len(remove)
+        rows = row_indexes(lines)
+    if dropped:
+        for i, line in enumerate(lines):
+            if line.startswith(MARKER_PREFIX):
+                lines.insert(i, DROP_NOTICE.format(dropped=dropped, limit=BODY_LIMIT))
+                break
+    return "".join(lines), dropped
 
 
 def finding_rows(findings: list[Finding]) -> str:
@@ -386,7 +434,10 @@ def render(args: argparse.Namespace) -> tuple[str, dict[str, object]]:
         "omitted": omitted,
         "as_of": args.as_of,
     }
-    return "".join(parts), summary
+    body, dropped = fit_body("".join(parts))
+    if dropped:
+        summary["dropped"] = dropped
+    return body, summary
 
 
 def parse_args(argv: list[str] | None) -> argparse.Namespace:
@@ -435,22 +486,65 @@ def main(argv: list[str] | None = None) -> int:
         print(f"render_report: refused: {exc}", file=sys.stderr)
         return 2
     out = Path(args.out)
+    summary_path = Path(args.summary_out) if args.summary_out else None
     counts_text = (
         f"{summary['open']} open, {summary['high']} high, {summary['warn']} warn, "
         f"{summary['accepted']} accepted"
     )
     if not summary["changed"]:
         counts_text = f"{NO_CHANGE_SUMMARY} ({counts_text})"
+    tmp_out: Path | None = None
+    tmp_summary: Path | None = None
     try:
         out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_text(body, encoding="utf-8")
-        if args.summary_out:
-            Path(args.summary_out).write_text(
-                json.dumps(summary, sort_keys=True) + "\n", encoding="utf-8"
-            )
+        if str(out).startswith("/dev/") or (
+            out.exists() and (out.is_char_device() or out.is_fifo())
+        ):
+            out.write_text(body, encoding="utf-8")
+        else:
+            with tempfile.NamedTemporaryFile(
+                mode="w", dir=out.parent, encoding="utf-8", delete=False
+            ) as f_body:
+                tmp_out = Path(f_body.name)
+                f_body.write(body)
+                f_body.flush()
+                os.fsync(f_body.fileno())
+
+        if summary_path:
+            summary_path.parent.mkdir(parents=True, exist_ok=True)
+            if str(summary_path).startswith("/dev/") or (
+                summary_path.exists() and (summary_path.is_char_device() or summary_path.is_fifo())
+            ):
+                summary_path.write_text(
+                    json.dumps(summary, sort_keys=True) + "\n", encoding="utf-8"
+                )
+            else:
+                with tempfile.NamedTemporaryFile(
+                    mode="w", dir=summary_path.parent, encoding="utf-8", delete=False
+                ) as f_sum:
+                    tmp_summary = Path(f_sum.name)
+                    f_sum.write(json.dumps(summary, sort_keys=True) + "\n")
+                    f_sum.flush()
+                    os.fsync(f_sum.fileno())
+
+        if tmp_out:
+            os.replace(tmp_out, out)
+            tmp_out = None
+        if summary_path and tmp_summary:
+            os.replace(tmp_summary, summary_path)
+            tmp_summary = None
     except OSError as exc:
+        if tmp_out and tmp_out.exists():
+            with contextlib.suppress(OSError):
+                tmp_out.unlink()
+        if tmp_summary and tmp_summary.exists():
+            with contextlib.suppress(OSError):
+                tmp_summary.unlink()
         print(f"render_report: cannot write {out}: {exc.strerror}", file=sys.stderr)
         return 2
+    dropped = summary.get("dropped", 0)
+    if dropped:
+        print(f"render_report: dropped {dropped} finding row(s) to fit the body limit")
     print(f"render_report: wrote {out} ({len(body)} characters); {counts_text}")
     return 0
 
