@@ -43,6 +43,10 @@ jobs:
   action:
     name: self-check / action
     runs-on: ubuntu-latest
+    # A fork's pull_request can edit the action this job then compiles with the workflow
+    # token. Read-only still lists every open issue, so this is a cost-and-token guard,
+    # not a write barrier. workflow_dispatch is left alone; the exit-3 probe still runs.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

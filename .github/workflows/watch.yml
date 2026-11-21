@@ -1,5 +1,5 @@
 # The dogfood run: this repository's own tracking issue, on a schedule (tasks 3.1, 3.2).
-
+#
 # Gate G3 asked for one thing this repository could not do at a desk: let the action write.
 # `self-check.yml` runs the whole step graph with `dry-run: true`, so the runner reaches the
 # point where `sync_issue.py` holds a body and stops. This file is the same call with the flag
@@ -15,19 +15,24 @@
 # the issue against its report, which is G4, and the numbers are the reason the third account is
 # in the policy on purpose.
 #
-# `issues: write` is the elevation, and it is the whole elevation: `contents: read` for the
-# checkout, nothing else. The default workflow token is scoped to this repository, so a scheduled
-# run cannot reach Gauge's. `break-build` stays off per D-05: a finding belongs in the issue, and
-# a red schedule should mean the read failed, not that the read worked.
+# The two jobs split the read from the write. `audit` checks out this repository, builds Gauge
+# from the pinned sha at `uses: ./`, renders the body in a dry run and hands the body, its
+# summary and the stdlib syncer to `write` as an artifact. `write` has no checkout and no Go:
+# it downloads those three files and is the only job holding `issues: write`. A fork cannot
+# reach either job: this workflow has no pull_request trigger.
 #
-# This is not a required status check either, and it cannot be: a cron that files an issue is not
-# evidence about a pull request. `self-check.yml` explains why a run that compiles another
-# repository's Go and reads a public Horizon must not gate a merge; the same reasoning applies
-# with the write turned on, only louder.
+# There is deliberately no workflow-level `permissions:` block. A workflow-wide write scope
+# would give the Go build the token that edits issues, which is the elevation this split
+# removes. `issues: read` is enough for the find step in `audit`, and `issues: write` on
+# `write` is the whole permission that job has.
 #
-# Third-party actions here are pinned by full sha with the release named beside them, the same
-# four commits the siblings run. `check_action.py` refuses an expression inside a `run:` block in
-# `action.yml`; the workflow files are not its subject, so the pins in this one are reviewed here.
+# `break-build` stays off per D-05: a finding belongs in the issue, and a red schedule should
+# mean the read failed, not that the read worked. This is not a required status check either,
+# and it cannot be: a cron that files an issue is not evidence about a pull request.
+#
+# Third-party actions here are pinned by full sha with the release named beside them. Both
+# upload-artifact and download-artifact are first-party actions resolved from their tags, and
+# `check_action.py` does not scan workflow files, so the pins are reviewed here.
 
 name: watch
 
@@ -51,24 +56,30 @@ on:
           issue either at the next change in posture or through this switch. Using it costs the
           header date its usual meaning, which is why the default is off.
 
-permissions:
-  contents: read
-  issues: write
-
 concurrency:
   group: account-posture-watch
   cancel-in-progress: false
 
 jobs:
-  watch:
+  audit:
     name: watch / audit
     runs-on: ubuntu-latest
+    # 30 minutes bounds the job that builds Gauge and holds the no-cancel group. A cold Go
+    # build is about 2 minutes (job 126475427542 took 118 s end to end) and three sync
+    # retries at a 60 s ceiling add at most 180 s, so the ~5 min worst case has 6x headroom.
+    # 30 min is still a twentieth of GitHub's six-hour default.
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      issues: read
+    outputs:
+      issue-number: ${{ steps.watch.outputs.issue-number }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - name: Audit the testnet policy and update the tracking issue
+      - name: Audit the testnet policy and render the body
         id: watch
         uses: ./
         with:
@@ -87,17 +98,16 @@ jobs:
           # clock on the path that leaves an unchanged issue alone. Only a dispatch with
           # `refresh_body` ticked reaches the flag, and it rewrites the body without a comment.
           update-on-no-change: ${{ inputs.refresh_body || 'false' }}
-          dry-run: "false"
-          # Named rather than left to the action's default, because in a workflow whose whole
-          # point is the write the diff should say which token performs it. This is the
-          # repository-scoped default token: a scheduled run has no other, and it cannot reach
-          # another repository's issues. Passed to `sync_issue.py` through an environment
-          # variable, never an argument, so it is in no step log.
+          # The whole point of the split: render, find and stop. The write job owns the token
+          # that can publish this body.
+          dry-run: "true"
+          # Read scope is enough here: the find step lists issues, and the dry-run write step
+          # builds no PATCH. Passed through the action's env bindings, never a shell argument.
           github-token: ${{ github.token }}
 
       # One line, no report text, per D-06: the JSON stays in a file inside the runner. The
-      # numbers exist so a reader of the run log can see which issue the write targeted without
-      # opening it, and so `changed=false` on a week when the issue says something new is
+      # numbers exist so a reader of the run log can see which issue the write will target
+      # without opening it, and `changed=false` on a week when the issue says something new is
       # visible as a contradiction rather than invisible.
       - name: Record what the run saw
         env:
@@ -106,3 +116,59 @@ jobs:
           CHANGED: ${{ steps.watch.outputs.changed }}
         run: |
           echo "gauge exited $GAUGE_EXIT, tracking issue ${ISSUE:-none}, changed=$CHANGED"
+
+      # The write job cannot check out this repository, so the stdlib script travels with the
+      # two files it reads. One directory keeps the artifact's root simple for the download.
+      - name: Stage the write handoff
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/posture-watch-write/scripts"
+          cp "$RUNNER_TEMP/issue-body.md" "$RUNNER_TEMP/summary.json" \
+            "$RUNNER_TEMP/posture-watch-write/"
+          cp scripts/sync_issue.py "$RUNNER_TEMP/posture-watch-write/scripts/"
+
+      - name: Upload the rendered body, summary and stdlib syncer
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: posture-watch-write
+          path: |
+            ${{ runner.temp }}/posture-watch-write/issue-body.md
+            ${{ runner.temp }}/posture-watch-write/summary.json
+            ${{ runner.temp }}/posture-watch-write/scripts/sync_issue.py
+          if-no-files-found: error
+          retention-days: 7
+
+  write:
+    name: watch / write
+    needs: audit
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Download the rendered body, summary and stdlib syncer
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: posture-watch-write
+          path: ${{ runner.temp }}/posture-watch-write
+
+      # sync_issue.py is the only writer. Its token comes from env, as it does in action.yml,
+      # and the number from the read half keeps an unchanged issue from being opened twice.
+      - name: Write the tracking issue
+        env:
+          POSTURE_WATCH_TOKEN: ${{ github.token }}
+          ISSUE_LABEL: account-posture
+          TITLE: Account posture watch
+          NUMBER: ${{ needs.audit.outputs.issue-number }}
+          UPDATE_ON_NO_CHANGE: ${{ inputs.refresh_body || 'false' }}
+        run: |
+          set -euo pipefail
+          echo "::add-mask::$POSTURE_WATCH_TOKEN"
+          args=()
+          if [ -n "$NUMBER" ]; then args+=(--number "$NUMBER"); fi
+          if [ "$UPDATE_ON_NO_CHANGE" = "true" ]; then args+=(--update-on-no-change); fi
+          python3 "$RUNNER_TEMP/posture-watch-write/scripts/sync_issue.py" write \
+            --label "$ISSUE_LABEL" \
+            --title "$TITLE" \
+            --body "$RUNNER_TEMP/posture-watch-write/issue-body.md" \
+            --summary "$RUNNER_TEMP/posture-watch-write/summary.json" \
+            "${args[@]}"

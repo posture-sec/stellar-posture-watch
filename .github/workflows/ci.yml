@@ -26,10 +26,18 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   checks:
     name: ci / python
     runs-on: ubuntu-latest
+    # Bounds checkout, setup-python's cached 3.11 download, the pinned dev-tool install,
+    # check_action, the suite and the three lint/type steps: roughly 30 s warm and under
+    # 2 min cold, so 15 min is about 7x headroom and far short of GitHub's 6 h default.
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

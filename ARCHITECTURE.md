@@ -75,13 +75,18 @@ constrains. See `docs/escape-contract.md` for the full contract and field table.
 Exit 0 or 2. It checks the Action's own surface, not Gauge's:
 
 - `gauge-ref` is exactly 40 hex characters; `gauge-repo` is `owner/name` of safe segments.
-- `fail-on` is `high` or `warn`; label and title are non-empty, at most 256 characters, and
-  carry no control character or newline.
+- `fail-on` is `high` or `warn`; label and title are non-empty, not blank once trimmed, at most
+  256 characters, and carry no control character or newline. Blank and empty are refused as two
+  different lines because the operator has two different mistakes to find, and neither value is
+  trimmed on the way through: an issue is titled what the input said.
+- `break-build`, `dry-run`, and `update-on-no-change` are exactly `true` or `false`.
 - `config` is a path inside the workspace: not absolute, no `..` segment, existing, a regular
-  file, at most 1 MiB.
+  file, at most 1 MiB. The size is read off the directory entry before the file, so a caller who
+  points at a large file is refused without the pre-flight holding it.
 - The policy file itself parses as TOML with `version = 1`, names a network, lists https
-  endpoints, and has at least one `[[account]]` whose `id` decodes as a canonical `G...`
-  strkey. An `M...`, `C...` or seed-shaped address gets its own message.
+  endpoints with none of them repeated, and has at least one `[[account]]` whose `id` decodes as
+  a canonical `G...` strkey. An `M...`, `C...` or seed-shaped address gets its own message. A
+  repeated endpoint names both indexes, because the second one is the line to delete.
 - A seed-shaped string anywhere in the raw policy text is refused, with the head and tail of
   the token printed but never the whole thing, and with a line saying whether its checksum
   verifies, because one that does must be treated as live and rotated.

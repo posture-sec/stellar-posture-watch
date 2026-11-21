@@ -117,14 +117,31 @@ def check_endpoint(url: str, problems: list[str]) -> None:
         problems.append(f"endpoint {url!r} has no host or carries a query string")
 
 
+def check_config_size(path: Path, size: int, problems: list[str]) -> bool:
+    """False, with the refusal appended, when `size` bytes is more than this script will parse."""
+    if size <= MAX_CONFIG_BYTES:
+        return True
+    problems.append(f"config {path}: {size} bytes is over the {MAX_CONFIG_BYTES} limit")
+    return False
+
+
 def check_policy(path: Path, problems: list[str]) -> None:
+    # The ceiling is a promise about what this process holds, so the first answer comes from the
+    # directory entry rather than from the bytes. The check after the read stays as a second one,
+    # not a replacement: a policy is allowed to grow between the two calls.
+    try:
+        size = path.stat().st_size
+    except OSError as exc:
+        problems.append(f"config {path}: cannot read it ({exc.strerror})")
+        return
+    if not check_config_size(path, size, problems):
+        return
     try:
         raw = path.read_bytes()
     except OSError as exc:
         problems.append(f"config {path}: cannot read it ({exc.strerror})")
         return
-    if len(raw) > MAX_CONFIG_BYTES:
-        problems.append(f"config {path}: {len(raw)} bytes is over the {MAX_CONFIG_BYTES} limit")
+    if not check_config_size(path, len(raw), problems):
         return
     text = raw.decode("utf-8", "replace")
     problems.extend(seed_findings(text))
@@ -152,8 +169,20 @@ def check_policy(path: Path, problems: list[str]) -> None:
     if not isinstance(endpoints, list) or not endpoints:
         problems.append(f"config {path}: endpoints must be a non-empty array")
     else:
-        for entry in endpoints:
+        # `check_endpoint` asks whether one entry is a usable URL. Whether two entries are the
+        # same URL is a different question, and unanswered it costs a full run: Gauge reads the
+        # account from the same host twice and the issue can carry one finding twice.
+        first_seen: dict[str, int] = {}
+        for index, entry in enumerate(endpoints):
             check_endpoint(entry, problems)
+            if not isinstance(entry, str):
+                continue
+            first = first_seen.setdefault(entry, index)
+            if first != index:
+                problems.append(
+                    f"config {path}: endpoint {entry} is listed twice, "
+                    f"at index {first} and index {index}"
+                )
 
     accounts = data.get("account")
     if not isinstance(accounts, list) or not accounts:
@@ -214,10 +243,22 @@ def check_text_input(name: str, value: str, problems: list[str]) -> None:
     if not value:
         problems.append(f"{name} must not be empty")
         return
+    if not value.strip():
+        # A title of spaces is truthy, so `not value` alone lets it reach the issue API, where
+        # it either cannot be created or is created rendering as nothing and cannot be adopted
+        # by the next run. The value is not trimmed on the way through: the run publishes what
+        # the operator wrote, or it does not run.
+        problems.append(f"{name} must not be blank")
+        return
     if len(value) > MAX_TEXT_INPUT:
         problems.append(f"{name} is {len(value)} characters, over the {MAX_TEXT_INPUT} limit")
     if CONTROL_CHARS.search(value) or "\n" in value:
         problems.append(f"{name} carries a control character or a line break")
+
+
+def check_boolean(name: str, value: str, problems: list[str]) -> None:
+    if value not in ("true", "false"):
+        problems.append(f"{name} must be true or false, got {value}")
 
 
 def validate(args: argparse.Namespace) -> list[str]:
@@ -233,6 +274,9 @@ def validate(args: argparse.Namespace) -> list[str]:
         problems.append(f"fail-on {args.fail_on!r} must be high or warn")
     check_text_input("issue-label", args.issue_label, problems)
     check_text_input("title", args.title, problems)
+    check_boolean("break-build", args.break_build, problems)
+    check_boolean("dry-run", args.dry_run, problems)
+    check_boolean("update-on-no-change", args.update_on_no_change, problems)
     config = check_config_path(args.config, problems)
     if config is not None:
         check_policy(config, problems)
@@ -247,6 +291,9 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument("--fail-on", dest="fail_on", default="high")
     parser.add_argument("--issue-label", dest="issue_label", default="account-posture")
     parser.add_argument("--title", default="Account posture watch")
+    parser.add_argument("--break-build", default="false")
+    parser.add_argument("--dry-run", default="false")
+    parser.add_argument("--update-on-no-change", default="false")
     return parser.parse_args(argv)
 
 
