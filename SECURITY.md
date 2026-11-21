@@ -102,7 +102,9 @@ answer is right.
 
 **The action trusts the caller's repository.** It runs with whatever permissions the calling
 workflow grants and reads a policy file from that workspace. `config` is confined to a path
-inside the workspace and the API base is confined to https, but a caller that hands this
+inside the workspace — the pre-flight resolves it before it accepts, so a committed link at the
+default config name cannot hand Gauge a file outside the checkout — and the API base is confined
+to https, but a caller that hands this
 action a token with more than `issues: write` has done that to itself.
 
 **A pinned sha is not a reviewed diff.** The pins in these workflow files were resolved from

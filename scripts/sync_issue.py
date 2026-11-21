@@ -168,7 +168,7 @@ def request(
                 reset_wait = rate_limit_wait(exc.headers)
                 if reset_wait is not None and reset_wait > MAX_RETRY_WAIT:
                     raise ApiError(
-                        f"{method} {url} -> 403: rate limit resets at "
+                        f"{method} {redact(url)} -> 403: rate limit resets at "
                         f"{reset_timestamp(exc.headers)}"
                     ) from None
             if (
@@ -186,7 +186,7 @@ def request(
                 if reset_wait is not None:
                     delay = max(reset_wait, 0.0)
             else:
-                raise ApiError(f"{method} {url} -> {exc.code}: {redact(detail)}") from None
+                raise ApiError(f"{method} {redact(url)} -> {exc.code}: {redact(detail)}") from None
         except (urllib.error.URLError, TimeoutError, OSError) as exc:
             last = exc
         if attempt < attempts:
@@ -194,10 +194,16 @@ def request(
             delay = min(delay * 2, MAX_RETRY_WAIT)
     reason = redact(str(last)) if last is not None else "no attempt succeeded"
     noun = "attempt" if attempts == 1 else "attempts"
-    raise ApiError(f"{method} {url} failed after {attempts} {noun}: {reason}")
+    raise ApiError(f"{method} {redact(url)} failed after {attempts} {noun}: {reason}")
 
 
 def redact(text: str) -> str:
+    """Mask every secret-shaped run in a string before it reaches a log.
+
+    Both halves of an ApiError message go through this. The response body can echo the
+    bearer value, and the URL carries the label input as a query value, so a token pasted
+    into `issue-label` would otherwise come back in the refusal with the pattern intact.
+    """
     return re.sub(
         r"(Bearer |token=|[a-z0-9_]+=)[A-Za-z0-9._-]+|"
         r"(gh[pousr]_[A-Za-z0-9_]{36,}|github_pat_[A-Za-z0-9_]{82,}|[A-Za-z0-9._-]{40,})",
@@ -218,7 +224,7 @@ def get_json(
         return json.loads(body)
     except json.JSONDecodeError:
         raise ApiError(
-            f"{method_target} {url} -> {status} returned a body that is not JSON"
+            f"{method_target} {redact(url)} -> {status} returned a body that is not JSON"
         ) from None
 
 
@@ -440,7 +446,7 @@ def check_path_segments(args: argparse.Namespace) -> None:
     for name, value in (("owner", args.owner), ("repo", args.repo), ("label", args.label)):
         if not value or not PATH_SEGMENT.fullmatch(value):
             raise BadInput(
-                f"{name} {value!r} must be 1 to 100 characters of letters, digits, dot, "
+                f"{name} {redact(value)!r} must be 1 to 100 characters of letters, digits, dot, "
                 "dash or underscore: it goes into a URL path"
             )
     if not args.title or len(args.title) > 256 or CONTROL_CHARS.search(args.title):

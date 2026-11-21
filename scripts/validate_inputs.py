@@ -16,6 +16,7 @@ import argparse
 import re
 import sys
 import tomllib
+import unicodedata
 from pathlib import Path
 
 MAX_CONFIG_BYTES = 1024 * 1024
@@ -232,13 +233,56 @@ def check_config_path(value: str, problems: list[str]) -> Path | None:
     if ".." in candidate.parts:
         problems.append(f"config {value!r} must not climb out of the repository with ..")
         return None
-    if not candidate.exists():
-        problems.append(f"config {value!r} does not exist in the workspace")
+    # The two checks above read the string, and a string is not where a symlink lands. A
+    # committed link at `gauge.toml` whose target is outside the checkout passes both, and the
+    # `exists`/`is_file` calls below follow it, so the escape has to be judged on the resolved
+    # path. `SECURITY.md` promises confinement to the workspace; this is what makes it true.
+    workspace = Path.cwd().resolve()
+    resolved = candidate.resolve()
+    if not resolved.is_relative_to(workspace):
+        problems.append(
+            f"config {value!r} resolves to {resolved}, outside the workspace {workspace}"
+        )
         return None
-    if not candidate.is_file():
+    if not resolved.exists():
+        # `exists()` on a dangling symlink is False and says nothing about the link, so the
+        # operator reading "does not exist" would go looking for a file that was never missing.
+        if candidate.is_symlink():
+            problems.append(
+                f"config {value!r} is a symlink that cannot be resolved: it points at {resolved}"
+            )
+        else:
+            problems.append(f"config {value!r} does not exist in the workspace")
+        return None
+    if not resolved.is_file():
         problems.append(f"config {value!r} is not a regular file")
         return None
-    return candidate
+    # Canonical but still relative to the workspace, which is what every caller below reads and
+    # what every refusal names. Handing on the absolute form would rewrite the message a policy
+    # error prints from `config gauge.toml:` to the runner's checkout path, and the containment
+    # check above already guarantees this is the same file with no link and no `..` left in it.
+    return resolved.relative_to(workspace)
+
+
+def invisible_character(value: str) -> str | None:
+    """A description of the first non-ASCII control or format character, or None.
+
+    `CONTROL_CHARS` is an ASCII range, so U+202E RIGHT-TO-LEFT OVERRIDE, U+200B ZERO WIDTH
+    SPACE, U+200D ZERO WIDTH JOINER and U+2066 LEFT-TO-RIGHT ISOLATE all walk through it.
+    Those are Unicode category Cf (plus Cc outside ASCII): they change how the title renders
+    without changing what a comparison sees, which is the difference between the issue title
+    and the bytes in the workflow file. Accented Latin and non-Latin scripts are Lo/Lu/Ll and
+    stay accepted; this refuses the invisible ones, by code point, not by alphabet.
+    """
+    for char in value:
+        if ord(char) < 0x80:
+            continue
+        category = unicodedata.category(char)
+        if category in ("Cc", "Cf"):
+            name = unicodedata.name(char, "")
+            named = f"U+{ord(char):04X} {name}" if name else f"U+{ord(char):04X}"
+            return f"{named} (category {category})"
+    return None
 
 
 def check_text_input(
@@ -258,6 +302,12 @@ def check_text_input(
         problems.append(f"{name} is {len(value)} characters, over the {limit} limit")
     if CONTROL_CHARS.search(value) or "\n" in value:
         problems.append(f"{name} carries a control character or a line break")
+    hidden = invisible_character(value)
+    if hidden:
+        problems.append(
+            f"{name} carries {hidden}, a character that alters how the text renders; "
+            "control and format characters are refused"
+        )
 
 
 def check_boolean(name: str, value: str, problems: list[str]) -> None:

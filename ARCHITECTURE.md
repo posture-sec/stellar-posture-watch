@@ -75,13 +75,20 @@ constrains. See `docs/escape-contract.md` for the full contract and field table.
 Exit 0 or 2. It checks the Action's own surface, not Gauge's:
 
 - `gauge-ref` is exactly 40 hex characters; `gauge-repo` is `owner/name` of safe segments.
-- `fail-on` is `high` or `warn`; label and title are non-empty, not blank once trimmed, at most
-  256 characters, and carry no control character or newline. Blank and empty are refused as two
+- `fail-on` is `high` or `warn`; label and title are non-empty, not blank once trimmed, each
+  within its own limit (`MAX_LABEL_CHARS` is GitHub's 50 for a label name, `MAX_TEXT_INPUT` is
+  256 for a title), carry no control character or newline, and carry no Unicode format character
+  either: a RIGHT-TO-LEFT OVERRIDE or a ZERO WIDTH SPACE renders an issue title as something
+  other than what the workflow file says, so the name is refused by code point outside ASCII
+  rather than by alphabet. Blank and empty are refused as two
   different lines because the operator has two different mistakes to find, and neither value is
   trimmed on the way through: an issue is titled what the input said.
 - `break-build`, `dry-run`, and `update-on-no-change` are exactly `true` or `false`.
-- `config` is a path inside the workspace: not absolute, no `..` segment, existing, a regular
-  file, at most 1 MiB. The size is read off the directory entry before the file, so a caller who
+- `config` is a path inside the workspace: not absolute, no `..` segment, resolving to a path
+  under the checkout so that a committed symlink cannot hand Gauge a file outside it, existing,
+  a regular file, at most 1 MiB. A link that points at nothing says so rather than saying the
+  file is missing, because those are two different files to go looking for. The size is read off
+  the directory entry before the file, so a caller who
   points at a large file is refused without the pre-flight holding it.
 - The policy file itself parses as TOML with `version = 1`, names a network, lists https
   endpoints with none of them repeated, and has at least one `[[account]]` whose `id` decodes as
