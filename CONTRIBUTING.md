@@ -41,7 +41,7 @@ says why in one line.
 | The token is never an argument. | `POSTURE_WATCH_TOKEN` in the step's `env`, and `redact()` masks a bearer value in every failure message. |
 | Python standard library only. | D-02. The three scripts import nothing outside it; `tomllib` (3.11+) is the only non-obvious one. `requirements-dev.txt` is dev tooling, not a runtime dependency, and no workflow installs anything. |
 | Tests do not touch the network. | The only sockets are loopback servers started inside the test process, plus subprocesses of the three scripts over a temporary directory. |
-| A schedule stays green for findings and red for failures. | D-05, mapped in the last step of `action.yml`. Do not "fix" a red run by weakening this: exit 2 and 3 mean nothing was read. |
+| A schedule stays green for findings and red for failures. | D-05, mapped in the last step of `action.yml`, and `tests/test_action_exit_codes.py` executes that block out of the file against a twelve row table. Do not "fix" a red run by weakening this: exit 2 and 3 mean nothing was read. |
 | Never weaken, skip or delete a check to make something pass. | If a test is wrong, fix the test and say why in the pull request. If a check is wrong, the check is the bug. |
 
 ## Workflow

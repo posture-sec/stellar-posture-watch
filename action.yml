@@ -19,9 +19,9 @@ inputs:
     required: false
     default: posture-sec/guage
   config:
-    description: Path to the Gauge policy file, relative to the caller's workspace.
+    description: Path to the Gauge policy file, relative to the caller's workspace. Defaults to .posture/gauge.toml.
     required: false
-    default: gauge.toml
+    default: .posture/gauge.toml
   fail-on:
     description: Severity Gauge needs to reach before it exits 1, high or warn.
     required: false
@@ -79,6 +79,15 @@ runs:
   # environment variable, because a reusable action cannot assume the caller's workflow
   # file is the thing that was reviewed.
   steps:
+    - name: Register the token mask
+      shell: bash
+      env:
+        TOKEN_TO_MASK: ${{ inputs.github-token }}
+      run: |
+        if [ -n "$TOKEN_TO_MASK" ]; then
+          echo "::add-mask::$TOKEN_TO_MASK"
+        fi
+
     - name: Check the inputs
       shell: bash
       env:
@@ -88,6 +97,9 @@ runs:
         FAIL_ON: ${{ inputs.fail-on }}
         ISSUE_LABEL: ${{ inputs.issue-label }}
         TITLE: ${{ inputs.title }}
+        BREAK_BUILD: ${{ inputs.break-build }}
+        DRY_RUN: ${{ inputs.dry-run }}
+        UPDATE_ON_NO_CHANGE: ${{ inputs.update-on-no-change }}
       run: |
         python3 "$GITHUB_ACTION_PATH/scripts/validate_inputs.py" \
           --config "$CONFIG" \
@@ -95,7 +107,21 @@ runs:
           --gauge-ref "$GAUGE_REF" \
           --fail-on "$FAIL_ON" \
           --issue-label "$ISSUE_LABEL" \
-          --title "$TITLE"
+          --title "$TITLE" \
+          --break-build="$BREAK_BUILD" \
+          --dry-run="$DRY_RUN" \
+          --update-on-no-change="$UPDATE_ON_NO_CHANGE"
+
+    - name: Guard against non-dry pull_request runs
+      shell: bash
+      env:
+        EVENT_NAME: ${{ github.event_name }}
+        DRY_RUN: ${{ inputs.dry-run }}
+      run: |
+        if [ "$EVENT_NAME" = "pull_request" ] && [ "$DRY_RUN" != "true" ]; then
+          echo "stellar-posture-watch: pull_request event is only supported with dry-run: true" >&2
+          exit 2
+        fi
 
     - name: Fetch the pinned Gauge commit
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

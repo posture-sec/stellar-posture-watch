@@ -25,6 +25,8 @@ METRICS_END = "<!-- METRICS:END -->"
 
 
 def count_tests() -> int:
+    if str(REPO_ROOT) not in sys.path:
+        sys.path.insert(0, str(REPO_ROOT))
     suite = unittest.defaultTestLoader.discover(str(REPO_ROOT / "tests"), pattern="test_*.py")
     return suite.countTestCases()
 

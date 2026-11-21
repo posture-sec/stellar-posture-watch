@@ -87,5 +87,24 @@ jobs:
           GAUGE_EXIT: ${{ steps.watch.outputs.exit-code }}
           ISSUE: ${{ steps.watch.outputs.issue-number }}
           CHANGED: ${{ steps.watch.outputs.changed }}
+          REPORT_PATH: ${{ steps.watch.outputs.report-path }}
         run: |
           echo "gauge exited $GAUGE_EXIT, tracking issue ${ISSUE:-none}, changed=$CHANGED"
+          cat > "$RUNNER_TEMP/posture-watch-run.json" <<EOF
+          {
+            "exit-code": "$GAUGE_EXIT",
+            "issue-number": "$ISSUE",
+            "changed": "$CHANGED",
+            "report-path": "$REPORT_PATH"
+          }
+          EOF
+
+      # The action itself uploads Gauge's exit-3 stderr as `gauge-diagnostics` (retention 7).
+      # This step uploads the example run's outputs so downstream jobs can read the numbers.
+      - name: Upload the run record
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: posture-watch-run
+          path: ${{ runner.temp }}/posture-watch-run.json
+          if-no-files-found: ignore
+          retention-days: 7
