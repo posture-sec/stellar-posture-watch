@@ -142,16 +142,15 @@ def split_accepted(
     report: dict, open_findings: list[Finding]
 ) -> tuple[list[Finding], list[Finding]]:
     """Findings the policy accepted, kept out of the change list on purpose."""
-    accepted_keys: set[tuple[str, str]] = set()
+    accepted_keys: set[str] = set()
     for account in report["accounts"]:
         for entry in account.get("findings") or []:
             if isinstance(entry, dict) and entry.get("accepted") is True:
-                accepted_keys.add((str(entry.get("rule_id")), str(entry.get("fingerprint"))))
+                accepted_keys.add(str(entry.get("fingerprint")))
     open_only: list[Finding] = []
     accepted: list[Finding] = []
     for finding in open_findings:
-        key = (finding["rule"], finding["fingerprint"])
-        (accepted if key in accepted_keys else open_only).append(finding)
+        (accepted if finding["fingerprint"] in accepted_keys else open_only).append(finding)
     return open_only, accepted
 
 
@@ -176,14 +175,15 @@ def encode_state(findings: list[Finding], budget: int = MAX_STATE_ENTRIES) -> tu
 
 def decode_state(text: str) -> list[Finding] | None:
     """The findings recorded by a previous run, or None if the body carries no state."""
-    match = re.search(
+    all_matches = re.findall(
         re.escape(MARKER_PREFIX) + r"([A-Za-z0-9_-]*)" + re.escape(MARKER_SUFFIX), text
     )
-    if not match:
+    if not all_matches:
         return None
-    padding = "=" * (-len(match.group(1)) % 4)
+    last = all_matches[-1]
+    padding = "=" * (-len(last) % 4)
     try:
-        payload = base64.urlsafe_b64decode(match.group(1) + padding)
+        payload = base64.urlsafe_b64decode(last + padding)
         entries = json.loads(payload)
     except (ValueError, json.JSONDecodeError):
         return None
@@ -359,6 +359,15 @@ def render(args: argparse.Namespace) -> tuple[str, dict[str, object]]:
 
     all_findings = collect_findings(report, Path(args.report))
     open_findings, accepted = split_accepted(report, all_findings)
+    _seen_fps: dict[str, str] = {}
+    _acc_index = {str(_snapshot(a).get("id")): i for i, a in enumerate(report["accounts"])}
+    for _f in open_findings:
+        _fp = _f["fingerprint"]
+        if _fp in _seen_fps:
+            _i0 = _acc_index.get(_seen_fps[_fp], "?")
+            _i1 = _acc_index.get(_f["account"], "?")
+            raise Refused(f"fingerprint {_fp} appears in both accounts[{_i0}] and accounts[{_i1}]")
+        _seen_fps[_fp] = _f["account"]
     current = {f["fingerprint"]: f for f in open_findings}
 
     previous: list[Finding] | None = None
@@ -479,6 +488,9 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     if not re.fullmatch(r"[0-9a-f]{40}", args.gauge_ref):
         print("render_report: --gauge-ref must be a full 40-character commit sha", file=sys.stderr)
+        return 2
+    if args.max_state_entries < 0:
+        print("render_report: --max-state-entries must be 0 or above", file=sys.stderr)
         return 2
     try:
         body, summary = render(args)

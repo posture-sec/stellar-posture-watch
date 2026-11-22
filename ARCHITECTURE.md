@@ -46,7 +46,7 @@ Load bearing, checked in `read_report` and `collect_findings` (`scripts/render_r
 | `limits` | string | The footer that tells a reader what the report cannot see. Refused if absent. |
 | `accounts` | array of objects | Everything. Refused if missing or not an array. |
 | `accounts[].snapshot.id` | string | Findings are keyed by account; without an id the row cannot be named. Refused. |
-| `accounts[].findings[].rule_id` | non-empty string | Sorted, grouped and accepted-key matching all use it. Refused if missing. |
+| `accounts[].findings[].rule_id` | non-empty string | Sorted and grouped by rule; fingerprint alone drives accepted-key matching. Refused if missing. |
 | `accounts[].findings[].severity` | `high` or `warn` | An unknown value makes the counts and the sort meaningless. Refused. |
 | `accounts[].findings[].fingerprint` | exactly `[0-9a-f]{64}` | It is the identity of a finding across runs. Refused: no fingerprint means no change detection. |
 | `accounts[].findings[].message` | string, escaped | Only display; an absent message renders empty rather than failing. |
