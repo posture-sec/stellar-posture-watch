@@ -411,7 +411,9 @@ it is why this repository's value right now is the plumbing rather than the find
   closed. What still holds the tag is the owner's judgement about what a release commits a
   consumer to, and the second half of the done-when is now satisfied: `stellar-account-fixtures`
   pins this repository by sha at `deaf7dcc` and a runner has fetched and executed it there, which
-  is 3.4. The tag is what is left, and it is the owner's to decide. **Issue:** #16.
+  is 3.4. The tag is what is left, and it is the owner's to decide. 9.4 now means `validate_inputs.py`
+  and `render_report.py` will accept a `v0.1.0` tag ref without refusing; `README.md` says so
+  in the pinning paragraph. **Issue:** #16.
 - [x] **2.11** `example/`. `example/gauge.toml` is a testnet policy for three accounts: a
   declared five-of-six signer set (five keys at weight 1 plus the master at weight 0) at
   thresholds 3/3/3 with every flag off, an issuer with `auth_required`, `auth_revocable` and
@@ -631,14 +633,8 @@ it is why this repository's value right now is the plumbing rather than the find
   finding, so it needs a new decision row before new code. **Issue:** #21.
 - [ ] **9.3** Watching more than one policy file. Deferred: one file per issue is the
   contract, and a second file needs a state marker per file. **Issue:** #22.
-- [ ] **9.4** Pinning Gauge by release tag once Gauge is tagged. Waiting on Gauge's v0.1.0,
-  which does not exist yet; D-01 stays until it does. **Issue:** #23.
-- [ ] **9.5** The escape surface as a test matrix. Added 2026-11-05 out of the wave packet's
-  Medium tier rather than out of a failure: `render_report.py` builds an issue body out of strings
-  that came off the chain, 1.2 proves the sanitizer holds one input at a time, and nothing here
-  states, per markdown construct, the render a hostile value must not produce. The case that
-  matters most is a `home_domain` that can close D-07's state comment, because that comment is
-  what the next run believes it already saw. **Issue:** #24.
+- [x] **9.4** Pinning Gauge by release tag once Gauge is tagged. Done-when: `validate_inputs.py` accepts a semver release tag of the form `vMAJOR.MINOR.PATCH` as well as a full 40-character sha, the error message names both accepted forms, `render_report.py` likewise accepts the same two shapes so the action does not break when a tag is passed end-to-end, `action.yml` description for `gauge-ref` documents the tag option, `README.md` pinning paragraph says `v0.1.0` can replace the sha once Gauge publishes it, and `tests/test_validate_inputs.py` replaces the `test_a_tag_name_is_refused` case with `test_a_release_tag_passes` plus subtest coverage for other valid semver tags and invalid tag-like strings, while `tests/test_render_report.py` adds `test_a_release_tag_gauge_ref_passes`. This repo's own `watch.yml` keeps the sha as D-01 recommends. **Issue:** #23.
+- [x] **9.5** The escape surface as a test matrix. Done-when: `tests/test_render_report.py` gains `TestEscapeSurface` with 15 cases covering links, mentions, heading and list prefixes, table pipes, backtick fence closers, HTML comment close sequences, autolinks, HTML script tags, tilde strikethrough, ampersand, and hash prefixes; each case injects a hostile value into a finding message or home domain, asserts the unescaped markdown construct does not appear as a valid construct in the rendered body, and verifies the state comment prefix is present and intact; the HTML comment close case additionally verifies the state marker payload contains no `-->`. **Issue:** #24.
 - [ ] **9.6** The Scorecard gaps this repository can close. Added 2026-11-05 from 2.8's own
   reading, which named four checks and left them as numbers: `Pinned-Dependencies` 6 for the
   unpinned `pip install -r` line in `ci.yml`, `Dependency-Update-Tool` for no
@@ -736,6 +732,7 @@ it is why this repository's value right now is the plumbing rather than the find
 - [x] **9.44** Refuse bidi and zero-width characters in `title` and `issue-label`. Done-when: `check_text_input()` rejects Unicode categories Cc and Cf outside ASCII through `invisible_character()`, naming the code point and its Unicode name, an accented Latin or non-Latin title still passes, the ASCII newline message is untouched, `tests/test_validate_unicode_controls.py` is a table over U+202E, U+200B, U+200D and U+2066 plus U+0085, and the hostile-strings fixture body renders to the sha256 it rendered before this change, which is what proves `render_report.escape()`'s deliberate zero-width break did not move. **Issue:** #71.
 - [x] **9.45** Guard the CI matrix 9.34 shipped. Done-when: `tests/test_ci_matrix.py` reads `.github/workflows/ci.yml` as text, with no YAML dependency, and refuses a matrix that drops 3.11 or 3.12, a `setup-python` that stops reading `matrix.python-version`, a suite or interpreter step that runs more than once per leg, a job name that stops mapping the 3.11 leg to exactly `ci / python` (the name ruleset 26515104 requires), a dev-tools install that stops reading `requirements-dev.txt`, a removed lint or type step, and a moved pin in `requirements-dev.txt`. `tests/test_workflows_python_matrix.py`, added by 9.34, stays as it is. **Issue:** #72.
 - [x] **9.46** Prove no token reaches stdout, stderr or a step output. Done-when: `tests/test_sync_token_stderr.py` drives `main()` with `POSTURE_WATCH_TOKEN` set and `GITHUB_OUTPUT` pointed at a real file through 401, 403, 404, 422, a 429 that then fails, three 5xx, a `URLError`, an `OSError` and a non-JSON 200, on both `find` and `write`, plus the empty-token, `BadInput`, summary-missing and body-missing paths, with the bearer value in the response reason phrase, in the response body and in the `labels=` query value, and asserts the token appears in none of the three outputs while `[redacted]` appears where a message quoted it; the URL and the refused input go through `redact()` at every `ApiError` and `BadInput` formatter that prints them, and the suite carries a class that neutered `redact()` and watches the same cases leak. **Issue:** #73.
+- [x] **9.47** Short base64 state payloads read as no state rather than raising. Done-when: `tests/test_state_padding.py` (new) asserts that a previous body whose state marker carries a one-character base64 payload exits 0, produces empty stderr, sets `changed` to True, and includes "establishes the baseline" in the rendered body; the same four assertions cover a two-character payload, a padding-only payload (`=`), and a four-equals payload (`====`), since all four decode to fewer bytes than a valid JSON array or raise `binascii.Error` (a subclass of `ValueError`), and both errors are already caught by the broad `except (ValueError, json.JSONDecodeError)` in `decode_state`. `decode_state` and existing tests are not changed. **Issue:** #40.
 ## 6. Gates
 
 - [x] **G1** CI green on `main`: `ci / python` passing on the merged commit, and
@@ -801,7 +798,7 @@ it is why this repository's value right now is the plumbing rather than the find
 | 1 | The action | 11 | 11 | 100% |
 | 2 | Public shape | 12 | 13 | 92% |
 | 3 | Real use | 7 | 8 | 88% |
-| 9 (backlog) | Backlog, not scheduled | 40 | 46 | 87% |
+| 9 (backlog) | Backlog, not scheduled | 43 | 47 | 91% |
 | **All phases** | **Readiness total** | **37** | **39** | **95%** |
 | Gates | G1 to G5 | 4 | 5 | 80% |
 <!-- PROGRESS:END -->

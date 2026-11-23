@@ -138,16 +138,27 @@ class TestHappyPath(Harness):
 
 
 class TestRefPin(Harness):
-    def test_a_branch_name_is_refused(self) -> None:
-        code, _, err = self.run_cli(gauge_ref="main")
-        self.assertEqual(code, 2)
-        self.assertIn("not a full 40-character lowercase commit sha", err)
-        self.assertIn("change without this file changing", err)
+    def test_a_release_tag_passes(self) -> None:
+        code, out, err = self.run_cli(gauge_ref="v0.1.0")
+        self.assertEqual(code, 0, err)
+        self.assertIn("gauge-ref is pinned at v0.1.0", out)
 
-    def test_a_tag_name_is_refused(self) -> None:
-        code, _, err = self.run_cli(gauge_ref="v0.1.0")
+    def test_other_release_tags_pass(self) -> None:
+        for tag in ("v1.0.0", "v0.2.3", "v10.11.12"):
+            with self.subTest(tag=tag):
+                code, _, err = self.run_cli(gauge_ref=tag)
+                self.assertEqual(code, 0, err)
+
+    def test_a_bare_tag_without_v_prefix_is_refused(self) -> None:
+        code, _, err = self.run_cli(gauge_ref="0.1.0")
         self.assertEqual(code, 2)
         self.assertIn("not a full 40-character lowercase commit sha", err)
+
+    def test_a_partial_semver_tag_is_refused(self) -> None:
+        for ref in ("v0.1", "v1", "v0.1.0.0", "v0.1.0-rc1"):
+            with self.subTest(ref=ref):
+                code, _, err = self.run_cli(gauge_ref=ref)
+                self.assertEqual(code, 2)
 
     def test_seven_characters_is_refused_because_it_is_resolvable_but_not_pinned(self) -> None:
         code, _, err = self.run_cli(gauge_ref=PIN[:7])

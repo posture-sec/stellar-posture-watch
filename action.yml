@@ -9,10 +9,11 @@ branding:
 inputs:
   gauge-ref:
     description: >-
-      Full 40-character commit sha of the Gauge checkout to build and run. Required and
-      deliberately without a default: this action compiles Go code from that commit, so a
-      branch or tag name would let the code that runs change without the workflow file
-      changing. Bump it in a pull request the same way you bump an action's sha.
+      Full 40-character commit sha or release tag (e.g. v0.1.0) of the Gauge checkout to
+      build and run. Required and deliberately without a default: this action compiles Go
+      code from that commit, so a branch name or short sha would let the code that runs
+      change without the workflow file changing. A release tag resolves to an immutable
+      commit; bump it in a pull request the same way you bump an action's sha.
     required: true
   gauge-repo:
     description: owner/name of the Gauge repository to build.

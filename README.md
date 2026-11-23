@@ -41,7 +41,7 @@ tests/                  359 cases, loopback only, including captured reports
 <!-- METRICS:START -->
 | Indicator | Value | Source |
 |---|---|---|
-| Unit & Action Tests | **402 passing** | `python -m unittest` |
+| Unit & Action Tests | **424 passing** | `python -m unittest` |
 | Supported Findings | **4 active rules** (`acct-*`, `flag-*`) | `action.yml` |
 | Runtime Footprint | **0 external dependencies** | Python standard library |
 | State Tracking | **Idempotent issue marker** | `<!-- posture-watch:v1:state -->` |
@@ -127,9 +127,12 @@ jobs:
           fail-on: warn
 ```
 
-`gauge-ref` has no default and will not accept a branch or a tag. That is the point: this
-action compiles Go code from that commit, so the only way to change what runs should be a
-one-line diff in your workflow file, reviewed like any other dependency bump.
+`gauge-ref` has no default and will not accept a branch name or short sha. It accepts a
+full 40-character commit sha or a release tag of the form `vMAJOR.MINOR.PATCH` once
+Gauge publishes one (see ROADMAP task 9.4). Either pins to an immutable commit: the only
+way to change what runs should be a one-line diff in your workflow file, reviewed like any
+other dependency bump. Once `v0.1.0` is tagged on Gauge you can write
+`gauge-ref: v0.1.0` in place of the sha.
 `example/workflow.yml` is the same file with the schedule commented and the inputs spelled
 out, and `example/gauge.toml` is the policy it reads.
 

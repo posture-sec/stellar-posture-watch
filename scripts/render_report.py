@@ -477,8 +477,14 @@ def main(argv: list[str] | None = None) -> int:
     if date.isoformat() != args.as_of:
         print(f"render_report: --as-of {args.as_of!r} is not a canonical ISO date", file=sys.stderr)
         return 2
-    if not re.fullmatch(r"[0-9a-f]{40}", args.gauge_ref):
-        print("render_report: --gauge-ref must be a full 40-character commit sha", file=sys.stderr)
+    if not re.fullmatch(r"[0-9a-f]{40}", args.gauge_ref) and not re.fullmatch(
+        r"v\d+\.\d+\.\d+", args.gauge_ref
+    ):
+        print(
+            "render_report: --gauge-ref must be a full 40-character commit sha "
+            "or a release tag of the form vMAJOR.MINOR.PATCH",
+            file=sys.stderr,
+        )
         return 2
     try:
         body, summary = render(args)
