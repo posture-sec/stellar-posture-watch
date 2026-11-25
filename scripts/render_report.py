@@ -52,6 +52,7 @@ MENTION = re.compile(r"(?<![\w/])@(\w{1,39})")
 # U+200B-U+200D: ZWSP, ZWNJ, ZWJ (zero-width joiners / separators)
 # U+2060: WJ (word joiner); U+FEFF: BOM / ZWNBSP
 _BIDI_STRIP = re.compile("[‪-‮⁦-⁩​-‍⁠﻿]")
+LINE_BREAK = re.compile(r"[ \t]*\r?\n[ \t]*")
 NO_CHANGE_SUMMARY = "no change since the previous run"
 
 
@@ -85,8 +86,18 @@ def escape(value: object) -> str:
 
 def fenced(value: object) -> str:
     """A value in backticks, with any run of backticks inside it neutralised."""
-    text = str(value).replace("`", "&#96;")
+    text = MENTION.sub(lambda m: "@&#8203;" + m.group(1), str(value).replace("`", "&#96;"))
     return f"`{text}`"
+
+
+def cell(value: object) -> str:
+    """An escaped value for a table cell.
+
+    ``escape`` covers markup but not line endings, and a newline inside a cell ends
+    the row: the rest of the value renders as a row the report never contained, which
+    a reader cannot tell from a real one. A break becomes the space it stood for.
+    """
+    return escape(LINE_BREAK.sub(" ", str(value)))
 
 
 def read_report(path: Path) -> dict:
@@ -301,7 +312,7 @@ def finding_rows(findings: list[Finding]) -> str:
         lines.append(
             f"| {escape(finding['severity'])} | {fenced(finding['rule'])} "
             f"| {fenced(finding['account'])} | {fenced(finding['fingerprint'][:12])} "
-            f"| {escape(finding['message'])} |"
+            f"| {cell(finding['message'])} |"
         )
     return "\n".join(lines) + "\n"
 
@@ -322,7 +333,7 @@ def account_rows(report: dict) -> str:
             # configured one, so the row says "(not read)" and leaves the cells out.
             lines.append(
                 f"| {fenced(snapshot.get('id'))} | (not read) | - | - | - "
-                f"| - | - | {escape(status)} |"
+                f"| - | - | {cell(status)} |"
             )
             continue
         check_snapshot_scalars(snapshot, f"accounts[{account.get('id', '?')}]")
@@ -339,7 +350,7 @@ def account_rows(report: dict) -> str:
             f"| {thresholds.get('low', 0)}/{thresholds.get('medium', 0)}"
             f"/{thresholds.get('high', 0)} "
             f"| {len(signers)} | {len(balances)} | {set_flags} "
-            f"| {escape(domain) if domain else '(none)'} | {escape(status)} |"
+            f"| {cell(domain) if domain else '(none)'} | {cell(status)} |"
         )
     return "\n".join(lines) + "\n"
 
