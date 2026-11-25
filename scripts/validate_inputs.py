@@ -332,7 +332,8 @@ def validate(args: argparse.Namespace) -> list[str]:
         problems.append(
             f"gauge-ref {args.gauge_ref!r} is not a full 40-character lowercase commit sha "
             "or a release tag of the form vMAJOR.MINOR.PATCH; "
-            "a branch name or short sha would let the commit built change without this file changing"
+            "a branch name or short sha would let the commit built change without this "
+            "file changing"
         )
     if not REPO_SHAPE.match(args.gauge_repo):
         problems.append(f"gauge-repo {args.gauge_repo!r} is not an owner/name pair")
