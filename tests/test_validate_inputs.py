@@ -157,7 +157,7 @@ class TestRefPin(Harness):
     def test_a_partial_semver_tag_is_refused(self) -> None:
         for ref in ("v0.1", "v1", "v0.1.0.0", "v0.1.0-rc1"):
             with self.subTest(ref=ref):
-                code, _, err = self.run_cli(gauge_ref=ref)
+                code, _, _err = self.run_cli(gauge_ref=ref)
                 self.assertEqual(code, 2)
 
     def test_seven_characters_is_refused_because_it_is_resolvable_but_not_pinned(self) -> None:
