@@ -89,7 +89,7 @@ class TestNoGateLoosening(MatrixText):
 class TestDevPinsUnchanged(unittest.TestCase):
     def test_requirements_dev_still_names_the_two_pinned_tools(self) -> None:
         text = DEV_REQUIREMENTS.read_text(encoding="utf-8")
-        self.assertIn("ruff==0.17.3", text)
+        self.assertIn("ruff==0.17.6", text)
         self.assertIn("mypy==2.4.0", text)
 
 
