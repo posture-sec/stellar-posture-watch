@@ -41,7 +41,7 @@ tests/                  432 cases, loopback only, including captured reports
 <!-- METRICS:START -->
 | Indicator | Value | Source |
 |---|---|---|
-| Unit & Action Tests | **530 passing** | `python -m unittest` |
+| Unit & Action Tests | **538 passing** | `python -m unittest` |
 | Supported Findings | **4 active rules** (`acct-*`, `flag-*`) | `action.yml` |
 | Runtime Footprint | **0 external dependencies** | Python standard library |
 | State Tracking | **Idempotent issue marker** | `<!-- posture-watch:v1:state -->` |
