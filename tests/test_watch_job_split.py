@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parent.parent
 WATCH = ROOT / ".github" / "workflows" / "watch.yml"
 PATH = "watch.yml"
 UPLOAD = "actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2"
-DOWNLOAD = "actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0"
+DOWNLOAD = "actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2"
 
 
 def indent_of(line: str) -> int:
