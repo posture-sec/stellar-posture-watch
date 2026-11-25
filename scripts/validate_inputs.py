@@ -316,6 +316,16 @@ def check_boolean(name: str, value: str, problems: list[str]) -> None:
         problems.append(f"{name} must be true or false, got {value}")
 
 
+def check_output_format(value: str, problems: list[str]) -> None:
+    if value not in ("markdown", "sarif"):
+        problems.append(f"output-format {value!r} must be markdown or sarif")
+
+
+def check_mode(value: str, problems: list[str]) -> None:
+    if value not in ("schedule", "pull_request"):
+        problems.append(f"mode {value!r} must be schedule or pull_request")
+
+
 def validate(args: argparse.Namespace) -> list[str]:
     problems: list[str] = []
     if not SHA40.match(args.gauge_ref) and not RELEASE_TAG.match(args.gauge_ref):
@@ -333,6 +343,8 @@ def validate(args: argparse.Namespace) -> list[str]:
     check_boolean("break-build", args.break_build, problems)
     check_boolean("dry-run", args.dry_run, problems)
     check_boolean("update-on-no-change", args.update_on_no_change, problems)
+    check_output_format(args.output_format, problems)
+    check_mode(args.mode, problems)
     config = check_config_path(args.config, problems)
     if config is not None:
         check_policy(config, problems)
@@ -350,6 +362,8 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument("--break-build", default="false")
     parser.add_argument("--dry-run", default="false")
     parser.add_argument("--update-on-no-change", default="false")
+    parser.add_argument("--output-format", dest="output_format", default="markdown")
+    parser.add_argument("--mode", default="schedule")
     return parser.parse_args(argv)
 
 

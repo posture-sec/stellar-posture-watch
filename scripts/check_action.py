@@ -21,14 +21,18 @@ import sys
 from pathlib import Path
 
 SHA_PIN = re.compile(r"^[A-Za-z0-9._/-]+@[0-9a-f]{40}( # v\S+)?$")
-INPUT_REF = re.compile(r"\$\{\{\s*inputs\.([a-z0-9-]+)\s*\}\}")
+INPUT_REF = re.compile(
+    r"""\$\{\{\s*inputs(?:\.([a-z0-9-]+)|\[\s*['"]([a-z0-9-]+)['"]\s*\])\s*\}\}"""
+)
 STEP_ID = re.compile(r"^\s{6}id:\s*([a-z0-9-]+)\s*$")
 STEP_START = re.compile(r"^\s{4}- (?:name|uses):")
 RUN_ANY = re.compile(r"^\s+run:")
-RUN_BLOCK = re.compile(r"^\s+run:\s*\|")
+RUN_BLOCK = re.compile(r"^(\s+)run:\s*\|")
 RUN_INLINE = re.compile(r"^\s+run:\s*(\S.*)$")
 SHELL_KEY = re.compile(r"^\s+shell:\s*\S")
 USING_KEY = re.compile(r"^\s+using:\s*(\S+)")
+KEY_START = re.compile(r"^\s*[A-Za-z_][A-Za-z0-9_.-]*:")
+LIST_START = re.compile(r"^\s*- ")
 
 
 def input_names(lines: list[str]) -> dict[str, list[str]]:
@@ -53,25 +57,55 @@ def input_names(lines: list[str]) -> dict[str, list[str]]:
     return found
 
 
+def input_refs(line: str) -> list[str]:
+    """Every input name a line references, in dot or in bracket form.
+
+    `inputs.title`, `inputs['title']` and `inputs["title"]` are the same expression to the
+    runner, so both rules that read input references — the `env:` binding collection and the
+    run-block scan — have to see all three spellings. A bracket reference the pattern misses
+    does not simply go uncounted: the input reads as declared and never bound, which is a
+    refusal the file cannot answer because it does bind the input.
+    """
+    return [dotted or bracketed for dotted, bracketed in INPUT_REF.findall(line)]
+
+
+def ends_body(line: str, key_indent: int) -> bool:
+    """True when a non-blank line starts the YAML node that ends a `run:` block.
+
+    A block scalar's body is whatever is indented past its key, and what ends it is the step's
+    next key or the next step. Reading the indent off the `run:` key is what makes that work at
+    any depth: the eight spaces this scanner used to compare against belong to one file's shape,
+    and against any other they either cut the body short before anything was read — so the scan
+    examined nothing — or run straight through the step's later keys and blame them for holding
+    the expressions they legitimately hold.
+    """
+    if len(line) - len(line.lstrip()) > key_indent:
+        return False
+    return bool(KEY_START.match(line) or LIST_START.match(line))
+
+
 def run_blocks(lines: list[str]) -> list[tuple[int, list[str]]]:
-    """(line number of the key, body) for every `run:` step in the file.
+    """(1-based line of the body's first line, body) for every `run:` step in the file.
 
     Both spellings count: the block scalar introduced by `run: |`, and the one line written
     beside the key as `run: echo`. The second is what #66 found missing — an expression in a
     one-line run is the same shell injection as one in a block, and the block path alone let
-    it through. The number counts from the `run:` key's own line, which is where a reader
-    needs to land to fix the step.
+    it through. Counting from the body rather than the key is what makes the reported number
+    the line a reader needs to land on: for the one-line form the two are the same line, and
+    for the block form the key is the line above the offending shell text.
     """
     blocks: list[tuple[int, list[str]]] = []
     index = 0
     while index < len(lines):
-        if RUN_BLOCK.match(lines[index]):
-            start = index + 1
+        block = RUN_BLOCK.match(lines[index])
+        if block:
+            key_indent = len(block.group(1))
+            start = index + 2
             body: list[str] = []
             index += 1
             while index < len(lines):
                 line = lines[index]
-                if line.strip() and not line.startswith(" " * 8):
+                if line.strip() and ends_body(line, key_indent):
                     break
                 body.append(line)
                 index += 1
@@ -108,7 +142,7 @@ def step_env_names(lines: list[str]) -> set[str]:
             if not match:
                 in_env = False
                 continue
-            bound.update(INPUT_REF.findall(match.group(1)))
+            bound.update(input_refs(match.group(1)))
     return bound
 
 
@@ -138,7 +172,7 @@ def check(path: Path) -> list[str]:
     used: set[str] = set()
     for number, body in run_blocks(lines):
         for offset, line in enumerate(body):
-            used.update(INPUT_REF.findall(line))
+            used.update(input_refs(line))
             if "${{" in line:
                 problems.append(
                     f"line {number + offset}: an expression inside a run: block reaches the "
@@ -174,10 +208,21 @@ def check(path: Path) -> list[str]:
                 "from, so nobody can tell which commit was read"
             )
 
-    ids = {m.group(1) for m in (STEP_ID.match(line) for line in lines) if m}
+    id_lines: dict[str, list[int]] = {}
+    for number, line in enumerate(lines, start=1):
+        step_id = STEP_ID.match(line)
+        if step_id:
+            id_lines.setdefault(step_id.group(1), []).append(number)
+    for name, numbers in sorted(id_lines.items()):
+        for first, second in itertools.pairwise(numbers):
+            problems.append(
+                f"step id {name!r} appears on lines {first} and {second}: the runner resolves "
+                "`steps.{id}.outputs.*` to one of them, and which one is not visible in the file"
+            )
+
     for number, line in enumerate(lines, start=1):
         output = re.match(r"^\s+value:\s*\$\{\{\s*steps\.([a-z0-9-]+)\.", line)
-        if output and output.group(1) not in ids:
+        if output and output.group(1) not in id_lines:
             problems.append(
                 f"line {number}: output refers to step id {output.group(1)!r}, "
                 "and no step in the file carries that id"

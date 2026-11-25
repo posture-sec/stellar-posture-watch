@@ -406,5 +406,61 @@ class TestProbePolicy(Harness):
         self.assertIn('endpoints = ["https://horizon.invalid"]', text)
 
 
+class OutputFormatHarness(unittest.TestCase):
+    def run_validator(self, *options: str) -> tuple[int, str]:
+        stdout, stderr = io.StringIO(), io.StringIO()
+        with redirect_stdout(stdout), redirect_stderr(stderr):
+            code = validate_inputs.main(
+                ["--config", "example/gauge.toml", "--gauge-ref", PIN, *options]
+            )
+        return code, stderr.getvalue()
+
+
+class TestOutputFormatInput(OutputFormatHarness):
+    def test_markdown_is_accepted(self) -> None:
+        code, _ = self.run_validator("--output-format=markdown")
+        self.assertEqual(code, 0)
+
+    def test_sarif_is_accepted(self) -> None:
+        code, _ = self.run_validator("--output-format=sarif")
+        self.assertEqual(code, 0)
+
+    def test_unknown_format_is_refused(self) -> None:
+        code, stderr = self.run_validator("--output-format=pdf")
+        self.assertEqual(code, 2)
+        self.assertIn("output-format", stderr)
+        self.assertIn("pdf", stderr)
+
+    def test_default_is_markdown(self) -> None:
+        args = validate_inputs.parse_args([])
+        self.assertEqual(args.output_format, "markdown")
+
+
+class TestModeInput(OutputFormatHarness):
+    def test_schedule_is_accepted(self) -> None:
+        code, _ = self.run_validator("--mode=schedule")
+        self.assertEqual(code, 0)
+
+    def test_pull_request_is_accepted(self) -> None:
+        code, _ = self.run_validator("--mode=pull_request")
+        self.assertEqual(code, 0)
+
+    def test_unknown_mode_is_refused(self) -> None:
+        code, stderr = self.run_validator("--mode=cron")
+        self.assertEqual(code, 2)
+        self.assertIn("mode", stderr)
+        self.assertIn("cron", stderr)
+
+    def test_default_is_schedule(self) -> None:
+        args = validate_inputs.parse_args([])
+        self.assertEqual(args.mode, "schedule")
+
+    def test_multiple_errors_reported_together(self) -> None:
+        code, stderr = self.run_validator("--output-format=pdf", "--mode=cron")
+        self.assertEqual(code, 2)
+        self.assertIn("output-format", stderr)
+        self.assertIn("mode", stderr)
+
+
 if __name__ == "__main__":
     unittest.main()

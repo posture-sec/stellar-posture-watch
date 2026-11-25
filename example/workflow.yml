@@ -99,7 +99,8 @@ jobs:
           }
           EOF
 
-      # The action itself uploads Gauge's exit-3 stderr as `gauge-diagnostics` (retention 7).
+      # The action itself uploads Gauge's exit-3 stderr as `gauge-diagnostics-audit-exit-3`
+      # (retention 7), named for the audit exit code that produced it.
       # This step uploads the example run's outputs so downstream jobs can read the numbers.
       - name: Upload the run record
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

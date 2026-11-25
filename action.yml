@@ -53,6 +53,20 @@ inputs:
     description: Render the body and report what would change, without opening or editing an issue.
     required: false
     default: "false"
+  output-format:
+    description: >-
+      Output format for findings. markdown (default) updates the tracking issue body.
+      sarif writes a SARIF 2.1.0 file for the GitHub security tab; use with
+      actions/upload-sarif and the sarif-path output.
+    required: false
+    default: "markdown"
+  mode:
+    description: >-
+      Operating mode. schedule (default) maintains the tracking issue on a cron. pull_request
+      comments on the pull request instead of updating an issue; in this mode the check colour
+      is the signal and break-build has no effect.
+    required: false
+    default: "schedule"
   github-token:
     description: >-
       Token used for the issue API only, passed through an environment variable so it never
@@ -73,6 +87,9 @@ outputs:
   report-path:
     description: Path of the JSON report inside the runner, never printed to the log.
     value: ${{ steps.gauge.outputs.report-path }}
+  sarif-path:
+    description: Path of the SARIF 2.1.0 file when output-format is sarif, empty otherwise.
+    value: ${{ steps.render.outputs.sarif-path }}
 
 runs:
   using: composite
@@ -101,6 +118,8 @@ runs:
         BREAK_BUILD: ${{ inputs.break-build }}
         DRY_RUN: ${{ inputs.dry-run }}
         UPDATE_ON_NO_CHANGE: ${{ inputs.update-on-no-change }}
+        OUTPUT_FORMAT: ${{ inputs.output-format }}
+        MODE: ${{ inputs.mode }}
       run: |
         python3 "$GITHUB_ACTION_PATH/scripts/validate_inputs.py" \
           --config "$CONFIG" \
@@ -111,7 +130,9 @@ runs:
           --title "$TITLE" \
           --break-build="$BREAK_BUILD" \
           --dry-run="$DRY_RUN" \
-          --update-on-no-change="$UPDATE_ON_NO_CHANGE"
+          --update-on-no-change="$UPDATE_ON_NO_CHANGE" \
+          --output-format="$OUTPUT_FORMAT" \
+          --mode="$MODE"
 
     - name: Guard against non-dry pull_request runs
       shell: bash
@@ -134,7 +155,7 @@ runs:
         fetch-depth: 1
 
     - name: Install Go from the pinned commit
-      uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
       with:
         go-version-file: .posture-watch/gauge/go.mod
         check-latest: false
@@ -168,7 +189,7 @@ runs:
 
     - name: Find the tracking issue
       id: find
-      if: steps.gauge.outputs.exit-code == '0' || steps.gauge.outputs.exit-code == '1'
+      if: (steps.gauge.outputs.exit-code == '0' || steps.gauge.outputs.exit-code == '1') && inputs.mode == 'schedule'
       shell: bash
       env:
         POSTURE_WATCH_TOKEN: ${{ inputs.github-token }}
@@ -182,6 +203,7 @@ runs:
           --previous-body-out "$RUNNER_TEMP/previous-body.md"
 
     - name: Render the issue body
+      id: render
       if: steps.gauge.outputs.exit-code == '0' || steps.gauge.outputs.exit-code == '1'
       shell: bash
       env:
@@ -190,19 +212,26 @@ runs:
         GAUGE_REPO: ${{ inputs.gauge-repo }}
         FAIL_ON: ${{ inputs.fail-on }}
         GAUGE_EXIT: ${{ steps.gauge.outputs.exit-code }}
+        OUTPUT_FORMAT: ${{ inputs.output-format }}
       run: |
         set -euo pipefail
-        python3 "$GITHUB_ACTION_PATH/scripts/render_report.py" \
-          --report "$RUNNER_TEMP/report.json" \
-          --out "$RUNNER_TEMP/issue-body.md" \
-          --summary-out "$RUNNER_TEMP/summary.json" \
-          --previous-body "$RUNNER_TEMP/previous-body.md" \
-          --as-of "$(date -u +%F)" \
-          --config "$CONFIG" \
-          --gauge-repo "$GAUGE_REPO" \
-          --gauge-ref "$GAUGE_REF" \
-          --fail-on "$FAIL_ON" \
+        args=(
+          --report "$RUNNER_TEMP/report.json"
+          --out "$RUNNER_TEMP/issue-body.md"
+          --summary-out "$RUNNER_TEMP/summary.json"
+          --previous-body "$RUNNER_TEMP/previous-body.md"
+          --as-of "$(date -u +%F)"
+          --config "$CONFIG"
+          --gauge-repo "$GAUGE_REPO"
+          --gauge-ref "$GAUGE_REF"
+          --fail-on "$FAIL_ON"
           --exit-code "$GAUGE_EXIT"
+        )
+        if [ "$OUTPUT_FORMAT" = "sarif" ]; then
+          args+=(--sarif-out "$RUNNER_TEMP/posture-report.sarif")
+          echo "sarif-path=$RUNNER_TEMP/posture-report.sarif" >> "$GITHUB_OUTPUT"
+        fi
+        python3 "$GITHUB_ACTION_PATH/scripts/render_report.py" "${args[@]}"
 
     - name: Update the tracking issue
       id: write
@@ -215,24 +244,40 @@ runs:
         NUMBER: ${{ steps.find.outputs.issue-number }}
         DRY_RUN: ${{ inputs.dry-run }}
         UPDATE_ON_NO_CHANGE: ${{ inputs.update-on-no-change }}
+        MODE: ${{ inputs.mode }}
+        PR_NUMBER: ${{ github.event.number }}
       run: |
         set -euo pipefail
-        args=()
-        if [ -n "$NUMBER" ]; then args+=(--number "$NUMBER"); fi
-        if [ "$DRY_RUN" = "true" ]; then args+=(--dry-run); fi
-        if [ "$UPDATE_ON_NO_CHANGE" = "true" ]; then args+=(--update-on-no-change); fi
-        python3 "$GITHUB_ACTION_PATH/scripts/sync_issue.py" write \
-          --label "$ISSUE_LABEL" \
-          --title "$TITLE" \
-          --body "$RUNNER_TEMP/issue-body.md" \
-          --summary "$RUNNER_TEMP/summary.json" \
-          "${args[@]}"
+        if [ "${MODE:-}" = "pull_request" ]; then
+          if [ -z "${PR_NUMBER:-}" ]; then
+            echo "stellar-posture-watch: pull_request mode needs a pull request number; this event carries none" >&2
+            exit 2
+          fi
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "sync_issue: dry run, would comment on pull request #$PR_NUMBER"
+          else
+            python3 "$GITHUB_ACTION_PATH/scripts/sync_issue.py" comment \
+              --number "$PR_NUMBER" \
+              --body "$RUNNER_TEMP/issue-body.md"
+          fi
+        else
+          args=()
+          if [ -n "$NUMBER" ]; then args+=(--number "$NUMBER"); fi
+          if [ "$DRY_RUN" = "true" ]; then args+=(--dry-run); fi
+          if [ "$UPDATE_ON_NO_CHANGE" = "true" ]; then args+=(--update-on-no-change); fi
+          python3 "$GITHUB_ACTION_PATH/scripts/sync_issue.py" write \
+            --label "$ISSUE_LABEL" \
+            --title "$TITLE" \
+            --body "$RUNNER_TEMP/issue-body.md" \
+            --summary "$RUNNER_TEMP/summary.json" \
+            "${args[@]}"
+        fi
 
     - name: Upload Gauge's diagnostics when the run failed outright
-      if: failure() || steps.gauge.outputs.exit-code == '2' || steps.gauge.outputs.exit-code == '3'
+      if: steps.gauge.outputs.exit-code == '2' || steps.gauge.outputs.exit-code == '3'
       uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
-        name: gauge-diagnostics
+        name: gauge-diagnostics-audit-exit-${{ steps.gauge.outputs.exit-code }}
         path: ${{ runner.temp }}/gauge-stderr.log
         if-no-files-found: ignore
         retention-days: 7
@@ -242,11 +287,16 @@ runs:
       env:
         GAUGE_EXIT: ${{ steps.gauge.outputs.exit-code }}
         BREAK_BUILD: ${{ inputs.break-build }}
+        MODE: ${{ inputs.mode }}
       run: |
         set -uo pipefail
         case "$GAUGE_EXIT" in
           0) exit 0 ;;
-          1) if [ "$BREAK_BUILD" = "true" ]; then
+          1) if [ "${MODE:-}" = "pull_request" ]; then
+               echo "gauge reported findings in pull_request mode"
+               exit 1
+             fi
+             if [ "$BREAK_BUILD" = "true" ]; then
                echo "gauge reported findings and break-build is true"
                exit 1
              fi

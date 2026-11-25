@@ -90,6 +90,8 @@ class TestBooleanInputs(unittest.TestCase):
             "BREAK_BUILD": "yes",
             "DRY_RUN": "true",
             "UPDATE_ON_NO_CHANGE": "false",
+            "OUTPUT_FORMAT": "markdown",
+            "MODE": "schedule",
         }
         result = subprocess.run(
             ["bash", "-e", "-o", "pipefail", "-c", script],

@@ -402,13 +402,28 @@ def run_write(args: argparse.Namespace, token: str) -> int:
     return 0
 
 
+def run_comment(args: argparse.Namespace, token: str) -> int:
+    body_text = Path(args.body).read_text(encoding="utf-8")
+    base = api_base()
+    request(
+        "POST",
+        f"{base}/repos/{args.owner}/{args.repo}/issues/{args.number}/comments",
+        token,
+        {"body": body_text},
+        attempts=1,
+    )
+    emit("issue-number", str(args.number))
+    print(f"sync_issue: posted comment on pull request #{args.number}")
+    return 0
+
+
 def parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("action", choices=("find", "write"))
+    parser.add_argument("action", choices=("find", "write", "comment"))
     parser.add_argument("--owner", default="", help="defaults to the owner of GITHUB_REPOSITORY")
     parser.add_argument("--repo", default="", help="defaults to the name in GITHUB_REPOSITORY")
-    parser.add_argument("--label", required=True)
-    parser.add_argument("--title", required=True)
+    parser.add_argument("--label", default="")
+    parser.add_argument("--title", default="")
     parser.add_argument("--previous-body-out", dest="previous_body_out", default="")
     parser.add_argument("--body", default="")
     parser.add_argument("--summary", default="")
@@ -441,16 +456,28 @@ def check_path_segments(args: argparse.Namespace) -> None:
     """Owner, repo and label go into a URL path, so they get checked before the call.
 
     A label with a slash or a query marker would move the request somewhere else in
-    the API, and a token would be sent there with it.
+    the API, and a token would be sent there with it. Label and title are only required
+    for find/write; comment uses --number and --body instead.
     """
-    for name, value in (("owner", args.owner), ("repo", args.repo), ("label", args.label)):
+    for name, value in (("owner", args.owner), ("repo", args.repo)):
         if not value or not PATH_SEGMENT.fullmatch(value):
             raise BadInput(
                 f"{name} {redact(value)!r} must be 1 to 100 characters of letters, digits, dot, "
                 "dash or underscore: it goes into a URL path"
             )
-    if not args.title or len(args.title) > 256 or CONTROL_CHARS.search(args.title):
-        raise BadInput("title must be 1 to 256 characters with no control characters")
+    if args.action in ("find", "write"):
+        if not args.label or not PATH_SEGMENT.fullmatch(args.label):
+            raise BadInput(
+                f"label {redact(args.label)!r} must be 1 to 100 characters of letters, digits, "
+                "dot, dash or underscore: it goes into a URL path"
+            )
+        if not args.title or len(args.title) > 256 or CONTROL_CHARS.search(args.title):
+            raise BadInput("title must be 1 to 256 characters with no control characters")
+    if args.action == "comment":
+        if args.number is None or args.number < 1:
+            raise BadInput(f"comment needs --number, got {args.number!r}")
+        if not args.body:
+            raise BadInput("comment needs --body")
     if args.number is not None and args.number < 1:
         raise BadInput(f"--number must be positive, got {args.number}")
     if args.action == "find" and not args.previous_body_out:
@@ -475,6 +502,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.action == "find":
             return run_find(args, token)
+        if args.action == "comment":
+            return run_comment(args, token)
         if not args.body or not args.summary:
             raise ApiError("write needs --body and --summary")
         Path(args.body).read_text(encoding="utf-8")

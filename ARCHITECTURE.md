@@ -43,10 +43,10 @@ Load bearing, checked in `read_report` and `collect_findings` (`scripts/render_r
 | `network` | string, escaped | The header would not say which network was read. Refused. |
 | `ledger` | rendered as given | The "at one ledger" claim becomes unverifiable. Refused if absent. |
 | `exit_code` | must equal `--exit-code` | A report that disagrees with the process it came from is not rendered. Refused. |
-| `limits` | string | The footer that tells a reader what the report cannot see. Refused if absent. |
+| `limits` | string | The footer that tells a reader what the report cannot see. Refused if absent or not a string. |
 | `accounts` | array of objects | Everything. Refused if missing or not an array. |
 | `accounts[].snapshot.id` | string | Findings are keyed by account; without an id the row cannot be named. Refused. |
-| `accounts[].findings[].rule_id` | non-empty string | Sorted, grouped and accepted-key matching all use it. Refused if missing. |
+| `accounts[].findings[].rule_id` | non-empty string | Sorted and grouped by rule; fingerprint alone drives accepted-key matching. Refused if missing. |
 | `accounts[].findings[].severity` | `high` or `warn` | An unknown value makes the counts and the sort meaningless. Refused. |
 | `accounts[].findings[].fingerprint` | exactly `[0-9a-f]{64}` | It is the identity of a finding across runs. Refused: no fingerprint means no change detection. |
 | `accounts[].findings[].message` | string, escaped | Only display; an absent message renders empty rather than failing. |
@@ -183,7 +183,7 @@ across five files, no network beyond loopback, and none of them starts a runner.
 |---|---|---|
 | Input unusable (bad sha, bad path, bad policy) | `validate_inputs.py` | First step fails, exit 2, nothing fetched, no issue touched. |
 | Gauge refuses the config (exit 2) | `render_report.py` | Gauge writes no report to stdout on a usage error, so the renderer refuses an empty file and the run is red at that step. No issue is opened or edited. |
-| Endpoint unreachable, or one account read fails (exit 3) | `render_report.py` | Same shape: `internal/run` cancels on the first fetch error and returns no report, so the body is never rendered and the run is red. Gauge's stderr goes up as the `gauge-diagnostics` artifact. |
+| Endpoint unreachable, or one account read fails (exit 3) | `render_report.py` | Same shape: `internal/run` cancels on the first fetch error and returns no report, so the body is never rendered and the run is red. Gauge's stderr goes up as the `gauge-diagnostics-audit-exit-3` artifact. |
 | Network mismatch (exit 1) | Renders | Each account row says `not read: the endpoint is on a different network`, `acct-network-mismatch` carries the finding, and the run is green by D-05. |
 | Account not on this endpoint (exit 1) | Renders | The row says `not found on this endpoint` and carries `(not read)` in its data columns, so an absent account never reads as a configured one. |
 | Report inconsistent with the run | `render_report.py` | Exit 2, body never written, no API call made. |
