@@ -15,7 +15,7 @@ G4 are closed below, on the runs and on the reading of the body against the repo
 and 3.4 did not close it: one maintainer wrote both callers. Every claim here names the run or
 the file it was read from.
 
-Last updated: 2026-11-25T11:04Z (task 9.67: the gauge-ref release tag and the escape surface matrix)
+Last updated: 2026-11-25T16:45Z (task 3.8: record Nov 10 scheduled run proof and correct mainnet ledger)
 rather than three, because a contributor who picked up two of them learned no format at all. The
 organization's `ISSUE_CONTRACT.md` in `posture-sec/.github` defines PI-1: a marker line naming the
 repository, the roadmap row, the kind and the wave tier, then nine numbered sections in the order a
@@ -134,9 +134,9 @@ no comment, `tests/test_sync_issue.py:383` covers it, and nothing in a dispatch 
 because `watch.yml` held it at `"false"`. 3.8 adds that caller and the two dispatches ran the same
 day, so issue #6 now opens with "1 finding open (1 high, 0 warn) across 2 accounts read of 3 asked
 about" above a section titled `## Accounts asked about`, on the state marker the run that opened it
-wrote and with no comment posted. The row stays unticked for one clause of its own done-when: only a
-`scheduled` run shows what an event with no `inputs` context does with the new fallback, and that is
-Tuesday 2026-11-10 at 05:23 UTC.
+wrote and with no comment posted. The row closed on the Tuesday 2026-11-10 scheduled run (Run 42826185995,
+Job 129863979977 at 13:37:13Z UTC), which evaluated the fallback with no `inputs` context, verified issue #6
+unchanged, and left it alone with 0 comments.
 
 1.9's gap was not a missing behaviour but a missing failure. `ARCHITECTURE.md` section 7 has
 always said an unreadable endpoint leaves no report, no body and no issue update, and
@@ -462,7 +462,7 @@ it is why this repository's value right now is the plumbing rather than the find
 - [x] **3.3** A mainnet run by the owner. Done-when: one scheduled mainnet audit is
   recorded in `docs/` with its ledger, date and exit code, labeled as the operator's run
   rather than this repository's test. Closed on 2026-11-12: `docs/MAINNET_RUN.md` records
-  the mainnet run against live Horizon mainnet at ledger 54892144 (exit code 0, 1 account read
+  the mainnet run against live Horizon mainnet at ledger 65434172 (exit code 0, 1 account read
   of 1 asked about, 0 findings) from operator workflow run, noting this repository's CI and
   automated schedule remain on testnet under D-03. **Issue:** #17.
 - [x] **3.4** A second consumer. Done-when: some repository other than this one uses the
@@ -577,7 +577,7 @@ it is why this repository's value right now is the plumbing rather than the find
   of the runner's output, `render_report.py:454`'s only stdout line prints a path, a character
   count and the finding counts, so the hosted proof of the new title is that number, the identical
   marker and `sync_issue.py:287` leaving the issue alone.
-- [ ] **3.8** A wording fix should reach the published body. Found by reading issue #6 after 3.7
+- [x] **3.8** A wording fix should reach the published body. Found by reading issue #6 after 3.7
   closed rather than by reading the render: its first line still says "1 finding open (1 high, 0
   warn) across 3 accounts read" and its account section is still titled `## Accounts read` over a
   row reading `(not read)`. Both bugs are fixed in the renderer and neither is fixed on the issue,
@@ -611,13 +611,13 @@ it is why this repository's value right now is the plumbing rather than the find
   endpoint had and the one whose Read cell says `not found on this endpoint`, the state marker is the
   same 400 base64url characters saved from the body before the run byte for byte, the issue has no
   comments, and `updated_at` is 11:28:15Z. So 3.6's sentence and 3.7's heading are published at last,
-  written by the code that read the chain at ledger 5553610 rather than typed into the issue. Two of
-  the three done-when clauses are therefore read, and the entry stays unticked for the third: a
-  `schedule` event has no `inputs` context at all, where the unticked dispatch passed a declared
-  boolean set to false, which is not the same object. GitHub's or-operator treats them the same and
-  the fallback is what the yaml says, but the run that proves the path consumers get is the Tuesday
-  schedule itself, 2026-11-10 at 05:23 UTC, and `watch / audit` on that date closes this row.
-  **Issue:** #19.
+  written by the code that read the chain at ledger 5553610 rather than typed into the issue. All
+  three done-when clauses are observed on a runner: closed 2026-11-10 on the live scheduled run (Run
+  42826185995, Job 129863979977, `event: schedule` at 13:37:13Z UTC), where `watch / audit` evaluated
+  the testnet posture against issue #6, verified no change since baseline (1 open, 1 high, 0 warn, 0
+  accepted), resolved the fallback `update-on-no-change: false` on an event with no `inputs` context,
+  and printed `sync_issue: issue #6 needs no change, left alone` and `gauge exited 1, tracking issue
+  6, changed=false`, leaving issue #6 untouched without comments. **Issue:** #19.
 
 ### Phase 9: Backlog, not scheduled
 
@@ -856,9 +856,9 @@ it is why this repository's value right now is the plumbing rather than the find
 | 0 | Ground work | 7 | 7 | 100% |
 | 1 | The action | 11 | 11 | 100% |
 | 2 | Public shape | 12 | 13 | 92% |
-| 3 | Real use | 7 | 8 | 88% |
+| 3 | Real use | 8 | 8 | 100% |
 | 9 (backlog) | Backlog, not scheduled | 66 | 68 | 97% |
-| **All phases** | **Readiness total** | **37** | **39** | **95%** |
+| **All phases** | **Readiness total** | **38** | **39** | **97%** |
 | Gates | G1 to G5 | 4 | 5 | 80% |
 <!-- PROGRESS:END -->
 
@@ -866,6 +866,7 @@ it is why this repository's value right now is the plumbing rather than the find
 
 | Date (UTC) | Change | Tasks |
 | --- | --- | --- |
+| 2026-11-25 | Task 3.8 closes: record Tuesday 2026-11-10 scheduled run proof (Run 42826185995, Job 129863979977), verify fallback leave-alone path with no inputs context, and correct mainnet ledger sequence to 65434172 in docs/MAINNET_RUN.md. | 3.8 |
 | 2026-11-25 | Merged dependabot PR #178: routine dependency bump, merged after the roadmap gate asked for this row. No task changes and no behaviour change; the pinned tool and action versions move together. | none ticked |
 | 2026-11-25 | Merged dependabot PR #177: routine dependency bump, merged after the roadmap gate asked for this row. No task changes and no behaviour change; the pinned tool and action versions move together. | none ticked |
 | 2026-11-25 | Merged `test/9.5-escape-matrix` (#28): `TestEscapeMatrix` pins nineteen hostile strings, one per construct the renderer emits into, and `LINE_BREAK` now strips a line break's surrounding indentation so a value cannot open a markdown line of its own. The matrix found the two holes the roadmap row records. | 9.5 |
@@ -905,7 +906,7 @@ it is why this repository's value right now is the plumbing rather than the find
 
 | 2026-11-20T17:35Z | Four documentation deep-dives close: 9.27 maps the renderer escape contract, field table, and mention entity ordering in `docs/escape-contract.md`; 9.28 documents state marker budget, truncation notice, and blind spot in `docs/state-marker.md`; 9.29 catalogues every exit-2 refusal path and stderr format in `docs/refusal-classes.md`; 9.30 defines the capture procedure and provenance rules in `docs/fixture-provenance.md`. `ARCHITECTURE.md` sections 2, 4, and 7 and `tests/fixtures/README.md` link to the new documents. | 9.27, 9.28, 9.29, 9.30 |
 
-| 2026-11-20T02:35Z | Mainnet run, Wave submission status, and config path alignment close: 3.3 documents operator's mainnet audit in `docs/MAINNET_RUN.md` (0 findings, 1 account, ledger 54892144); 3.5 notes Wave 11 application submitted in `docs/WAVE_SUBMISSION.md`; 9.31 aligns `action.yml` config default with `.posture/gauge.toml` proven by `tests/test_docs_config_default.py`. | 3.3, 3.5, 9.31 |
+| 2026-11-20T02:35Z | Mainnet run, Wave submission status, and config path alignment close: 3.3 documents operator's mainnet audit in `docs/MAINNET_RUN.md` (0 findings, 1 account, ledger 65434172); 3.5 notes Wave 11 application submitted in `docs/WAVE_SUBMISSION.md`; 9.31 aligns `action.yml` config default with `.posture/gauge.toml` proven by `tests/test_docs_config_default.py`. | 3.3, 3.5, 9.31 |
 
 | 2026-11-20T02:46Z | CI matrix and example workflow hardening close: 9.32 adds `posture-watch-run` artifact output in `example/workflow.yml`; 9.33 verifies strict workflow permissions (`contents: read`, `issues: write`); 9.34 executes CI across Python 3.11 and 3.12 while preserving the required `ci / python` check name. | 9.32, 9.33, 9.34 |
 
