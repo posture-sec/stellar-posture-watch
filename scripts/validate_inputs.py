@@ -30,6 +30,7 @@ NETWORK_KEYWORDS = ("mainnet", "testnet")
 # lookahead stop a longer base32 run matching in the middle of itself.
 SEED_SHAPE = re.compile(r"(?<![A-Z2-7])S[A-Z2-7]{55}(?![A-Z2-7])")
 SHA40 = re.compile(r"^[0-9a-f]{40}$")
+RELEASE_TAG = re.compile(r"^v\d+\.\d+\.\d+$")
 REPO_SHAPE = re.compile(r"^[A-Za-z0-9_.-]{1,39}/[A-Za-z0-9_.-]{1,100}$")
 CONTROL_CHARS = re.compile(r"[\x00-\x08\x0b-\x1f\x7f]")
 
@@ -327,10 +328,12 @@ def check_mode(value: str, problems: list[str]) -> None:
 
 def validate(args: argparse.Namespace) -> list[str]:
     problems: list[str] = []
-    if not SHA40.match(args.gauge_ref):
+    if not SHA40.match(args.gauge_ref) and not RELEASE_TAG.match(args.gauge_ref):
         problems.append(
-            f"gauge-ref {args.gauge_ref!r} is not a full 40-character lowercase commit sha; "
-            "a branch or tag would let the commit built change without this file changing"
+            f"gauge-ref {args.gauge_ref!r} is not a full 40-character lowercase commit sha "
+            "or a release tag of the form vMAJOR.MINOR.PATCH; "
+            "a branch name or short sha would let the commit built change without this "
+            "file changing"
         )
     if not REPO_SHAPE.match(args.gauge_repo):
         problems.append(f"gauge-repo {args.gauge_repo!r} is not an owner/name pair")

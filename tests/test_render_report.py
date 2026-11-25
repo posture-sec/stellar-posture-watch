@@ -688,10 +688,15 @@ class TestRefusals(Renderer):
             self.assertEqual(code, 2, value)
             self.assertIn("is not a", err, value)
 
-    def test_a_non_sha_gauge_ref(self) -> None:
+    def test_a_non_sha_non_tag_gauge_ref_is_refused(self) -> None:
         code, _, _, err = self.render("report-clean.json", extra={"gauge-ref": "main"})
         self.assertEqual(code, 2)
         self.assertIn("full 40-character commit sha", err)
+
+    def test_a_release_tag_gauge_ref_passes(self) -> None:
+        code, body, _, err = self.render("report-clean.json", extra={"gauge-ref": "v0.1.0"})
+        self.assertEqual(code, 0, err)
+        self.assertIn("v0.1.0", body)
 
 
 class TestStateBudget(Renderer):
@@ -731,6 +736,189 @@ class TestStateBudget(Renderer):
             if "render_report.py" in line or "--max-state" in line
         )
         self.assertNotIn("--max-state", argv)
+
+
+class TestEscapeSurface(Renderer):
+    """9.5: table-driven matrix for every markdown construct the renderer emits.
+
+    Each row: a hostile value injected into a report field → the unescaped form must NOT
+    appear in the rendered body. The state comment must survive every case byte for byte.
+    """
+
+    MARKER_PREFIX = "<!-- posture-watch:state v1 "
+    MARKER_SUFFIX = " -->"
+
+    def _report_with_message(self, message: str) -> Path:
+        report = json.loads((FIXTURES / "report-findings.json").read_text())
+        for account in report["accounts"]:
+            for entry in account.get("findings") or []:
+                entry["message"] = message
+        path = self.tmp / "hostile_msg.json"
+        path.write_text(json.dumps(report))
+        return path
+
+    def _report_with_domain(self, domain: str) -> Path:
+        report = json.loads((FIXTURES / "report-clean.json").read_text())
+        snapshot = report["accounts"][0].setdefault("snapshot", {})
+        snapshot["home_domain"] = domain
+        path = self.tmp / "hostile_domain.json"
+        path.write_text(json.dumps(report))
+        return path
+
+    def assert_escape_case(
+        self, description: str, path: Path, must_not_appear: str, exit_code: int = 1
+    ) -> None:
+        code, body, _, err = self.render(path, exit_code=exit_code)
+        self.assertEqual(code, 0, f"{description}: render failed: {err}")
+        self.assertNotIn(
+            must_not_appear,
+            body,
+            f"{description}: unescaped form found in body",
+        )
+        self.assertIn(
+            self.MARKER_PREFIX,
+            body,
+            f"{description}: state marker prefix missing",
+        )
+        marker_start = body.index(self.MARKER_PREFIX)
+        marker_end = body.index(self.MARKER_SUFFIX, marker_start + len(self.MARKER_PREFIX))
+        full_marker = body[marker_start : marker_end + len(self.MARKER_SUFFIX)]
+        self.assertNotIn("-->", full_marker[len(self.MARKER_PREFIX) :].rstrip(self.MARKER_SUFFIX))
+
+    def test_link_open_bracket_in_message(self) -> None:
+        self.assert_escape_case(
+            "link: [text](url)",
+            self._report_with_message("[click here](https://evil.example)"),
+            "[click here](https://evil.example)",
+        )
+
+    def test_mention_all_in_message(self) -> None:
+        self.assert_escape_case(
+            "mention: @all",
+            self._report_with_message("notify @all of this"),
+            "@all",
+        )
+
+    def test_mention_username_in_message(self) -> None:
+        self.assert_escape_case(
+            "mention: @username",
+            self._report_with_message("see @somebody for details"),
+            "@somebody",
+        )
+
+    def test_heading_prefix_in_message(self) -> None:
+        """# at the start of a line creates a heading; inside a table cell it must not."""
+        code, body, _, err = self.render(
+            self._report_with_message("# injected heading"), exit_code=1
+        )
+        self.assertEqual(code, 0, err)
+        # The # is escaped so no line in the body starts with "# ".
+        for line in body.splitlines():
+            self.assertFalse(
+                line.startswith("# injected"),
+                "unescaped heading found at line start",
+            )
+        self.assertIn(self.MARKER_PREFIX, body)
+
+    def test_list_prefix_dash_in_message(self) -> None:
+        """A dash cannot start a new list item from inside a table cell."""
+        code, body, _, err = self.render(
+            self._report_with_message("- injected list item"), exit_code=1
+        )
+        self.assertEqual(code, 0, err)
+        for line in body.splitlines():
+            self.assertFalse(
+                line.startswith("- injected"),
+                "unescaped dash-list found at line start",
+            )
+        self.assertIn(self.MARKER_PREFIX, body)
+
+    def test_list_prefix_asterisk_in_message(self) -> None:
+        """* is in MARKDOWN_SPECIAL and is escaped; it must not open a list from a cell."""
+        code, body, _, err = self.render(
+            self._report_with_message("* injected list item"), exit_code=1
+        )
+        self.assertEqual(code, 0, err)
+        for line in body.splitlines():
+            self.assertFalse(
+                line.startswith("* injected"),
+                "unescaped asterisk-list found at line start",
+            )
+        self.assertIn(self.MARKER_PREFIX, body)
+
+    def test_table_pipe_in_message(self) -> None:
+        self.assert_escape_case(
+            "table pipe: |",
+            self._report_with_message("data | injected cell"),
+            "data | injected cell",
+        )
+
+    def test_backtick_fence_closer_in_message(self) -> None:
+        """Triple backtick is escaped; the closing form ``` must not appear."""
+        code, body, _, err = self.render(
+            self._report_with_message("```\ninjected code block"), exit_code=1
+        )
+        self.assertEqual(code, 0, err)
+        self.assertNotIn("```", body)
+        self.assertIn(self.MARKER_PREFIX, body)
+
+    def test_html_comment_closer_in_domain_cannot_break_state_marker(self) -> None:
+        """A home_domain of '--> evil' must not close the state HTML comment early."""
+        path = self._report_with_domain("--> injected after close")
+        code, body, _, err = self.render(path, exit_code=0)
+        self.assertEqual(code, 0, err)
+        marker_start = body.find(self.MARKER_PREFIX)
+        self.assertGreater(marker_start, -1, "state marker missing")
+        after_prefix = body[marker_start + len(self.MARKER_PREFIX) :]
+        close_pos = after_prefix.find(self.MARKER_SUFFIX)
+        self.assertGreater(close_pos, -1, "state marker never closed")
+        payload = after_prefix[:close_pos]
+        self.assertNotIn("-->", payload)
+
+    def test_autolink_angle_bracket_in_message(self) -> None:
+        """< and > are both escaped; <url> cannot form an autolink."""
+        self.assert_escape_case(
+            "autolink: <https://...>",
+            self._report_with_message("<https://evil.example>"),
+            "<https://evil.example>",
+        )
+
+    def test_html_script_tag_in_message(self) -> None:
+        """< and > are both escaped; <script> cannot appear as an HTML tag."""
+        self.assert_escape_case(
+            "HTML: <script>alert</script>",
+            self._report_with_message("<script>alert(1)</script>"),
+            "<script>alert(1)</script>",
+        )
+
+    def test_tilde_strikethrough_in_message(self) -> None:
+        self.assert_escape_case(
+            "tilde: ~~strikethrough~~",
+            self._report_with_message("~~strikethrough~~"),
+            "~~strikethrough~~",
+        )
+
+    def test_ampersand_in_message(self) -> None:
+        self.assert_escape_case(
+            "ampersand: &",
+            self._report_with_message("rock & roll"),
+            "rock & roll",
+        )
+
+    def test_hash_in_message(self) -> None:
+        """# is escaped; no line in the body should start with #hidden."""
+        code, body, _, err = self.render(self._report_with_message(" #hidden heading"), exit_code=1)
+        self.assertEqual(code, 0, err)
+        for line in body.splitlines():
+            self.assertFalse(line.startswith("#hidden"), "unescaped #hidden at line start")
+        self.assertIn(self.MARKER_PREFIX, body)
+
+    def test_state_marker_survives_hostile_domain_tilde(self) -> None:
+        path = self._report_with_domain("~~evil~~")
+        code, body, _, err = self.render(path, exit_code=0)
+        self.assertEqual(code, 0, err)
+        self.assertIn(self.MARKER_PREFIX, body)
+        self.assertNotIn("~~evil~~", body)
 
 
 class TestFixtureProvenance(unittest.TestCase):

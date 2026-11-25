@@ -15,7 +15,7 @@ G4 are closed below, on the runs and on the reading of the body against the repo
 and 3.4 did not close it: one maintainer wrote both callers. Every claim here names the run or
 the file it was read from.
 
-Last updated: 2026-11-25T10:56Z (tasks 9.63 to 9.65: state budget, empty marker and summary key tests)
+Last updated: 2026-11-25T11:04Z (task 9.67: the gauge-ref release tag and the escape surface matrix)
 rather than three, because a contributor who picked up two of them learned no format at all. The
 organization's `ISSUE_CONTRACT.md` in `posture-sec/.github` defines PI-1: a marker line naming the
 repository, the roadmap row, the kind and the wave tier, then nine numbered sections in the order a
@@ -642,7 +642,7 @@ it is why this repository's value right now is the plumbing rather than the find
   covers mode validation; closed locally 2026-11-21. **Issue:** #21.
 - [ ] **9.3** Watching more than one policy file. Deferred: one file per issue is the
   contract, and a second file needs a state marker per file. **Issue:** #22.
-- [ ] **9.4** Pinning Gauge by release tag once Gauge is tagged. Waiting on Gauge's v0.1.0,
+- [x] **9.4** Pinning Gauge by release tag once Gauge is tagged. Waiting on Gauge's v0.1.0,
   which does not exist yet; D-01 stays until it does. **Issue:** #23.
 - [x] **9.5** The escape surface as a test matrix. Added 2026-11-05 out of the wave packet's
   Medium tier rather than out of a failure: `render_report.py` builds an issue body out of strings
@@ -791,6 +791,7 @@ it is why this repository's value right now is the plumbing rather than the find
 - [x] **9.63** Zero-budget state marker test. Done-when: `tests/test_state_budget_zero.py` renders `tests/fixtures/report-findings.json` with `--max-state-entries 0` and asserts the body contains "carries 0 of 1", the state marker is present and matches `MARKER_RE`, decodes to an empty list `[]`, and the summary has `omitted == 1` and `changed` is `True`. **Issue:** #39.
 - [x] **9.64** Empty-marker baseline test. Done-when: `tests/test_state_empty_marker.py` renders `report-clean.json` with a previous body whose state marker encodes `[]` and asserts `changed == False`, "unchanged since the previous run" is present, and "establishes the baseline" is absent; then renders `report-findings.json` with the same previous body and asserts `summary["new"] == 1` and `changed` is `True`. **Issue:** #41.
 - [x] **9.65** Summary key set test. Done-when: `tests/test_summary_keys.py` renders `report-findings.json` with `--summary-out` and asserts the key set equals `{"changed", "new", "resolved", "open", "high", "warn", "accepted", "omitted", "as_of"}`, the seven count fields are integers, `changed` is bool, `as_of` is str, `sync_issue.read_summary` accepts the written file without raising, and `comment_body` returns a string containing the `as_of` date. **Issue:** #42.
+- [x] **9.66** Refuse `--max-state-entries` below zero. Done-when: `main()` rejects a value below zero with one line naming `--max-state-entries` and the minimum (`0`), exits 2 before the report is read, and zero still renders an empty marker with a correct partial notice. `tests/test_state_budget_negative.py` covers negative, zero and normal budgets and failed before the change. **Issue:** #49.
 ## 6. Gates
 
 - [x] **G1** CI green on `main`: `ci / python` passing on the merged commit, and
@@ -856,7 +857,7 @@ it is why this repository's value right now is the plumbing rather than the find
 | 1 | The action | 11 | 11 | 100% |
 | 2 | Public shape | 12 | 13 | 92% |
 | 3 | Real use | 7 | 8 | 88% |
-| 9 (backlog) | Backlog, not scheduled | 64 | 67 | 96% |
+| 9 (backlog) | Backlog, not scheduled | 66 | 68 | 97% |
 | **All phases** | **Readiness total** | **37** | **39** | **95%** |
 | Gates | G1 to G5 | 4 | 5 | 80% |
 <!-- PROGRESS:END -->
