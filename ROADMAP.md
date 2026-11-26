@@ -15,7 +15,7 @@ G4 are closed below, on the runs and on the reading of the body against the repo
 and 3.4 did not close it: one maintainer wrote both callers. Every claim here names the run or
 the file it was read from.
 
-Last updated: 2026-11-25T16:45Z (task 3.8: record Nov 10 scheduled run proof and correct mainnet ledger)
+Last updated: 2026-11-26T17:43Z (9.67: escape a pipe inside a fenced value so a rule id cannot split a row)
 rather than three, because a contributor who picked up two of them learned no format at all. The
 organization's `ISSUE_CONTRACT.md` in `posture-sec/.github` defines PI-1: a marker line naming the
 repository, the roadmap row, the kind and the wave tier, then nine numbered sections in the order a
@@ -792,6 +792,8 @@ it is why this repository's value right now is the plumbing rather than the find
 - [x] **9.64** Empty-marker baseline test. Done-when: `tests/test_state_empty_marker.py` renders `report-clean.json` with a previous body whose state marker encodes `[]` and asserts `changed == False`, "unchanged since the previous run" is present, and "establishes the baseline" is absent; then renders `report-findings.json` with the same previous body and asserts `summary["new"] == 1` and `changed` is `True`. **Issue:** #41.
 - [x] **9.65** Summary key set test. Done-when: `tests/test_summary_keys.py` renders `report-findings.json` with `--summary-out` and asserts the key set equals `{"changed", "new", "resolved", "open", "high", "warn", "accepted", "omitted", "as_of"}`, the seven count fields are integers, `changed` is bool, `as_of` is str, `sync_issue.read_summary` accepts the written file without raising, and `comment_body` returns a string containing the `as_of` date. **Issue:** #42.
 - [x] **9.66** Refuse `--max-state-entries` below zero. Done-when: `main()` rejects a value below zero with one line naming `--max-state-entries` and the minimum (`0`), exits 2 before the report is read, and zero still renders an empty marker with a correct partial notice. `tests/test_state_budget_negative.py` covers negative, zero and normal budgets and failed before the change. **Issue:** #49.
+- [x] **9.67** Escape a pipe inside a fenced value. Added 2026-11-26 from wave-23. Done-when: `fenced()` replaces `|` with `\|` before it replaces backticks, so the pipe cannot end the cell; `tests/test_fenced_pipes.py` asserts `fenced("a|b")` equals the backticked escaped form and a normal rule id is unchanged; a rendered report whose rule id contains `|` gives one row per finding, five cells per row, and a marker that still decodes; and this row is ticked here with `Last updated` bumped and the progress table regenerated. **Issue:** #57.
+
 ## 6. Gates
 
 - [x] **G1** CI green on `main`: `ci / python` passing on the merged commit, and
@@ -857,7 +859,7 @@ it is why this repository's value right now is the plumbing rather than the find
 | 1 | The action | 11 | 11 | 100% |
 | 2 | Public shape | 12 | 13 | 92% |
 | 3 | Real use | 8 | 8 | 100% |
-| 9 (backlog) | Backlog, not scheduled | 66 | 68 | 97% |
+| 9 (backlog) | Backlog, not scheduled | 67 | 69 | 97% |
 | **All phases** | **Readiness total** | **38** | **39** | **97%** |
 | Gates | G1 to G5 | 4 | 5 | 80% |
 <!-- PROGRESS:END -->
@@ -866,6 +868,7 @@ it is why this repository's value right now is the plumbing rather than the find
 
 | Date (UTC) | Change | Tasks |
 | --- | --- | --- |
+| 2026-11-26 | A pipe inside a fenced value is escaped. GFM reads an unescaped pipe as a cell boundary even inside a code span, and `decode_state` accepts any string for `rule` and `account`, so a hand-edited state marker could add a column and shift every cell after it in the finding table. `fenced()` now replaces `|` with `\|` before the backtick, because the backslash has to be written before the backtick substitution can touch it. `tests/test_fenced_pipes.py` covers the helper directly (one pipe, several, a backtick and a mention beside it, a normal rule id unchanged) and renders `report-clean.json` with `flag|drift` to assert the row survives: the rendered row set is one distinct row, every copy has five unescaped-pipe-delimited cells, and the state marker still base64url-decodes to the original `rule`. Suite 601, `ruff check` and `mypy` clean. | 9.67 |
 | 2026-11-25 | Task 3.8 closes: record Tuesday 2026-11-10 scheduled run proof (Run 42826185995, Job 129863979977), verify fallback leave-alone path with no inputs context, and correct mainnet ledger sequence to 65434172 in docs/MAINNET_RUN.md. | 3.8 |
 | 2026-11-25 | Merged dependabot PR #178: routine dependency bump, merged after the roadmap gate asked for this row. No task changes and no behaviour change; the pinned tool and action versions move together. | none ticked |
 | 2026-11-25 | Merged dependabot PR #177: routine dependency bump, merged after the roadmap gate asked for this row. No task changes and no behaviour change; the pinned tool and action versions move together. | none ticked |
