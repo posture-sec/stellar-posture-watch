@@ -52,7 +52,7 @@ MENTION = re.compile(r"(?<![\w/])@(\w{1,39})")
 # U+200B-U+200D: ZWSP, ZWNJ, ZWJ (zero-width joiners / separators)
 # U+2060: WJ (word joiner); U+FEFF: BOM / ZWNBSP
 _BIDI_STRIP = re.compile("[‪-‮⁦-⁩​-‍⁠﻿]")
-LINE_BREAK = re.compile(r"[ \t]*\r?\n[ \t]*")
+LINE_BREAK = re.compile(r"(?:[ \t]*(?:\r\n|\r|\n)[ \t]*)+")
 NO_CHANGE_SUMMARY = "no change since the previous run"
 
 
@@ -73,31 +73,37 @@ class Refused(Exception):
 def escape(value: object) -> str:
     """Make a report-derived string safe to drop into issue markdown.
 
-    Strips bidi and zero-width Unicode format characters that cause visual spoofing.
+    Collapses any line ending to the single space it stood for, so a value carrying a
+    break cannot end a table row or open a block at column zero.  Then strips bidi and
+    zero-width Unicode format characters that cause visual spoofing.
     Backslash escapes the characters that can open markup, and any mention is broken
     with a zero-width space entity so a hostile home domain cannot notify a user or
     ``@all``.  The mention rewrite emits ``&#8203;`` as an HTML entity; because that
     is ASCII it is unaffected by stripping the corresponding code point U+200B.
     """
-    text = _BIDI_STRIP.sub("", str(value))
+    text = LINE_BREAK.sub(" ", str(value))
+    text = _BIDI_STRIP.sub("", text)
     text = MARKDOWN_SPECIAL.sub(r"\\\1", text)
     return MENTION.sub(lambda m: "@&#8203;" + m.group(1), text)
 
 
 def fenced(value: object) -> str:
-    """A value in backticks, with any run of backticks inside it neutralised."""
-    text = MENTION.sub(lambda m: "@&#8203;" + m.group(1), str(value).replace("`", "&#96;"))
-    return f"`{text}`"
+    """A value in backticks, with any run of backticks inside it neutralised.
+
+    Breaks collapse to a space for the same reason as ``escape``: a newline inside the
+    backticks still ends the row they are in.
+    """
+    flat = LINE_BREAK.sub(" ", str(value)).replace("`", "&#96;")
+    return f"`{MENTION.sub(lambda m: '@&#8203;' + m.group(1), flat)}`"
 
 
 def cell(value: object) -> str:
     """An escaped value for a table cell.
 
-    ``escape`` covers markup but not line endings, and a newline inside a cell ends
-    the row: the rest of the value renders as a row the report never contained, which
-    a reader cannot tell from a real one. A break becomes the space it stood for.
+    ``escape`` collapses the break first, so this is now the same function; the name
+    stays because a cell is where the collapse matters most.
     """
-    return escape(LINE_BREAK.sub(" ", str(value)))
+    return escape(value)
 
 
 def read_report(path: Path) -> dict:
