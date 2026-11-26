@@ -85,8 +85,15 @@ def escape(value: object) -> str:
 
 
 def fenced(value: object) -> str:
-    """A value in backticks, with any run of backticks inside it neutralised."""
-    text = MENTION.sub(lambda m: "@&#8203;" + m.group(1), str(value).replace("`", "&#96;"))
+    """A value in backticks, with any run of backticks inside it neutralised and every
+    pipe escaped.
+
+    GFM reads an unescaped pipe as a cell boundary even inside a code span, so a rule id
+    carrying one would add a column and shift every cell after it. The pipe goes first,
+    before the backtick, so the backslash it writes is never itself neutralised.
+    """
+    flat = str(value).replace("|", "\\|").replace("`", "&#96;")
+    text = MENTION.sub(lambda m: "@&#8203;" + m.group(1), flat)
     return f"`{text}`"
 
 
