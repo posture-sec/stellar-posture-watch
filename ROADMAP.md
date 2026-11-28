@@ -882,7 +882,7 @@ it is why this repository's value right now is the plumbing rather than the find
 | 1 | The action | 11 | 11 | 100% |
 | 2 | Public shape | 12 | 13 | 92% |
 | 3 | Real use | 8 | 8 | 100% |
-| 9 (backlog) | Backlog, not scheduled | 66 | 68 | 97% |
+| 9 (backlog) | Backlog, not scheduled | 70 | 71 | 99% |
 | **All phases** | **Readiness total** | **38** | **39** | **97%** |
 | Gates | G1 to G5 | 4 | 5 | 80% |
 <!-- PROGRESS:END -->
