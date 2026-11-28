@@ -138,16 +138,27 @@ class TestHappyPath(Harness):
 
 
 class TestRefPin(Harness):
-    def test_a_branch_name_is_refused(self) -> None:
-        code, _, err = self.run_cli(gauge_ref="main")
-        self.assertEqual(code, 2)
-        self.assertIn("not a full 40-character lowercase commit sha", err)
-        self.assertIn("change without this file changing", err)
+    def test_a_release_tag_passes(self) -> None:
+        code, out, err = self.run_cli(gauge_ref="v0.1.0")
+        self.assertEqual(code, 0, err)
+        self.assertIn("gauge-ref is pinned at v0.1.0", out)
 
-    def test_a_tag_name_is_refused(self) -> None:
-        code, _, err = self.run_cli(gauge_ref="v0.1.0")
+    def test_other_release_tags_pass(self) -> None:
+        for tag in ("v1.0.0", "v0.2.3", "v10.11.12"):
+            with self.subTest(tag=tag):
+                code, _, err = self.run_cli(gauge_ref=tag)
+                self.assertEqual(code, 0, err)
+
+    def test_a_bare_tag_without_v_prefix_is_refused(self) -> None:
+        code, _, err = self.run_cli(gauge_ref="0.1.0")
         self.assertEqual(code, 2)
         self.assertIn("not a full 40-character lowercase commit sha", err)
+
+    def test_a_partial_semver_tag_is_refused(self) -> None:
+        for ref in ("v0.1", "v1", "v0.1.0.0", "v0.1.0-rc1"):
+            with self.subTest(ref=ref):
+                code, _, _err = self.run_cli(gauge_ref=ref)
+                self.assertEqual(code, 2)
 
     def test_seven_characters_is_refused_because_it_is_resolvable_but_not_pinned(self) -> None:
         code, _, err = self.run_cli(gauge_ref=PIN[:7])
@@ -393,6 +404,62 @@ class TestProbePolicy(Harness):
         # so the unreachable half is the file's own claim rather than anything it enforces.
         text = PROBE_POLICY.read_text(encoding="utf-8")
         self.assertIn('endpoints = ["https://horizon.invalid"]', text)
+
+
+class OutputFormatHarness(unittest.TestCase):
+    def run_validator(self, *options: str) -> tuple[int, str]:
+        stdout, stderr = io.StringIO(), io.StringIO()
+        with redirect_stdout(stdout), redirect_stderr(stderr):
+            code = validate_inputs.main(
+                ["--config", "example/gauge.toml", "--gauge-ref", PIN, *options]
+            )
+        return code, stderr.getvalue()
+
+
+class TestOutputFormatInput(OutputFormatHarness):
+    def test_markdown_is_accepted(self) -> None:
+        code, _ = self.run_validator("--output-format=markdown")
+        self.assertEqual(code, 0)
+
+    def test_sarif_is_accepted(self) -> None:
+        code, _ = self.run_validator("--output-format=sarif")
+        self.assertEqual(code, 0)
+
+    def test_unknown_format_is_refused(self) -> None:
+        code, stderr = self.run_validator("--output-format=pdf")
+        self.assertEqual(code, 2)
+        self.assertIn("output-format", stderr)
+        self.assertIn("pdf", stderr)
+
+    def test_default_is_markdown(self) -> None:
+        args = validate_inputs.parse_args([])
+        self.assertEqual(args.output_format, "markdown")
+
+
+class TestModeInput(OutputFormatHarness):
+    def test_schedule_is_accepted(self) -> None:
+        code, _ = self.run_validator("--mode=schedule")
+        self.assertEqual(code, 0)
+
+    def test_pull_request_is_accepted(self) -> None:
+        code, _ = self.run_validator("--mode=pull_request")
+        self.assertEqual(code, 0)
+
+    def test_unknown_mode_is_refused(self) -> None:
+        code, stderr = self.run_validator("--mode=cron")
+        self.assertEqual(code, 2)
+        self.assertIn("mode", stderr)
+        self.assertIn("cron", stderr)
+
+    def test_default_is_schedule(self) -> None:
+        args = validate_inputs.parse_args([])
+        self.assertEqual(args.mode, "schedule")
+
+    def test_multiple_errors_reported_together(self) -> None:
+        code, stderr = self.run_validator("--output-format=pdf", "--mode=cron")
+        self.assertEqual(code, 2)
+        self.assertIn("output-format", stderr)
+        self.assertIn("mode", stderr)
 
 
 if __name__ == "__main__":

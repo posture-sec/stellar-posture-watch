@@ -30,6 +30,7 @@ NETWORK_KEYWORDS = ("mainnet", "testnet")
 # lookahead stop a longer base32 run matching in the middle of itself.
 SEED_SHAPE = re.compile(r"(?<![A-Z2-7])S[A-Z2-7]{55}(?![A-Z2-7])")
 SHA40 = re.compile(r"^[0-9a-f]{40}$")
+RELEASE_TAG = re.compile(r"^v\d+\.\d+\.\d+$")
 REPO_SHAPE = re.compile(r"^[A-Za-z0-9_.-]{1,39}/[A-Za-z0-9_.-]{1,100}$")
 CONTROL_CHARS = re.compile(r"[\x00-\x08\x0b-\x1f\x7f]")
 
@@ -315,12 +316,24 @@ def check_boolean(name: str, value: str, problems: list[str]) -> None:
         problems.append(f"{name} must be true or false, got {value}")
 
 
+def check_output_format(value: str, problems: list[str]) -> None:
+    if value not in ("markdown", "sarif"):
+        problems.append(f"output-format {value!r} must be markdown or sarif")
+
+
+def check_mode(value: str, problems: list[str]) -> None:
+    if value not in ("schedule", "pull_request"):
+        problems.append(f"mode {value!r} must be schedule or pull_request")
+
+
 def validate(args: argparse.Namespace) -> list[str]:
     problems: list[str] = []
-    if not SHA40.match(args.gauge_ref):
+    if not SHA40.match(args.gauge_ref) and not RELEASE_TAG.match(args.gauge_ref):
         problems.append(
-            f"gauge-ref {args.gauge_ref!r} is not a full 40-character lowercase commit sha; "
-            "a branch or tag would let the commit built change without this file changing"
+            f"gauge-ref {args.gauge_ref!r} is not a full 40-character lowercase commit sha "
+            "or a release tag of the form vMAJOR.MINOR.PATCH; "
+            "a branch name or short sha would let the commit built change without this "
+            "file changing"
         )
     if not REPO_SHAPE.match(args.gauge_repo):
         problems.append(f"gauge-repo {args.gauge_repo!r} is not an owner/name pair")
@@ -331,22 +344,11 @@ def validate(args: argparse.Namespace) -> list[str]:
     check_boolean("break-build", args.break_build, problems)
     check_boolean("dry-run", args.dry_run, problems)
     check_boolean("update-on-no-change", args.update_on_no_change, problems)
-
-    # Multi-config: the input may be a newline-separated list of paths.
-    raw_configs = args.config.splitlines()
-    configs = [line.strip() for line in raw_configs if line.strip()]
-    if not configs:
-        problems.append("config must list at least one policy file (the input was empty or blank)")
-        return problems
-    seen_configs: dict[str, int] = {}
-    for i, cfg in enumerate(configs):
-        first = seen_configs.setdefault(cfg, i)
-        if first != i:
-            problems.append(f"config {cfg!r} is listed twice, at index {first} and index {i}")
-    for cfg in configs:
-        path = check_config_path(cfg, problems)
-        if path is not None:
-            check_policy(path, problems)
+    check_output_format(args.output_format, problems)
+    check_mode(args.mode, problems)
+    config = check_config_path(args.config, problems)
+    if config is not None:
+        check_policy(config, problems)
     return problems
 
 
@@ -361,6 +363,8 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument("--break-build", default="false")
     parser.add_argument("--dry-run", default="false")
     parser.add_argument("--update-on-no-change", default="false")
+    parser.add_argument("--output-format", dest="output_format", default="markdown")
+    parser.add_argument("--mode", default="schedule")
     return parser.parse_args(argv)
 
 

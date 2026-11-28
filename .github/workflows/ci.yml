@@ -52,7 +52,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install the dev tools
-        run: python -m pip install --quiet -r requirements-dev.txt
+        run: python -m pip install --quiet --require-hashes -r requirements-dev.txt
 
       # The action first, before any test: a yaml file that does not parse fails the build in
       # one line rather than in ten subprocesses that each got a file nobody read.

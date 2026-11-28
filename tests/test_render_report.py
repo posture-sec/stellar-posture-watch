@@ -7,6 +7,7 @@ tests/fixtures/README.md, and one test enforces that that README still lists all
 
 from __future__ import annotations
 
+import base64
 import json
 import re
 import subprocess
@@ -17,6 +18,7 @@ from tempfile import TemporaryDirectory
 from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "scripts"))
 SCRIPT = ROOT / "scripts" / "render_report.py"
 FIXTURES = ROOT / "tests" / "fixtures"
 PIN = "da656733fff839d5cf20f795460f4365a7254257"
@@ -465,6 +467,154 @@ class TestHostileStrings(Renderer):
         self.assertEqual(err, "")
 
 
+class TestEscapeMatrix(Renderer):
+    """One case per markdown construct the renderer emits into.
+
+    Every case names the render it must not produce and the escaped render it must.
+    A construct is only covered if both halves are asserted: that the unsafe form is
+    absent and that the safe form is present, on the one row the value belongs to.
+    The state marker is checked on every case in the same pass, because a hostile
+    value that reaches it is what the next run would believe it already saw.
+
+    Cases marked ``finds_a_hole`` fail against ``main`` before the fix beside them;
+    the rest are regression cases that already hold and are here so a later change
+    cannot quietly lose one.
+    """
+
+    def report_for(self, kind: str, value: str) -> Path:
+        """A copy of report-clean.json with one hostile value in one field."""
+        report = json.loads((FIXTURES / "report-clean.json").read_text())
+        report["exit_code"] = 1
+        finding: dict[str, Any] = {
+            "rule_id": "flag-drift",
+            "severity": "high",
+            "message": "m",
+            "evidence": "x",
+            "fingerprint": "a" * 64,
+            "accepted": False,
+        }
+        if kind == "domain":
+            report["accounts"][0]["snapshot"]["home_domain"] = value
+        elif kind == "rule":
+            finding["rule_id"] = value
+        else:
+            finding["message"] = value
+        report["accounts"][0]["findings"] = [finding]
+        while True:
+            self._calls += 1
+            path = self.tmp / f"matrix{self._calls}.json"
+            if not path.exists():
+                break
+        path.write_text(json.dumps(report))
+        return path
+
+    def row_for(self, body: str, kind: str) -> list[str]:
+        """The one row a hostile value belongs to, whichever table it lands in."""
+        heading = "## Accounts asked about" if kind == "domain" else "## Current findings"
+        section = body.partition(heading)[2].partition("\n## ")[0]
+        prefix = f"| `{ACCOUNT}`" if kind == "domain" else "| high |"
+        return [line for line in section.splitlines() if line.startswith(prefix)]
+
+    def assert_state_survives(self, body: str, expected_message: str) -> None:
+        """The state marker still reads back the run that wrote it, unchanged."""
+        payloads = MARKER_RE.findall(body)
+        self.assertEqual(len(payloads), 1, "a hostile value added or removed a state marker")
+        raw = base64.urlsafe_b64decode(payloads[0] + "=" * (-len(payloads[0]) % 4))
+        entries = json.loads(raw)
+        self.assertEqual(len(entries), 1, "the state marker lost or gained a finding")
+        self.assertEqual(
+            entries[0]["message"], expected_message, "the state carried a rewritten message"
+        )
+
+    def assert_case(self, kind: str, value: str, absent: str, present: str) -> None:
+        code, body, _, err = self.render(self.report_for(kind, value))
+        self.assertEqual(code, 0, err)
+        rows = self.row_for(body, kind)
+        self.assertEqual(len(rows), 1, f"{value!r} broke its row into {len(rows)} lines")
+        self.assertIn(present, rows[0], f"{value!r} did not render escaped")
+        if absent:
+            self.assertNotIn(absent, rows[0], f"{value!r} left its unsafe render in place")
+        self.assert_state_survives(body, value if kind == "message" else "m")
+
+    def test_a_link_cannot_open(self) -> None:
+        self.assert_case(
+            "message",
+            "[click](javascript:alert(1))",
+            "| [click](javascript:alert(1))",
+            "\\[click\\](javascript:alert(1))",
+        )
+
+    def test_an_image_cannot_open(self) -> None:
+        self.assert_case("message", "![a](b)", "| ![a](b)", "!\\[a\\](b)")
+
+    def test_a_mention_cannot_notify(self) -> None:
+        self.assert_case(
+            "message",
+            "@all and @somebody",
+            "@all and @somebody",
+            "@&#8203;all and @&#8203;somebody",
+        )
+
+    def test_a_heading_prefix_cannot_open_a_header(self) -> None:
+        self.assert_case("message", "# Head", "| # Head", "\\# Head")
+
+    def test_a_list_prefix_cannot_open_a_list(self) -> None:
+        self.assert_case("message", "- item", "", "| - item")
+
+    def test_a_quote_prefix_cannot_open_a_blockquote(self) -> None:
+        self.assert_case("message", "> quote", "| > quote", "\\> quote")
+
+    def test_emphasis_cannot_open(self) -> None:
+        self.assert_case("message", "_x_ and **y**", "| _x_ and **y**", "\\_x\\_ and \\*\\*y\\*\\*")
+
+    def test_a_pipe_cannot_break_the_cell(self) -> None:
+        self.assert_case("message", "a | b", "a | b", "a \\| b")
+
+    def test_a_backtick_run_cannot_break_out_of_its_span(self) -> None:
+        self.assert_case(
+            "message", "a `` fenced ` rule", "a `` fenced ` rule", "a \\`\\` fenced \\` rule"
+        )
+
+    def test_a_fence_closer_cannot_close_the_body(self) -> None:
+        self.assert_case("message", "```", "```", "\\`\\`\\`")
+
+    def test_an_html_comment_cannot_open(self) -> None:
+        self.assert_case("message", "<!-- c -->", "| <!-- c -->", "\\<!-- c --\\>")
+
+    def test_an_autolink_cannot_open(self) -> None:
+        self.assert_case(
+            "message", "<https://evil.test>", "| <https://evil.test>", "\\<https://evil.test\\>"
+        )
+
+    def test_a_trailing_backslash_keeps_the_span_closed(self) -> None:
+        self.assert_case("message", "a\\", "", "a\\\\")
+
+    def test_a_line_break_cannot_end_the_row(self) -> None:
+        self.assert_case(
+            "message", "a\n| high | FAKE | fake |", "a\n", "a \\| high \\| FAKE \\| fake \\|"
+        )
+
+    def test_a_carriage_return_is_treated_as_a_line_break(self) -> None:
+        self.assert_case("message", "a\r\nb", "a\r", "a b")
+
+    def test_a_line_break_in_a_home_domain_cannot_end_the_row(self) -> None:
+        self.assert_case("domain", "a\nb", "a\n", "| a b | read |")
+
+    def test_a_mention_inside_a_fenced_value_cannot_notify(self) -> None:
+        self.assert_case("rule", "@all", "`@all`", "`@&#8203;all`")
+
+    def test_a_trailing_backslash_in_a_fenced_value_keeps_it_closed(self) -> None:
+        self.assert_case("rule", "flag-x\\", "", "`flag-x\\`")
+
+    def test_the_state_marker_text_in_a_value_cannot_shadow_the_real_one(self) -> None:
+        value = "<!-- posture-watch:state v1 ZZ -->"
+        self.assert_case("message", value, "| <!--", "\\<!-- posture-watch:state v1 ZZ --\\>")
+        _, body, _, _ = self.render(self.report_for("message", value))
+        self.assertEqual(
+            body.count("\n<!-- posture-watch:state v1"), 1, "the value's marker shadowed the body's"
+        )
+
+
 class TestRefusals(Renderer):
     def assert_refused(self, report: Path, expect: str, exit_code: int = 1) -> None:
         code, body, _, err = self.render(report, exit_code=exit_code)
@@ -538,10 +688,15 @@ class TestRefusals(Renderer):
             self.assertEqual(code, 2, value)
             self.assertIn("is not a", err, value)
 
-    def test_a_non_sha_gauge_ref(self) -> None:
+    def test_a_non_sha_non_tag_gauge_ref_is_refused(self) -> None:
         code, _, _, err = self.render("report-clean.json", extra={"gauge-ref": "main"})
         self.assertEqual(code, 2)
         self.assertIn("full 40-character commit sha", err)
+
+    def test_a_release_tag_gauge_ref_passes(self) -> None:
+        code, body, _, err = self.render("report-clean.json", extra={"gauge-ref": "v0.1.0"})
+        self.assertEqual(code, 0, err)
+        self.assertIn("v0.1.0", body)
 
 
 class TestStateBudget(Renderer):
@@ -583,6 +738,189 @@ class TestStateBudget(Renderer):
         self.assertNotIn("--max-state", argv)
 
 
+class TestEscapeSurface(Renderer):
+    """9.5: table-driven matrix for every markdown construct the renderer emits.
+
+    Each row: a hostile value injected into a report field → the unescaped form must NOT
+    appear in the rendered body. The state comment must survive every case byte for byte.
+    """
+
+    MARKER_PREFIX = "<!-- posture-watch:state v1 "
+    MARKER_SUFFIX = " -->"
+
+    def _report_with_message(self, message: str) -> Path:
+        report = json.loads((FIXTURES / "report-findings.json").read_text())
+        for account in report["accounts"]:
+            for entry in account.get("findings") or []:
+                entry["message"] = message
+        path = self.tmp / "hostile_msg.json"
+        path.write_text(json.dumps(report))
+        return path
+
+    def _report_with_domain(self, domain: str) -> Path:
+        report = json.loads((FIXTURES / "report-clean.json").read_text())
+        snapshot = report["accounts"][0].setdefault("snapshot", {})
+        snapshot["home_domain"] = domain
+        path = self.tmp / "hostile_domain.json"
+        path.write_text(json.dumps(report))
+        return path
+
+    def assert_escape_case(
+        self, description: str, path: Path, must_not_appear: str, exit_code: int = 1
+    ) -> None:
+        code, body, _, err = self.render(path, exit_code=exit_code)
+        self.assertEqual(code, 0, f"{description}: render failed: {err}")
+        self.assertNotIn(
+            must_not_appear,
+            body,
+            f"{description}: unescaped form found in body",
+        )
+        self.assertIn(
+            self.MARKER_PREFIX,
+            body,
+            f"{description}: state marker prefix missing",
+        )
+        marker_start = body.index(self.MARKER_PREFIX)
+        marker_end = body.index(self.MARKER_SUFFIX, marker_start + len(self.MARKER_PREFIX))
+        full_marker = body[marker_start : marker_end + len(self.MARKER_SUFFIX)]
+        self.assertNotIn("-->", full_marker[len(self.MARKER_PREFIX) :].rstrip(self.MARKER_SUFFIX))
+
+    def test_link_open_bracket_in_message(self) -> None:
+        self.assert_escape_case(
+            "link: [text](url)",
+            self._report_with_message("[click here](https://evil.example)"),
+            "[click here](https://evil.example)",
+        )
+
+    def test_mention_all_in_message(self) -> None:
+        self.assert_escape_case(
+            "mention: @all",
+            self._report_with_message("notify @all of this"),
+            "@all",
+        )
+
+    def test_mention_username_in_message(self) -> None:
+        self.assert_escape_case(
+            "mention: @username",
+            self._report_with_message("see @somebody for details"),
+            "@somebody",
+        )
+
+    def test_heading_prefix_in_message(self) -> None:
+        """# at the start of a line creates a heading; inside a table cell it must not."""
+        code, body, _, err = self.render(
+            self._report_with_message("# injected heading"), exit_code=1
+        )
+        self.assertEqual(code, 0, err)
+        # The # is escaped so no line in the body starts with "# ".
+        for line in body.splitlines():
+            self.assertFalse(
+                line.startswith("# injected"),
+                "unescaped heading found at line start",
+            )
+        self.assertIn(self.MARKER_PREFIX, body)
+
+    def test_list_prefix_dash_in_message(self) -> None:
+        """A dash cannot start a new list item from inside a table cell."""
+        code, body, _, err = self.render(
+            self._report_with_message("- injected list item"), exit_code=1
+        )
+        self.assertEqual(code, 0, err)
+        for line in body.splitlines():
+            self.assertFalse(
+                line.startswith("- injected"),
+                "unescaped dash-list found at line start",
+            )
+        self.assertIn(self.MARKER_PREFIX, body)
+
+    def test_list_prefix_asterisk_in_message(self) -> None:
+        """* is in MARKDOWN_SPECIAL and is escaped; it must not open a list from a cell."""
+        code, body, _, err = self.render(
+            self._report_with_message("* injected list item"), exit_code=1
+        )
+        self.assertEqual(code, 0, err)
+        for line in body.splitlines():
+            self.assertFalse(
+                line.startswith("* injected"),
+                "unescaped asterisk-list found at line start",
+            )
+        self.assertIn(self.MARKER_PREFIX, body)
+
+    def test_table_pipe_in_message(self) -> None:
+        self.assert_escape_case(
+            "table pipe: |",
+            self._report_with_message("data | injected cell"),
+            "data | injected cell",
+        )
+
+    def test_backtick_fence_closer_in_message(self) -> None:
+        """Triple backtick is escaped; the closing form ``` must not appear."""
+        code, body, _, err = self.render(
+            self._report_with_message("```\ninjected code block"), exit_code=1
+        )
+        self.assertEqual(code, 0, err)
+        self.assertNotIn("```", body)
+        self.assertIn(self.MARKER_PREFIX, body)
+
+    def test_html_comment_closer_in_domain_cannot_break_state_marker(self) -> None:
+        """A home_domain of '--> evil' must not close the state HTML comment early."""
+        path = self._report_with_domain("--> injected after close")
+        code, body, _, err = self.render(path, exit_code=0)
+        self.assertEqual(code, 0, err)
+        marker_start = body.find(self.MARKER_PREFIX)
+        self.assertGreater(marker_start, -1, "state marker missing")
+        after_prefix = body[marker_start + len(self.MARKER_PREFIX) :]
+        close_pos = after_prefix.find(self.MARKER_SUFFIX)
+        self.assertGreater(close_pos, -1, "state marker never closed")
+        payload = after_prefix[:close_pos]
+        self.assertNotIn("-->", payload)
+
+    def test_autolink_angle_bracket_in_message(self) -> None:
+        """< and > are both escaped; <url> cannot form an autolink."""
+        self.assert_escape_case(
+            "autolink: <https://...>",
+            self._report_with_message("<https://evil.example>"),
+            "<https://evil.example>",
+        )
+
+    def test_html_script_tag_in_message(self) -> None:
+        """< and > are both escaped; <script> cannot appear as an HTML tag."""
+        self.assert_escape_case(
+            "HTML: <script>alert</script>",
+            self._report_with_message("<script>alert(1)</script>"),
+            "<script>alert(1)</script>",
+        )
+
+    def test_tilde_strikethrough_in_message(self) -> None:
+        self.assert_escape_case(
+            "tilde: ~~strikethrough~~",
+            self._report_with_message("~~strikethrough~~"),
+            "~~strikethrough~~",
+        )
+
+    def test_ampersand_in_message(self) -> None:
+        self.assert_escape_case(
+            "ampersand: &",
+            self._report_with_message("rock & roll"),
+            "rock & roll",
+        )
+
+    def test_hash_in_message(self) -> None:
+        """# is escaped; no line in the body should start with #hidden."""
+        code, body, _, err = self.render(self._report_with_message(" #hidden heading"), exit_code=1)
+        self.assertEqual(code, 0, err)
+        for line in body.splitlines():
+            self.assertFalse(line.startswith("#hidden"), "unescaped #hidden at line start")
+        self.assertIn(self.MARKER_PREFIX, body)
+
+    def test_state_marker_survives_hostile_domain_tilde(self) -> None:
+        path = self._report_with_domain("~~evil~~")
+        code, body, _, err = self.render(path, exit_code=0)
+        self.assertEqual(code, 0, err)
+        self.assertIn(self.MARKER_PREFIX, body)
+        self.assertNotIn("~~evil~~", body)
+
+
 class TestFixtureProvenance(unittest.TestCase):
     def test_every_fixture_is_listed_in_the_provenance_table(self) -> None:
         readme = (FIXTURES / "README.md").read_text()
@@ -600,6 +938,74 @@ class TestFixtureProvenance(unittest.TestCase):
         pattern = re.compile(r"(?<![A-Z2-7])S[A-Z2-7]{55}(?![A-Z2-7])")
         for path in FIXTURES.glob("*.json"):
             self.assertIsNone(pattern.search(path.read_text()), path.name)
+
+
+class TestSARIFRender(Renderer):
+    def render_sarif(self, fixture: str) -> dict[str, Any]:
+        import render_report as rr  # type: ignore[import-not-found]
+
+        report_path = FIXTURES / fixture
+        report = json.loads(report_path.read_text())
+        return rr.render_sarif(
+            report,
+            gauge_ref=PIN,
+            gauge_repo="posture-sec/guage",
+            config=str(report_path),
+        )
+
+    def test_findings_report_produces_results(self) -> None:
+        sarif = self.render_sarif("report-findings.json")
+        runs = sarif["runs"]
+        self.assertEqual(len(runs), 1)
+        self.assertGreater(len(runs[0]["results"]), 0)
+
+    def test_clean_report_produces_no_results(self) -> None:
+        sarif = self.render_sarif("report-clean.json")
+        self.assertEqual(sarif["runs"][0]["results"], [])
+
+    def test_sarif_version_is_2_1_0(self) -> None:
+        sarif = self.render_sarif("report-findings.json")
+        self.assertEqual(sarif["version"], "2.1.0")
+        self.assertIn("2.1.0", sarif["$schema"])
+
+    def test_high_severity_maps_to_error(self) -> None:
+        sarif = self.render_sarif("report-findings.json")
+        results = sarif["runs"][0]["results"]
+        high_results = [r for r in results if r["level"] == "error"]
+        # At least one high finding should map to error
+        self.assertTrue(high_results)
+        all_levels = {r["level"] for r in results}
+        self.assertIn("error", all_levels)
+
+    def test_warn_severity_maps_to_warning(self) -> None:
+        # Use the report that has warn findings
+        report_path = FIXTURES / "report-findings.json"
+        report = json.loads(report_path.read_text())
+        # Inject a warn finding
+        for account in report["accounts"]:
+            for finding in account.get("findings") or []:
+                finding["severity"] = "warn"
+                break
+        import render_report as rr  # type: ignore[import-not-found]
+
+        sarif = rr.render_sarif(report, PIN, "posture-sec/guage", str(report_path))
+        levels = {r["level"] for r in sarif["runs"][0]["results"]}  # type: ignore[index]
+        self.assertIn("warning", levels)
+
+    def test_sarif_tool_name_is_stellar_gauge(self) -> None:
+        sarif = self.render_sarif("report-findings.json")
+        driver = sarif["runs"][0]["tool"]["driver"]
+        self.assertEqual(driver["name"], "stellar-gauge")
+
+    def test_sarif_out_flag_writes_file(self) -> None:
+        code, _body, _summary, err = self.render(
+            "report-findings.json", extra={"sarif-out": str(self.tmp / "out.sarif")}
+        )
+        self.assertEqual(code, 0, err)
+        sarif_path = self.tmp / "out.sarif"
+        self.assertTrue(sarif_path.exists())
+        sarif = json.loads(sarif_path.read_text())
+        self.assertEqual(sarif["version"], "2.1.0")
 
 
 if __name__ == "__main__":

@@ -76,7 +76,9 @@ class TestCheckName(MatrixText):
 
 class TestNoGateLoosening(MatrixText):
     def test_the_legs_install_the_pinned_dev_tools(self) -> None:
-        self.assertIn("python -m pip install --quiet -r requirements-dev.txt", self.text)
+        self.assertIn(
+            "python -m pip install --quiet --require-hashes -r requirements-dev.txt", self.text
+        )
 
     def test_the_lint_and_type_steps_are_still_present(self) -> None:
         for command in ("ruff check .", "ruff format --check .", "mypy"):
@@ -87,7 +89,7 @@ class TestNoGateLoosening(MatrixText):
 class TestDevPinsUnchanged(unittest.TestCase):
     def test_requirements_dev_still_names_the_two_pinned_tools(self) -> None:
         text = DEV_REQUIREMENTS.read_text(encoding="utf-8")
-        self.assertIn("ruff==0.17.3", text)
+        self.assertIn("ruff==0.17.6", text)
         self.assertIn("mypy==2.4.0", text)
 
 
