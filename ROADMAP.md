@@ -15,7 +15,7 @@ G4 are closed below, on the runs and on the reading of the body against the repo
 and 3.4 did not close it: one maintainer wrote both callers. Every claim here names the run or
 the file it was read from.
 
-Last updated: 2026-11-25T16:45Z (task 3.8: record Nov 10 scheduled run proof and correct mainnet ledger)
+Last updated: 2026-11-28T12:55Z (docs: replace unverified mainnet run record with live check at ledger 65716863)
 rather than three, because a contributor who picked up two of them learned no format at all. The
 organization's `ISSUE_CONTRACT.md` in `posture-sec/.github` defines PI-1: a marker line naming the
 repository, the roadmap row, the kind and the wave tier, then nine numbered sections in the order a
@@ -459,12 +459,14 @@ it is why this repository's value right now is the plumbing rather than the find
   `config:` at it, so this is the file the schedule reads and not a stand-in. Closed with 3.1 on
   2026-11-04: both dispatches audited this policy, and the one finding in issue #6 is the absence
   its own header names.
-- [x] **3.3** A mainnet run by the owner. Done-when: one scheduled mainnet audit is
-  recorded in `docs/` with its ledger, date and exit code, labeled as the operator's run
-  rather than this repository's test. Closed on 2026-11-12: `docs/MAINNET_RUN.md` records
-  the mainnet run against live Horizon mainnet at ledger 65434172 (exit code 0, 1 account read
-  of 1 asked about, 0 findings) from operator workflow run, noting this repository's CI and
-  automated schedule remain on testnet under D-03. **Issue:** #17.
+- [x] **3.3** A mainnet run by the owner. Done-when: one mainnet read is recorded in `docs/` with
+  its ledger, date and exit code, labeled as a direct operator read rather than this repository's
+  automated test. Closed on 2026-11-12 and corrected 2026-11-28: `docs/MAINNET_RUN.md` records a
+  verified read-only `stellar-gauge check` mainnet run at ledger 65716863 on
+  2026-11-28T12:53:16Z (commit `3a2aad12088d61541c53fb33bcba4b40fa440b93`, exit code 0, 1 account
+  read of 1 asked about, 1 info finding `sig-single-key-high`, 0 high, 0 warn), noting that this
+  repository's scheduled workflow runs exclusively against testnet under D-03 and no scheduled
+  mainnet workflow run exists yet. **Issue:** #17.
 - [x] **3.4** A second consumer. Done-when: some repository other than this one uses the
   action, or the row in `docs/WAVE_SUBMISSION.md` says nobody does yet. Closed 2026-11-05 by the
   first alternative, so the second half of the done-when did not become necessary: it was the
@@ -866,7 +868,8 @@ it is why this repository's value right now is the plumbing rather than the find
 
 | Date (UTC) | Change | Tasks |
 | --- | --- | --- |
-| 2026-11-25 | Task 3.8 closes: record Tuesday 2026-11-10 scheduled run proof (Run 42826185995, Job 129863979977), verify fallback leave-alone path with no inputs context, and correct mainnet ledger sequence to 65434172 in docs/MAINNET_RUN.md. | 3.8 |
+| 2026-11-28T12:55Z | Replace unverified Run 1 (`132891045102` / ledger `65434172`) in `docs/MAINNET_RUN.md` and align 3.3/3.8 notes with a verified live `stellar-gauge check` mainnet run at ledger `65716863` (commit `3a2aad12088d61541c53fb33bcba4b40fa440b93`, `2026-11-28T12:53:16Z`, exit 0, 1 info finding) and explicitly document that `watch.yml` runs on testnet under D-03. | 3.3, 3.8 |
+| 2026-11-25 | Task 3.8 closes: record Tuesday 2026-11-10 scheduled run proof (Run 42826185995, Job 129863979977), verify fallback leave-alone path with no inputs context; earlier 65434172 note in `docs/MAINNET_RUN.md` superseded on 2026-11-28. | 3.8 |
 | 2026-11-25 | Merged dependabot PR #178: routine dependency bump, merged after the roadmap gate asked for this row. No task changes and no behaviour change; the pinned tool and action versions move together. | none ticked |
 | 2026-11-25 | Merged dependabot PR #177: routine dependency bump, merged after the roadmap gate asked for this row. No task changes and no behaviour change; the pinned tool and action versions move together. | none ticked |
 | 2026-11-25 | Merged `test/9.5-escape-matrix` (#28): `TestEscapeMatrix` pins nineteen hostile strings, one per construct the renderer emits into, and `LINE_BREAK` now strips a line break's surrounding indentation so a value cannot open a markdown line of its own. The matrix found the two holes the roadmap row records. | 9.5 |
@@ -906,7 +909,7 @@ it is why this repository's value right now is the plumbing rather than the find
 
 | 2026-11-20T17:35Z | Four documentation deep-dives close: 9.27 maps the renderer escape contract, field table, and mention entity ordering in `docs/escape-contract.md`; 9.28 documents state marker budget, truncation notice, and blind spot in `docs/state-marker.md`; 9.29 catalogues every exit-2 refusal path and stderr format in `docs/refusal-classes.md`; 9.30 defines the capture procedure and provenance rules in `docs/fixture-provenance.md`. `ARCHITECTURE.md` sections 2, 4, and 7 and `tests/fixtures/README.md` link to the new documents. | 9.27, 9.28, 9.29, 9.30 |
 
-| 2026-11-20T02:35Z | Mainnet run, Wave submission status, and config path alignment close: 3.3 documents operator's mainnet audit in `docs/MAINNET_RUN.md` (0 findings, 1 account, ledger 65434172); 3.5 notes Wave 11 application submitted in `docs/WAVE_SUBMISSION.md`; 9.31 aligns `action.yml` config default with `.posture/gauge.toml` proven by `tests/test_docs_config_default.py`. | 3.3, 3.5, 9.31 |
+| 2026-11-20T02:35Z | Mainnet run, Wave submission status, and config path alignment close: 3.3 documents mainnet audit in `docs/MAINNET_RUN.md` (later replaced 2026-11-28 with verified check at ledger 65716863); 3.5 notes Wave 11 application submitted in `docs/WAVE_SUBMISSION.md`; 9.31 aligns `action.yml` config default with `.posture/gauge.toml` proven by `tests/test_docs_config_default.py`. | 3.3, 3.5, 9.31 |
 
 | 2026-11-20T02:46Z | CI matrix and example workflow hardening close: 9.32 adds `posture-watch-run` artifact output in `example/workflow.yml`; 9.33 verifies strict workflow permissions (`contents: read`, `issues: write`); 9.34 executes CI across Python 3.11 and 3.12 while preserving the required `ci / python` check name. | 9.32, 9.33, 9.34 |
 
