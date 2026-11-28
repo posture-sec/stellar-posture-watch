@@ -202,6 +202,8 @@ runs:
         echo "exit-code=$max_ec" >> "$GITHUB_OUTPUT"
         echo "report-path=$RUNNER_TEMP/config-runs.txt" >> "$GITHUB_OUTPUT"
         echo "gauge max exit-code: $max_ec"
+        # Backward-compat alias: the exit-3 probe in self-check.yml checks report.json.
+        [ -f "$RUNNER_TEMP/report-0.json" ] && cp "$RUNNER_TEMP/report-0.json" "$RUNNER_TEMP/report.json"
         exit 0
 
     - name: Find the tracking issue

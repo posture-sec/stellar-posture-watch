@@ -15,7 +15,7 @@ G4 are closed below, on the runs and on the reading of the body against the repo
 and 3.4 did not close it: one maintainer wrote both callers. Every claim here names the run or
 the file it was read from.
 
-Last updated: 2026-11-25T16:45Z (task 3.8: record Nov 10 scheduled run proof and correct mainnet ledger)
+Last updated: 2026-11-28T14:00Z (close 9.3 and 9.67-9.69: multi-config support, newline collapsing in escape(), pipe escaping in fenced(), Refused on bad state-marker severity/fingerprint)
 rather than three, because a contributor who picked up two of them learned no format at all. The
 organization's `ISSUE_CONTRACT.md` in `posture-sec/.github` defines PI-1: a marker line naming the
 repository, the roadmap row, the kind and the wave tier, then nine numbered sections in the order a
@@ -640,8 +640,14 @@ it is why this repository's value right now is the plumbing rather than the find
   `find`/`write`; `validate_inputs.py` refuses unknown mode values; `tests/test_sync_comment.py`
   verifies the POST URL, payload, number requirement and label independence; `tests/test_validate_inputs.py`
   covers mode validation; closed locally 2026-11-21. **Issue:** #21.
-- [ ] **9.3** Watching more than one policy file. Deferred: one file per issue is the
-  contract, and a second file needs a state marker per file. **Issue:** #22.
+- [x] **9.3** Watching more than one policy file. Done-when: `config` input accepts a
+  newline-separated list of paths; `validate_inputs.py` refuses an empty list, duplicate paths
+  and any path outside the workspace in one pass; `action.yml` loops the gauge/find/render/write
+  pipeline once per file, each getting its own tracking issue titled `${title} [${basename}]` and
+  its own state marker; `--number-out` on `sync_issue.py find` writes the per-file issue number
+  to a path the write loop reads; and `tests/test_sync_issue.py` carries a
+  `TestMultiConfigWorkflow` test showing one file unchanged (no API call) and one updated (PATCH
+  + POST comment). **Issue:** #22.
 - [x] **9.4** Pinning Gauge by release tag once Gauge is tagged. Waiting on Gauge's v0.1.0,
   which does not exist yet; D-01 stays until it does. **Issue:** #23.
 - [x] **9.5** The escape surface as a test matrix. Added 2026-11-05 out of the wave packet's
@@ -792,6 +798,25 @@ it is why this repository's value right now is the plumbing rather than the find
 - [x] **9.64** Empty-marker baseline test. Done-when: `tests/test_state_empty_marker.py` renders `report-clean.json` with a previous body whose state marker encodes `[]` and asserts `changed == False`, "unchanged since the previous run" is present, and "establishes the baseline" is absent; then renders `report-findings.json` with the same previous body and asserts `summary["new"] == 1` and `changed` is `True`. **Issue:** #41.
 - [x] **9.65** Summary key set test. Done-when: `tests/test_summary_keys.py` renders `report-findings.json` with `--summary-out` and asserts the key set equals `{"changed", "new", "resolved", "open", "high", "warn", "accepted", "omitted", "as_of"}`, the seven count fields are integers, `changed` is bool, `as_of` is str, `sync_issue.read_summary` accepts the written file without raising, and `comment_body` returns a string containing the `as_of` date. **Issue:** #42.
 - [x] **9.66** Refuse `--max-state-entries` below zero. Done-when: `main()` rejects a value below zero with one line naming `--max-state-entries` and the minimum (`0`), exits 2 before the report is read, and zero still renders an empty marker with a correct partial notice. `tests/test_state_budget_negative.py` covers negative, zero and normal budgets and failed before the change. **Issue:** #49.
+- [x] **9.67** Collapse newlines in `escape()` before special-char substitution. Done-when:
+  `escape()` applies `_NEWLINE.sub(" ", ...)` (matching `\r\n`, `\r`, and `\n`) before
+  `MARKDOWN_SPECIAL.sub(...)` so a CR, LF or CRLF in a chain-derived field cannot end the table
+  row or start a heading or checklist; `tests/test_escape_newlines.py` covers LF, CR and CRLF
+  collapse, heading and checklist injection, the hostile-strings fixture body carries no injected
+  headings after the change, and the state marker is decodable with valid severity and fingerprint
+  for every entry. **Issue:** #56.
+- [x] **9.68** Escape `|` in `fenced()` before wrapping in backticks. Done-when: `fenced()`
+  replaces `|` with `\|` before the backtick substitution so a pipe inside a code span cannot
+  split the GFM table cell; `tests/test_fenced_pipes.py` asserts `fenced("a|b")` produces the
+  escaped form, a plain rule id is unchanged, the two substitutions do not interfere on a
+  combined input, and a rendered report whose rule id contains `|` gives one five-cell row per
+  finding with a decodable state marker. **Issue:** #57.
+- [x] **9.69** Raise `Refused` in `decode_state()` for invalid severity or fingerprint.
+  Done-when: `decode_state()` raises `Refused` (exit 2) when a fully-typed entry carries a
+  severity not in `SEVERITIES` or a fingerprint that does not match `HEX64`, while bad base64,
+  a missing required field and a non-dict entry still return `None` (no previous state);
+  `tests/test_state_validation.py` covers both raise paths, all None-returning paths, and second-
+  entry validation. **Issue:** #58.
 ## 6. Gates
 
 - [x] **G1** CI green on `main`: `ci / python` passing on the merged commit, and

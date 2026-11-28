@@ -22,7 +22,7 @@ stellar-gauge audit --config policy.toml --format json [--fail-on warn]
 | `report-warn.json` | real run, ledger 5535646, exit 1 | `0a0789f958230c8cbed6197ca07dbf08d4753064395a4db3f73f0551a6f61085` | a `warn` finding (`flag-undeclared-clawback`) at a `--fail-on warn` threshold |
 | `report-network-mismatch.json` | real run, ledger 5535646, exit 1 | `689083b434c9d21aa7c8990ac33bcdf88dd76910e19970678927bc6bf9d7eed6` | `skipped` as a string plus the `acct-network-mismatch` HIGH finding, the shape a policy that names one network and points at another produces |
 | `report-accepted.json` | derived from `report-findings.json` | `f52a938dfab6e454c3113761c8fd32d8c0b7528832813794961fbcf972570b5d` | the `accepted: true` path, which no real run produced yet because no policy with an `[[accept]]` entry has been run |
-| `report-hostile-strings.json` | derived from `report-clean.json` | `e1e9c217f6cf89d4938c984947536c61bf97f48385a570639ee0df5e61a6168e` | markup and mentions inside chain-derived fields; also carries CR+LF in home_domain and LF in a finding message to exercise newline collapsing |
+| `report-hostile-strings.json` | derived from `report-clean.json` | `e73bcfe3559aa55156a08d183dd2a5669c5c7a05cf192d406b6fbd3bf56df192` | markup and mentions inside chain-derived fields; also carries CR+LF in home_domain and LF in a finding message to exercise newline collapsing |
 
 The two derived files are **hand-built**. Each is a copy of a captured report with these
 changes and nothing else:
