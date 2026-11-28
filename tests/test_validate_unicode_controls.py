@@ -238,10 +238,12 @@ class TestRendererKeepsItsOwnZeroWidthSpace(unittest.TestCase):
         zero-width break, the escaping or the row order changes this hash, and it changes it
         here rather than silently in a scheduled issue body.
         """
-        digest = hashlib.sha256(self.render_fixture()).hexdigest()
+        raw = self.render_fixture()
+        # Normalize line endings so the hash is stable across Windows (CRLF) and Linux (LF).
+        digest = hashlib.sha256(raw.replace(b"\r\n", b"\n")).hexdigest()
         self.assertEqual(
             digest,
-            "0e3c716348aeae44ea7c316fc9a4f1de2482dddd2c99fe8914042357e20b1432",
+            "7a35a3bbb2abeb1a774114e5870e8b2885e5328159fb654d22610797bd9102ae",
         )
 
 

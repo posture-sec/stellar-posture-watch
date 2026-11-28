@@ -329,6 +329,10 @@ def run_find(args: argparse.Namespace, token: str) -> int:
     )
     emit("found", "true" if number is not None else "false")
     emit("issue-number", str(number) if number is not None else "")
+    if args.number_out:
+        Path(args.number_out).write_text(
+            str(number) if number is not None else "", encoding="utf-8"
+        )
     print(
         f"sync_issue: {'found' if number is not None else 'no'} issue to update"
         + (f" (#{number})" if number else "")
@@ -425,6 +429,7 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument("--label", default="")
     parser.add_argument("--title", default="")
     parser.add_argument("--previous-body-out", dest="previous_body_out", default="")
+    parser.add_argument("--number-out", dest="number_out", default="")
     parser.add_argument("--body", default="")
     parser.add_argument("--summary", default="")
     parser.add_argument("--number", type=int, default=None)

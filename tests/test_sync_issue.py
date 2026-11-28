@@ -860,5 +860,49 @@ class TestMarkerContract(unittest.TestCase):
         self.assertIn("b03faa6106f2", body, "the short fingerprint is what a reader cites")
 
 
+class TestMultiConfigWorkflow(Stubbed):
+    """Multi-config: sequential write calls per policy file, each handled independently.
+
+    Issue #22 adds a newline-separated list of policy files; the action loops and calls
+    sync_issue once per file. This test shows the invariant: a file whose findings have
+    not changed makes no API request, while one that has changed does.
+    """
+
+    def test_changed_file_updates_issue_unchanged_file_skips(self) -> None:
+        self.env()
+        # file-a changes → PATCH body + POST comment; file-b is unchanged → no call.
+        stub = self.use([(200, b"{}"), (201, b"{}")])
+
+        # file-a: existing issue #7, findings changed.
+        code_a, log_a = self.write(stub, STATE_ISSUE)
+        self.assertEqual(code_a, 0, log_a)
+        self.assertEqual(stub.methods, ["PATCH", "POST"])
+
+        # file-b: existing issue #8, findings unchanged.
+        argv_b = [
+            "write",
+            "--label",
+            "account-posture",
+            "--title",
+            "Account posture watch [b]",
+            "--body",
+            self.file("body-b.md", "file b body"),
+            "--summary",
+            self.summary(changed=False),
+            "--number",
+            "8",
+        ]
+        out = io.StringIO()
+        from contextlib import redirect_stdout
+
+        with redirect_stdout(out):
+            code_b = sync_issue.main(argv_b)
+
+        self.assertEqual(code_b, 0)
+        # Stub still has 0 responses consumed by file-b (it made no calls).
+        self.assertEqual(stub.methods, ["PATCH", "POST"], "file-b made unexpected API calls")
+        self.assertIn("needs no change", out.getvalue())
+
+
 if __name__ == "__main__":
     unittest.main()

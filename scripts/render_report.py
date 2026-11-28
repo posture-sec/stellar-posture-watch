@@ -53,6 +53,7 @@ MENTION = re.compile(r"(?<![\w/])@(\w{1,39})")
 # U+2060: WJ (word joiner); U+FEFF: BOM / ZWNBSP
 _BIDI_STRIP = re.compile("[‪-‮⁦-⁩​-‍⁠﻿]")
 LINE_BREAK = re.compile(r"[ \t]*\r?\n[ \t]*")
+_NEWLINE = re.compile(r"\r\n|\r|\n")
 NO_CHANGE_SUMMARY = "no change since the previous run"
 
 
@@ -73,20 +74,28 @@ class Refused(Exception):
 def escape(value: object) -> str:
     """Make a report-derived string safe to drop into issue markdown.
 
-    Strips bidi and zero-width Unicode format characters that cause visual spoofing.
-    Backslash escapes the characters that can open markup, and any mention is broken
-    with a zero-width space entity so a hostile home domain cannot notify a user or
-    ``@all``.  The mention rewrite emits ``&#8203;`` as an HTML entity; because that
-    is ASCII it is unaffected by stripping the corresponding code point U+200B.
+    CR, LF and CRLF are collapsed to a single space first so a hostile value cannot end
+    the table row or start a new markdown block.  Strips bidi and zero-width Unicode
+    format characters that cause visual spoofing.  Backslash escapes the characters that
+    can open markup, and any mention is broken with a zero-width space entity so a hostile
+    home domain cannot notify a user or ``@all``.  The mention rewrite emits ``&#8203;``
+    as an HTML entity; because that is ASCII it is unaffected by stripping the
+    corresponding code point U+200B.
     """
-    text = _BIDI_STRIP.sub("", str(value))
+    text = _NEWLINE.sub(" ", str(value))
+    text = _BIDI_STRIP.sub("", text)
     text = MARKDOWN_SPECIAL.sub(r"\\\1", text)
     return MENTION.sub(lambda m: "@&#8203;" + m.group(1), text)
 
 
 def fenced(value: object) -> str:
-    """A value in backticks, with any run of backticks inside it neutralised."""
-    text = MENTION.sub(lambda m: "@&#8203;" + m.group(1), str(value).replace("`", "&#96;"))
+    """A value in backticks, with pipes and backticks neutralised.
+
+    A pipe inside a code span still ends the GFM table cell, so it is escaped before the
+    backtick substitution so the two replacements do not interfere with each other.
+    """
+    text = str(value).replace("|", r"\|").replace("`", "&#96;")
+    text = MENTION.sub(lambda m: "@&#8203;" + m.group(1), text)
     return f"`{text}`"
 
 
@@ -247,6 +256,13 @@ def decode_state(text: str) -> list[Finding] | None:
             for key in ("account", "fingerprint", "rule", "severity")
         ):
             return None
+        # A complete entry with an invalid severity or fingerprint is refused: returning
+        # None would silently re-baseline, while these fields are ones a hand-edited marker
+        # can forge. The field name is named; the value is not logged (D-06).
+        if entry["severity"] not in SEVERITIES:
+            raise Refused("state marker: severity field is not valid")
+        if not HEX64.match(entry["fingerprint"]):
+            raise Refused("state marker: fingerprint field is not valid")
         findings.append(
             {
                 "account": entry["account"],

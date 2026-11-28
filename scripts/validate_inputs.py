@@ -376,9 +376,11 @@ def main(argv: list[str] | None = None) -> int:
         for problem in problems:
             print(f"  - {problem}", file=sys.stderr)
         return 2
+    configs = [line.strip() for line in args.config.splitlines() if line.strip()]
+    cfg_summary = ", ".join(configs)
     print(
         f"validate_inputs: gauge-ref is pinned at {args.gauge_ref[:7]}, "
-        f"config {args.config} parsed, fail-on {args.fail_on}"
+        f"config {cfg_summary} parsed, fail-on {args.fail_on}"
     )
     return 0
 

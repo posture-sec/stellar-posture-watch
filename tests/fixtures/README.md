@@ -22,7 +22,7 @@ stellar-gauge audit --config policy.toml --format json [--fail-on warn]
 | `report-warn.json` | real run, ledger 5535646, exit 1 | `0a0789f958230c8cbed6197ca07dbf08d4753064395a4db3f73f0551a6f61085` | a `warn` finding (`flag-undeclared-clawback`) at a `--fail-on warn` threshold |
 | `report-network-mismatch.json` | real run, ledger 5535646, exit 1 | `689083b434c9d21aa7c8990ac33bcdf88dd76910e19970678927bc6bf9d7eed6` | `skipped` as a string plus the `acct-network-mismatch` HIGH finding, the shape a policy that names one network and points at another produces |
 | `report-accepted.json` | derived from `report-findings.json` | `f52a938dfab6e454c3113761c8fd32d8c0b7528832813794961fbcf972570b5d` | the `accepted: true` path, which no real run produced yet because no policy with an `[[accept]]` entry has been run |
-| `report-hostile-strings.json` | derived from `report-clean.json` | `de4b5ea19334baddf4f882acd3fdaefaec0c12740ce819895bdffc1cf910c260` | markup and mentions inside chain-derived fields, which no real account has been observed to carry |
+| `report-hostile-strings.json` | derived from `report-clean.json` | `e73bcfe3559aa55156a08d183dd2a5669c5c7a05cf192d406b6fbd3bf56df192` | markup and mentions inside chain-derived fields; also carries CR+LF in home_domain and LF in a finding message to exercise newline collapsing |
 
 The two derived files are **hand-built**. Each is a copy of a captured report with these
 changes and nothing else:
@@ -31,8 +31,11 @@ changes and nothing else:
   `report-findings.json`. The fingerprint, account and message are the captured ones.
 - `report-hostile-strings.json`: a `flag-drift` finding added with fingerprint `0`*64, its
   `evidence` carrying a markdown link and `@all`, the snapshot's `home_domain` set to
-  `[click here](javascript:alert(1)) @all @somebody #hidden`, and `exit_code` moved to 1 so
-  the report is consistent with the finding it now contains.
+  `[click here](javascript:alert(1)) @all @somebody #hidden\r\n- [ ] approved` (CR+LF to
+  exercise newline collapsing in `escape()`), the finding `message` set to
+  `observed auth_required true but the policy expects false\n## Account verified` (LF to
+  exercise the same path), and `exit_code` moved to 1 so the report is consistent with
+  the finding it now contains.
 
 Both are labeled hand-built here and in the tests that read them, per the rule that a
 fixture's provenance is written down. The markup in `report-hostile-strings.json` is
